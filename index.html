@@ -1,0 +1,2182 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ระบบสารสนเทศห้องเรียนคู่ขนานบุคคลออทิสติก</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--primary:#1a5fa8;--primary-light:#e8f0fb;--success:#2d7d3a;--success-light:#e6f4ea;--danger:#b71c1c;--danger-light:#fce8e8;--warn:#e65100;--warn-light:#fff3e0;--bg:#f4f6fa;--card:#fff;--border:#d8dde6;--text:#1c2940;--muted:#6b7a99;--radius:10px;--shadow:0 2px 8px rgba(0,0,0,.08)}
+body{font-family:'Sarabun',sans-serif;font-size:14px;color:var(--text);background:var(--bg);min-height:100vh}
+/* LOGIN */
+.login-bg{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#1a5fa8 0%,#0d3d6e 100%);padding:1rem}
+.login-card{background:#fff;border-radius:16px;padding:2.5rem 2rem;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.login-logo{text-align:center;margin-bottom:1.5rem}
+.login-logo img{max-height:80px;max-width:200px;object-fit:contain;display:block;margin:0 auto 10px}
+.login-logo .icon-placeholder{font-size:48px;margin-bottom:8px}
+.login-logo h1{font-size:16px;font-weight:700;color:var(--primary);line-height:1.4}
+.login-logo p{font-size:11px;color:var(--muted);margin-top:4px}
+/* LAYOUT */
+.app{display:none;flex-direction:column;min-height:100vh}
+.app.active{display:flex}
+.topbar{background:var(--primary);color:#fff;height:54px;display:flex;align-items:center;gap:12px;padding:0 1.25rem;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(0,0,0,.15)}
+.topbar img.logo{height:38px;width:auto;object-fit:contain}
+.topbar .logo-icon{font-size:28px}
+.topbar-title{font-size:13px;font-weight:600;flex:1;opacity:.95}
+.topbar-badge{background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;font-size:11px}
+.topbar-user{font-size:12px;opacity:.8}
+.body-wrap{display:flex;flex:1}
+.sidebar{width:210px;background:#fff;border-right:1px solid var(--border);padding:.75rem 0;flex-shrink:0;overflow-y:auto}
+.nav-section{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);padding:10px 16px 4px;margin-top:6px}
+.nav-item{display:flex;align-items:center;gap:9px;padding:8px 16px;cursor:pointer;font-size:13px;color:var(--muted);border-left:3px solid transparent;transition:all .15s}
+.nav-item:hover{background:var(--primary-light);color:var(--primary)}
+.nav-item.active{background:var(--primary-light);color:var(--primary);border-left-color:var(--primary);font-weight:600}
+.main{flex:1;padding:1.5rem;overflow-y:auto;background:var(--bg)}
+/* CARDS & FORMS */
+.page-header{margin-bottom:1.25rem}
+.page-header h2{font-size:18px;font-weight:700}
+.page-header p{font-size:12px;color:var(--muted);margin-top:3px}
+.card{background:var(--card);border-radius:var(--radius);border:1px solid var(--border);padding:1.1rem 1.25rem;margin-bottom:1rem;box-shadow:var(--shadow)}
+.card h3{font-size:13px;font-weight:700;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid var(--border);color:var(--primary)}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:1.25rem}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1rem;text-align:center;box-shadow:var(--shadow)}
+.stat-card .num{font-size:28px;font-weight:700;color:var(--primary)}
+.stat-card .lbl{font-size:11px;color:var(--muted);margin-top:3px}
+/* FORM CONTROLS */
+input[type=text],input[type=date],input[type=number],input[type=password],input[type=email],input[type=tel],select,textarea{width:100%;padding:8px 11px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit;color:var(--text);background:#fff;outline:none;transition:border .15s}
+input:focus,select:focus,textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(26,95,168,.1)}
+textarea{resize:vertical;min-height:72px}
+.form-group{margin-bottom:.9rem}
+.form-group label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.form-row3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+/* BUTTONS */
+.btn{padding:7px 16px;border-radius:8px;border:none;cursor:pointer;font-size:13px;font-family:inherit;font-weight:500;display:inline-flex;align-items:center;gap:6px;transition:all .15s}
+.btn-primary{background:var(--primary);color:#fff}.btn-primary:hover{background:#0d3d6e}
+.btn-success{background:var(--success);color:#fff}.btn-success:hover{background:#1b5e20}
+.btn-danger{background:var(--danger);color:#fff}.btn-danger:hover{background:#7f0000}
+.btn-warn{background:var(--warn);color:#fff}
+.btn-outline{background:#fff;border:1px solid var(--border);color:var(--text)}.btn-outline:hover{background:var(--bg)}
+.btn-sm{padding:4px 10px;font-size:12px;border-radius:6px}
+.btn-full{width:100%;justify-content:center;padding:10px}
+/* TABLE */
+.table-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{background:var(--bg);padding:8px 10px;font-weight:600;font-size:12px;color:var(--muted);border-bottom:2px solid var(--border);text-align:left;white-space:nowrap}
+td{padding:8px 10px;border-bottom:1px solid var(--border)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+/* BADGE */
+.badge{display:inline-block;padding:2px 9px;border-radius:12px;font-size:11px;font-weight:600}
+.badge-blue{background:var(--primary-light);color:var(--primary)}
+.badge-green{background:var(--success-light);color:var(--success)}
+.badge-red{background:var(--danger-light);color:var(--danger)}
+.badge-warn{background:var(--warn-light);color:var(--warn)}
+.badge-gray{background:#f0f0f0;color:#555}
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.45);display:none;align-items:center;justify-content:center;z-index:1000;padding:1rem}
+.modal-bg.open{display:flex}
+.modal-box{background:#fff;border-radius:12px;padding:1.5rem;width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.2)}
+.modal-box h3{font-size:15px;font-weight:700;margin-bottom:1rem;color:var(--primary)}
+.modal-footer{display:flex;justify-content:flex-end;gap:8px;margin-top:1rem;padding-top:1rem;border-top:1px solid var(--border)}
+/* ROOM TABS */
+.room-tabs{display:flex;gap:8px;margin-bottom:1.25rem;flex-wrap:wrap}
+.room-tab{padding:6px 14px;border-radius:20px;border:1.5px solid var(--border);background:#fff;font-size:12px;font-weight:600;cursor:pointer;color:var(--muted);transition:all .15s}
+.room-tab.active{background:var(--primary);color:#fff;border-color:var(--primary)}
+/* ATTENDANCE */
+.att-cell{display:inline-block;width:24px;height:24px;border-radius:5px;text-align:center;line-height:24px;font-size:10px;font-weight:700;cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--muted)}
+.att-P{background:#c8e6c9;color:#1b5e20;border-color:#81c784}
+.att-A{background:#ffcdd2;color:#b71c1c;border-color:#ef9a9a}
+.att-L{background:#fff3cd;color:#856404;border-color:#ffc107}
+.att-W{background:#e8e8e8;color:#555;border-color:#bbb}
+/* PROGRESS */
+.progress-bar{background:#e9ecef;border-radius:4px;height:8px;overflow:hidden;margin-top:4px}
+.progress-fill{background:var(--primary);height:100%;border-radius:4px;transition:width .3s}
+/* PHOTO GRID */
+.photo-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:10px}
+.photo-item{border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff}
+.photo-item img{width:100%;height:120px;object-fit:cover;display:block}
+.photo-item .photo-caption{padding:6px 8px;font-size:11px;color:var(--muted)}
+.photo-slot{height:160px;border:2px dashed var(--border);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;color:var(--muted);font-size:12px;gap:6px;background:#fafafa}
+.photo-slot:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+/* PDF UPLOAD */
+.pdf-upload-zone{border:2px dashed var(--border);border-radius:8px;padding:1.25rem;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;transition:all .15s;background:#fafafa;margin-bottom:8px}
+.pdf-upload-zone:hover{border-color:var(--danger);color:var(--danger);background:#fff5f5}
+.pdf-upload-zone.dragover{border-color:var(--danger);background:#fff5f5;transform:scale(1.01)}
+.pdf-ready{background:#fff5f5;border:2px solid var(--danger);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.pdf-ready .pdf-icon-big{font-size:32px;flex-shrink:0}
+.pdf-ready .pdf-info{flex:1}
+.pdf-ready .pdf-name{font-weight:700;font-size:13px;color:var(--danger)}
+.pdf-ready .pdf-size{font-size:11px;color:var(--muted);margin-top:2px}
+/* PDF ITEM */
+.pdf-item{display:flex;align-items:center;gap:10px;padding:10px;border:1px solid var(--border);border-radius:8px;margin-bottom:8px;background:#fff}
+.pdf-icon{font-size:28px;color:var(--danger)}
+/* TOAST */
+.toast{position:fixed;bottom:24px;right:24px;padding:11px 20px;border-radius:10px;font-size:13px;font-weight:600;z-index:9999;display:none;box-shadow:0 4px 20px rgba(0,0,0,.2)}
+.toast.ok{background:#2d7d3a;color:#fff}
+.toast.err{background:#b71c1c;color:#fff}
+/* REPORT */
+.rep-preview{background:#fff;border:1px solid var(--border);border-radius:var(--radius);padding:2.5rem;font-size:13px;line-height:1.9}
+.rep-preview h1{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px}
+.rep-preview h2{font-size:13px;text-align:center;color:var(--muted);margin-bottom:6px}
+.rep-section{margin-top:1.5rem}
+.rep-section h3{font-size:13px;font-weight:700;border-bottom:1.5px solid var(--border);padding-bottom:4px;margin-bottom:9px;color:var(--primary)}
+.rep-table{width:100%;border-collapse:collapse;font-size:12px}
+.rep-table th,.rep-table td{border:1px solid var(--border);padding:5px 8px}
+.rep-table th{background:var(--bg);font-weight:700;text-align:center}
+/* SETUP GUIDE */
+.step-box{background:var(--bg);border-radius:8px;padding:1rem;margin-bottom:.75rem;border-left:4px solid var(--primary)}
+.step-box h4{font-size:13px;font-weight:700;margin-bottom:6px;color:var(--primary)}
+.step-box p,.step-box li{font-size:12px;color:var(--text);line-height:1.8}
+.step-box ul{padding-left:18px}
+.code-blk{background:#1e1e2e;color:#cdd6f4;padding:10px 14px;border-radius:8px;font-size:11px;font-family:monospace;white-space:pre-wrap;word-break:break-all;margin:6px 0;position:relative}
+.logo-upload-area{border:2px dashed var(--border);border-radius:8px;padding:1.5rem;text-align:center;cursor:pointer;color:var(--muted);font-size:13px}
+.logo-upload-area:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+/* IMAGE UPLOAD */
+.img-upload-zone{border:2px dashed var(--border);border-radius:8px;padding:1.25rem;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;transition:all .15s;background:#fafafa}
+.img-upload-zone:hover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.img-upload-zone.dragover{border-color:var(--primary);background:var(--primary-light);transform:scale(1.01)}
+.img-preview-wrap{position:relative;display:inline-block;margin-top:8px}
+.img-preview-wrap img{max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);display:block}
+.img-preview-wrap .remove-img{position:absolute;top:-8px;right:-8px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.img-thumb{width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid var(--border);display:block}
+.upload-progress{height:4px;background:var(--border);border-radius:4px;margin-top:6px;overflow:hidden;display:none}
+.upload-progress-fill{height:100%;background:var(--primary);border-radius:4px;transition:width .3s}
+/* STAT PAGE */
+.stat-section{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin-bottom:1rem}
+.stat-big{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:1.25rem;text-align:center;box-shadow:var(--shadow)}
+.stat-big .n{font-size:36px;font-weight:700;color:var(--primary)}
+.stat-big .l{font-size:12px;color:var(--muted)}
+/* UTIL */
+.text-muted{color:var(--muted);font-size:12px}
+.mt-1{margin-top:.5rem}.mt-2{margin-top:1rem}
+.flex{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.error-msg{color:var(--danger);font-size:12px;margin-top:4px}
+hr.dashed{border:none;border-top:1px dashed var(--border);margin:1rem 0}
+.teacher-avatar{width:40px;height:40px;border-radius:50%;object-fit:cover;border:2px solid var(--border);display:block}
+.teacher-avatar-placeholder{width:40px;height:40px;border-radius:50%;background:var(--bg);border:2px solid var(--border);display:inline-flex;align-items:center;justify-content:center;font-size:18px}
+/* IMAGE UPLOAD */
+.img-upload-zone{border:2px dashed var(--border);border-radius:8px;padding:1.25rem;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;transition:all .15s;background:#fafafa}
+.img-upload-zone:hover,.img-upload-zone.dragover{border-color:var(--primary);color:var(--primary);background:var(--primary-light)}
+.img-preview-wrap{position:relative;display:inline-block;margin-top:8px}
+.img-preview-wrap img{max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);display:block}
+.remove-img{position:absolute;top:-8px;right:-8px;background:var(--danger);color:#fff;border:none;border-radius:50%;width:22px;height:22px;font-size:13px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-weight:700}
+.upload-progress{height:4px;background:var(--border);border-radius:4px;margin-top:6px;overflow:hidden;display:none}
+.upload-progress-fill{height:100%;background:var(--primary);border-radius:4px;transition:width .3s}
+/* PDF UPLOAD */
+.pdf-upload-zone{border:2px dashed var(--border);border-radius:8px;padding:1.25rem;text-align:center;cursor:pointer;color:var(--muted);font-size:13px;transition:all .15s;background:#fafafa;margin-bottom:8px}
+.pdf-upload-zone:hover,.pdf-upload-zone.dragover{border-color:var(--danger);color:var(--danger);background:#fff5f5}
+.pdf-ready{background:#fff5f5;border:2px solid var(--danger);border-radius:8px;padding:12px 14px;display:flex;align-items:center;gap:12px;margin-bottom:8px}
+.pdf-ready .pdf-icon-big{font-size:32px;flex-shrink:0}
+.pdf-ready .pdf-info{flex:1}
+.pdf-ready .pdf-name{font-weight:700;font-size:13px;color:var(--danger)}
+.pdf-ready .pdf-size{font-size:11px;color:var(--muted);margin-top:2px}
+@media print{
+  .sidebar,.topbar,.btn,.room-tabs,.modal-bg,.toast{display:none!important}
+  .main{padding:0!important}
+  .rep-preview{border:none;box-shadow:none;padding:1rem}
+  body{background:#fff}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="loginBg" class="login-bg">
+<div class="login-card">
+  <div class="login-logo">
+    <div id="loginLogoWrap">
+      <div id="loginLogoIcon" class="icon-placeholder">🏫</div>
+      <img id="loginLogoImg" src="" style="display:none" alt="โลโก้"/>
+    </div>
+    <h1>ระบบสารสนเทศ<br>ห้องเรียนคู่ขนานบุคคลออทิสติก</h1>
+    <p>ฝ่ายบริหารวิชาการ ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา</p>
+  </div>
+  <div class="form-group"><label>ชื่อผู้ใช้</label><input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้"/></div>
+  <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+  <div id="loginError" class="error-msg" style="display:none">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
+  <button class="btn btn-primary btn-full mt-2" onclick="doLogin()">🔐 เข้าสู่ระบบ</button>
+  <p class="text-muted" style="text-align:center;margin-top:12px">ทดสอบ: admin/admin123 | room1/room1pass | room2/room2pass | room3/room3pass</p>
+</div>
+</div>
+
+<!-- MAIN APP -->
+<div id="appWrap" class="app">
+<div class="topbar">
+  <div id="topbarIcon" class="logo-icon">🏫</div>
+  <img id="topbarLogo" src="" style="display:none;height:38px" alt="โลโก้"/>
+  <span class="topbar-title">ระบบสารสนเทศห้องเรียนคู่ขนานบุคคลออทิสติก</span>
+  <span class="topbar-badge" id="topbarRoom"></span>
+  <span class="topbar-badge" id="topbarYear" style="background:rgba(255,255,255,.15);font-size:11px"></span>
+  <span class="topbar-user" id="topbarUser"></span>
+  <button class="btn btn-outline btn-sm" onclick="doLogout()">ออกจากระบบ</button>
+</div>
+<div class="body-wrap">
+  <div class="sidebar" id="sidebar"></div>
+  <div class="main" id="mainContent"></div>
+</div>
+</div>
+
+<!-- MODAL -->
+<div id="modalBg" class="modal-bg"><div id="modalBox" class="modal-box"></div></div>
+<div id="toast" class="toast"></div>
+
+<script>
+// ──────────── CONSTANTS ────────────
+const ACCOUNTS={
+  admin:{pass:'admin123',role:'admin',name:'ผู้ดูแลระบบ',room:'ทุกห้องเรียน'},
+  room1:{pass:'room1pass',role:'room',roomId:0,name:'ครูห้องเรียน 1',room:'ร.ร.เทศบาล 2'},
+  room2:{pass:'room2pass',role:'room',roomId:1,name:'ครูห้องเรียน 2',room:'ร.ร.วัดเจริญภูผา'},
+  room3:{pass:'room3pass',role:'room',roomId:2,name:'ครูห้องเรียน 3',room:'ร.ร.บ้านทำเนียบ'}
+};
+const ROOMS=['ห้องเรียนคู่ขนานบุคคลออทิสติก โรงเรียนเทศบาล 2 (บ้านหาดใหญ่)','ห้องเรียนคู่ขนานบุคคลออทิสติก โรงเรียนวัดเจริญภูผา','ห้องเรียนคู่ขนานบุคคลออทิสติก โรงเรียนบ้านทำเนียบ'];
+const RS=['ร.ร.เทศบาล 2','ร.ร.วัดเจริญภูผา','ร.ร.บ้านทำเนียบ'];
+const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+const DIS=['บุคคลที่มีความบกพร่องทางการเห็น','บุคคลที่มีความบกพร่องทางการได้ยิน','บุคคลที่มีความบกพร่องทางสติปัญญา','บุคคลที่มีความบกพร่องทางร่างกายหรือการเคลื่อนไหวหรือสุขภาพ','บุคคลที่มีความบกพร่องทางการเรียนรู้','บุคคลที่มีความบกพร่องทางการพูดและภาษา','บุคคลที่มีความบกพร่องทางพฤติกรรมหรืออารมณ์','บุคคลออทิสติก','บุคคลพิการซ้อน'];
+
+// ──────────── DB ────────────
+function mkRoom(){return{teachers:[],students:[],attendance:{},services:[],hrMonthly:[],training:[],community:[],network:[],photos:[],schedules:[]};}
+let db={rooms:[mkRoom(),mkRoom(),mkRoom()]};
+let settings={
+  scriptUrl:'',
+  logoDataUrl:'',
+  academicYears:[
+    {id:1, name:'ปีการศึกษา 2567', startDate:'2024-05-16', endDate:'2025-03-31', active:true}
+  ],
+  activeYearId:1
+};
+let cu=null,ar=0,repRoom=0,repMonth=new Date().getMonth()+1,repYear=new Date().getFullYear()+543;
+let viewMonth=new Date().getMonth()+1,viewYear=new Date().getFullYear();
+let _curPageFn=null;
+function setViewDate(m,y){viewMonth=+m;viewYear=+y;if(_curPageFn)_curPageFn();}
+window.setViewDate=setViewDate;
+function monthYearPickerHtml(){
+  var now=new Date(),mOpts='',yOpts='';
+  MONTHS.forEach(function(mo,i){mOpts+='<option value="'+(i+1)+'"'+(i+1===viewMonth?' selected':'')+'>'+mo+'</option>';});
+  for(var y=now.getFullYear();y>=now.getFullYear()-5;y--){yOpts+='<option value="'+y+'"'+(y===viewYear?' selected':'')+'>'+( y+543)+'</option>';}
+  return '<div class="card" style="padding:.75rem 1.25rem;margin-bottom:1rem;border-left:3px solid var(--primary)">'
+    +'<div class="flex" style="gap:12px;flex-wrap:wrap;align-items:flex-end">'
+    +'<span style="font-size:13px;font-weight:600;color:var(--primary)">📅 เลือกเดือน/ปีที่ต้องการดู</span>'
+    +'<div class="form-group" style="margin:0"><label>เดือน</label>'
+    +'<select id="vMonth" onchange="setViewDate(this.value,viewYear)">'+mOpts+'</select></div>'
+    +'<div class="form-group" style="margin:0"><label>ปี (พ.ศ.)</label>'
+    +'<select id="vYear" onchange="setViewDate(viewMonth,+this.value-543)">'+yOpts+'</select></div>'
+    +'<span style="background:var(--primary-light);color:var(--primary);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600">'
+    +'กำลังดู: '+MONTHS[viewMonth-1]+' '+(viewYear+543)+'</span>'
+    +'</div></div>';
+}
+
+// seed sample data
+db.rooms[0].teachers=[{name:'นางสาวสมใจ ดีงาม',edu:'ปริญญาตรี',major:'การศึกษาพิเศษ',position:'ครูการศึกษาพิเศษ',org:'ศูนย์การศึกษาพิเศษ เขต 3',phone:'081-111-1111'}];
+db.rooms[0].students=[{name:'ด.ช.สมชาย ใจดี',dob:'2015-03-15',address:'123 ถ.สงขลา',type:'บุคคลออทิสติก',guardian:'นายสมศักดิ์ ใจดี',gphone:'082-111-1111'},{name:'ด.ญ.สุดา รักเรียน',dob:'2016-07-20',address:'45 ม.2 ต.หาดใหญ่',type:'บุคคลออทิสติก',guardian:'นางมาลี รักเรียน',gphone:'083-222-2222'}];
+db.rooms[1].teachers=[{name:'นางวิไล สุขสันต์',edu:'ปริญญาโท',major:'จิตวิทยาการศึกษา',position:'ครูการศึกษาพิเศษ',org:'ศูนย์การศึกษาพิเศษ เขต 3',phone:'082-222-2222'}];
+db.rooms[1].students=[{name:'ด.ช.วีระ สมบูรณ์',dob:'2014-05-10',address:'67 ถ.วัดเจริญ',type:'บุคคลออทิสติก',guardian:'นายวีรชัย สมบูรณ์',gphone:'084-333-3333'}];
+db.rooms[2].teachers=[{name:'นางสาวพิมพ์ใจ แสงทอง',edu:'ปริญญาตรี',major:'การศึกษาพิเศษ',position:'ครูการศึกษาพิเศษ',org:'ศูนย์การศึกษาพิเศษ เขต 3',phone:'083-333-3333'}];
+db.rooms[2].students=[{name:'ด.ช.ธีรภัทร ชัยมงคล',dob:'2016-01-25',address:'89 ม.1 บ้านทำเนียบ',type:'บุคคลออทิสติก',guardian:'นางชลธิชา ชัยมงคล',gphone:'085-444-4444'}];
+// init iep arrays
+db.rooms.forEach(r=>r.students.forEach(s=>{if(!s.iep)s.iep=[];if(!s.iip)s.iip=[];}));
+
+// ── IMG UPLOAD ────────────────────────────────────
+function fileToDataURL(file,maxMB){
+  return new Promise((resolve,reject)=>{
+    const limit=(maxMB||5)*1024*1024;
+    if(file.size>limit){reject(new Error('ไฟล์ใหญ่เกิน '+maxMB+'MB'));return;}
+    const r=new FileReader();
+    r.onload=e=>resolve(e.target.result);
+    r.onerror=()=>reject(new Error('อ่านไฟล์ไม่ได้'));
+    r.readAsDataURL(file);
+  });
+}
+
+function imgZoneHtml(fid, val, label){
+  var has=val&&(val.startsWith('data:')||val.startsWith('http'));
+  var inner=has
+    ?['<div class="img-preview-wrap">',
+      '<img src="'+val+'" style="max-width:100%;max-height:150px;border-radius:8px;border:1px solid var(--border)" onerror="this.hidden=true" alt="ภาพ"/>',
+      '<button class="remove-img" data-fid="'+fid+'" onclick="event.stopPropagation();clearImgZone(this.dataset.fid)">✕</button>',
+      '</div>'].join('')
+    :['<div style="font-size:24px;margin-bottom:4px">📷</div>',
+      '<div>คลิกหรือลากรูปมาวาง</div>',
+      '<div style="font-size:11px;color:var(--muted);margin-top:2px">JPG PNG GIF — ไม่เกิน 5MB</div>'].join('');
+  return [
+    '<div class="form-group">',
+    '<label>'+(label||'แนบรูปภาพ')+'</label>',
+    '<div class="img-upload-zone" data-fid="'+fid+'" id="imgzone_'+fid+'"',
+    ' onclick="trigImgFile(this.dataset.fid)"',
+    ' ondragover="imgDragOver(event)"',
+    ' ondragleave="imgDragLeave(event)"',
+    ' data-drop="'+fid+'" ondrop="handleImgDrop2(event,this.dataset.drop)">',
+    '<div id="imginner_'+fid+'">'+inner+'</div>',
+    '<div class="upload-progress" id="imgprog_'+fid+'">',
+    '<div class="upload-progress-fill" id="imgfill_'+fid+'"></div></div>',
+    '</div>',
+    '<input type="file" id="imgfile_'+fid+'" accept="image/*" style="display:none"',
+    ' data-fid="'+fid+'" onchange="handleImgChange(event,this.dataset.fid)"/>',
+    '<input type="hidden" id="'+fid+'" value="'+(val||'')+'">',
+    '</div>'
+  ].join('');
+}
+
+function imgDragOver(e){e.preventDefault();e.currentTarget.classList.add('dragover');}
+function imgDragLeave(e){e.currentTarget.classList.remove('dragover');}
+window.imgDragOver=imgDragOver;
+window.imgDragLeave=imgDragLeave;
+
+function trigImgFile(fid){var el=document.getElementById('imgfile_'+fid);if(el)el.click();}
+window.trigImgFile=trigImgFile;
+
+async function handleImgChange(e,fid){
+  const file=e.target.files[0];if(!file)return;
+  await processImg(file,fid);
+}
+window.handleImgChange=handleImgChange;
+
+async function handleImgDrop2(e,fid){
+  e.preventDefault();
+  const z=document.getElementById('imgzone_'+fid);if(z)z.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(!file||!file.type.startsWith('image/')){toast('กรุณาเลือกรูปภาพเท่านั้น','err');return;}
+  await processImg(file,fid);
+}
+window.handleImgDrop2=handleImgDrop2;
+
+async function processImg(file,fid){
+  const prog=document.getElementById('imgprog_'+fid);
+  const fill=document.getElementById('imgfill_'+fid);
+  if(prog){prog.style.display='block';fill.style.width='30%';}
+  try{
+    const data=await fileToDataURL(file,5);
+    if(fill)fill.style.width='100%';
+    document.getElementById(fid).value=data;
+    const inner=document.getElementById('imginner_'+fid);
+    if(inner){
+      inner.innerHTML='<div class="img-preview-wrap"><img src="'+data+'" style="max-width:100%;max-height:150px;border-radius:8px;border:1px solid var(--border)" onerror="this.hidden=true" alt="ภาพ"/>'
+        +'<button class="remove-img" data-fid="'+fid+'" onclick="event.stopPropagation();clearImgZone(this.dataset.fid)">✕</button></div>';
+    }
+    setTimeout(()=>{if(prog)prog.style.display='none';},500);
+    toast('โหลดรูปสำเร็จ ✓');
+  }catch(err){if(prog)prog.style.display='none';toast(err.message,'err');}
+}
+
+function clearImgZone(fid){
+  document.getElementById(fid).value='';
+  const inner=document.getElementById('imginner_'+fid);
+  if(inner)inner.innerHTML='<div style="font-size:24px;margin-bottom:4px">📷</div><div>คลิกหรือลากรูปมาวาง</div><div style="font-size:11px;color:var(--muted);margin-top:2px">JPG PNG GIF — ไม่เกิน 5MB</div>';
+}
+window.clearImgZone=clearImgZone;
+
+// ── PDF UPLOAD ─────────────────────────────────────
+let _iipQueue={};
+
+function pdfZoneHtml(fid,curName){
+  // สร้าง HTML โดยใช้ Array.join เพื่อหลีกเลี่ยง escape ซ้อน
+  var has=!!curName;
+  if(has){
+    return [
+      '<div id="pdfzone_'+fid+'">',
+      '<div class="pdf-ready">',
+      '<div class="pdf-icon-big">📕</div>',
+      '<div class="pdf-info"><div class="pdf-name">'+curName+'</div><div class="pdf-size">ไฟล์ที่อัปโหลดแล้ว</div></div>',
+      '<button class="btn btn-outline btn-sm" data-fid="'+fid+'" onclick="event.stopPropagation();clearPdfZone(this.dataset.fid)">🗑️ ลบ</button>',
+      '<button class="btn btn-danger btn-sm" data-fid="'+fid+'" onclick="event.stopPropagation();previewPdfZone(this.dataset.fid)">👁️ ดู</button>',
+      '</div>',
+      '<input type="file" id="pdffile_'+fid+'" accept=".pdf,application/pdf" style="display:none" data-fid="'+fid+'" onchange="handlePdfChange(event,this.dataset.fid)"/>',
+      '<input type="hidden" id="pdfdata_'+fid+'" value="">',
+      '<input type="hidden" id="pdfname_'+fid+'" value="'+curName+'">',
+      '</div>'
+    ].join('');
+  }
+  return [
+    '<div id="pdfzone_'+fid+'">',
+    '<div class="pdf-upload-zone" data-fid="'+fid+'" id="pdfzone_inner_'+fid+'"',
+    ' onclick="trigPdfFile(this.dataset.fid)"',
+    ' ondragover="imgDragOver(event)"',
+    ' ondragleave="imgDragLeave(event)"',
+    ' data-drop="'+fid+'" ondrop="handlePdfDrop(event,this.dataset.drop)">',
+    '<div style="font-size:28px;margin-bottom:6px">📄</div>',
+    '<div style="font-weight:600">คลิกหรือลากไฟล์ PDF มาวางที่นี่</div>',
+    '<div style="font-size:11px;color:var(--muted);margin-top:3px">เฉพาะไฟล์ .pdf — ไม่เกิน 10MB</div>',
+    '</div>',
+    '<input type="file" id="pdffile_'+fid+'" accept=".pdf,application/pdf" style="display:none" data-fid="'+fid+'" onchange="handlePdfChange(event,this.dataset.fid)"/>',
+    '<input type="hidden" id="pdfdata_'+fid+'" value="">',
+    '<input type="hidden" id="pdfname_'+fid+'" value="">',
+    '</div>'
+  ].join('');
+}
+
+function trigPdfFile(fid){var el=document.getElementById('pdffile_'+fid);if(el)el.click();}
+window.trigPdfFile=trigPdfFile;
+
+async function handlePdfChange(e,fid){
+  const file=e.target.files[0];if(!file)return;
+  await processPdf(file,fid);
+}
+window.handlePdfChange=handlePdfChange;
+
+async function handlePdfDrop(e,fid){
+  e.preventDefault();
+  const z=document.getElementById('pdfzone_inner_'+fid);if(z)z.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(!file||(!file.type.includes('pdf')&&!file.name.endsWith('.pdf'))){toast('กรุณาเลือกไฟล์ PDF เท่านั้น','err');return;}
+  await processPdf(file,fid);
+}
+window.handlePdfDrop=handlePdfDrop;
+
+async function processPdf(file,fid){
+  if(file.size>10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','err');return;}
+  try{
+    const data=await fileToDataURL(file,10);
+    document.getElementById('pdfdata_'+fid).value=data;
+    document.getElementById('pdfname_'+fid).value=file.name;
+    const z=document.getElementById('pdfzone_'+fid);
+    if(z){
+      const sz=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' MB':(file.size/1024).toFixed(0)+' KB';
+      z.innerHTML='<div class="pdf-ready">'
+        +'<div class="pdf-icon-big">📕</div>'
+        +'<div class="pdf-info"><div class="pdf-name">'+file.name+'</div><div class="pdf-size">'+sz+'</div></div>'
+        +'<button class="btn btn-outline btn-sm" data-fid="'+fid+'" onclick="event.stopPropagation();clearPdfZone(this.dataset.fid)">🗑️ ลบ</button>'
+        +'<button class="btn btn-danger btn-sm" data-fid="'+fid+'" onclick="event.stopPropagation();previewPdfZone(this.dataset.fid)">👁️ ดู</button>'
+        +'</div>'
+        +'<input type="file" id="pdffile_'+fid+'" accept=".pdf,application/pdf" style="display:none" data-fid="'+fid+'" onchange="handlePdfChange(event,this.dataset.fid)"/>'
+        +'<input type="hidden" id="pdfdata_'+fid+'" value="'+data+'"/>'
+        +'<input type="hidden" id="pdfname_'+fid+'" value="'+file.name+'"/>';
+    }
+    toast('โหลด PDF สำเร็จ ✓');
+  }catch(err){toast(err.message,'err');}
+}
+
+function clearPdfZone(fid){
+  var z=document.getElementById('pdfzone_'+fid);
+  if(z){z.outerHTML=pdfZoneHtml(fid,'');}
+}
+window.clearPdfZone=clearPdfZone;
+
+function previewPdfZone(fid){
+  var d=document.getElementById('pdfdata_'+fid);
+  var n=document.getElementById('pdfname_'+fid);
+  if(!d||!d.value){toast('ยังไม่มีไฟล์','err');return;}
+  openModal(['<h3>📄 ดูไฟล์ — '+(n?n.value:'')+'</h3>',
+    '<div style="height:500px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
+    '<iframe src="'+d.value+'" style="width:100%;height:100%;border:none"></iframe>',
+    '</div><div class="modal-footer">',
+    '<button class="btn btn-outline" onclick="closeModal()">ปิด</button>',
+    '</div>'].join(''));
+}
+window.previewPdfZone=previewPdfZone;
+
+// IIP multi upload
+function iipMultiZoneHtml(ri,si){
+  var key=ri+'_'+si;
+  if(!_iipQueue[key])_iipQueue[key]=[];
+  return [
+    '<div>',
+    '<div class="pdf-upload-zone" id="iipdrop_'+ri+'_'+si+'"',
+    ' onclick="trigIipFile(this.dataset.ri,this.dataset.si)"',
+    ' ondragover="imgDragOver(event)"',
+    ' ondragleave="imgDragLeave(event)"',
+    ' data-ri="'+ri+'" data-si="'+si+'"',
+    ' data-ri2="'+ri+'" data-si2="'+si+'" ondrop="iipDrop(event,this.dataset.ri2,this.dataset.si2)">',
+    '<div style="font-size:28px;margin-bottom:6px">📄</div>',
+    '<div style="font-weight:600">คลิกหรือลากไฟล์ PDF หลายไฟล์ได้</div>',
+    '<div style="font-size:11px;color:var(--muted);margin-top:3px">แต่ละไฟล์ไม่เกิน 10MB</div>',
+    '</div>',
+    '<input type="file" id="iipfiles_'+ri+'_'+si+'" accept=".pdf,application/pdf" multiple style="display:none"',
+    ' data-ri="'+ri+'" data-si="'+si+'" onchange="iipChange(event,this.dataset.ri,this.dataset.si)"/>',
+    '<div id="iipqueue_'+ri+'_'+si+'" style="margin-top:8px"></div>',
+    '</div>'
+  ].join('');
+}
+
+function renderIIPQ(ri,si){
+  const key=ri+'_'+si;
+  const q=_iipQueue[key]||[];
+  const el=document.getElementById('iipqueue_'+ri+'_'+si);
+  if(!el)return;
+  if(!q.length){el.innerHTML='';return;}
+  let h='<div style="font-size:12px;font-weight:600;color:var(--primary);margin-bottom:6px">ไฟล์ที่รอบันทึก ('+q.length+' ไฟล์)</div>';
+  q.forEach((f,fi)=>{
+    h+='<div class="pdf-ready" style="margin-bottom:6px">'
+      +'<div class="pdf-icon-big">📕</div>'
+      +'<div class="pdf-info"><div class="pdf-name">'+f.fileName+'</div><div class="pdf-size">'+f.sz+'</div></div>'
+      +'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-fi="'+fi+'" onclick="iipPreviewQ(this.dataset.ri,this.dataset.si,this.dataset.fi)">👁️ ดู</button>'
+      +' <button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-fi="'+fi+'" onclick="iipRemoveQ(this.dataset.ri,this.dataset.si,this.dataset.fi)">🗑️</button>'
+      +'</div>';
+  });
+  el.innerHTML=h;
+}
+
+async function iipChange(e,ri,si){
+  const files=Array.from(e.target.files);
+  await iipProcess(files,ri,si);
+  e.target.value='';
+}
+window.iipChange=iipChange;
+
+async function iipDrop(e,ri,si){
+  e.preventDefault();
+  const z=document.getElementById('iipdrop_'+ri+'_'+si);if(z)z.classList.remove('dragover');
+  const files=Array.from(e.dataTransfer.files).filter(f=>f.type.includes('pdf')||f.name.endsWith('.pdf'));
+  if(!files.length){toast('กรุณาเลือกไฟล์ PDF เท่านั้น','err');return;}
+  await iipProcess(files,ri,si);
+}
+window.iipDrop=iipDrop;
+
+async function iipProcess(files,ri,si){
+  const key=ri+'_'+si;
+  if(!_iipQueue[key])_iipQueue[key]=[];
+  let added=0;
+  for(const file of files){
+    try{
+      const data=await fileToDataURL(file,10);
+      const sz=file.size>1024*1024?(file.size/1024/1024).toFixed(1)+' MB':(file.size/1024).toFixed(0)+' KB';
+      _iipQueue[key].push({fileName:file.name,dataUrl:data,sz});
+      added++;
+    }catch(err){toast(file.name+': '+err.message,'err');}
+  }
+  if(added>0){toast('โหลด '+added+' ไฟล์สำเร็จ ✓');renderIIPQ(ri,si);}
+}
+
+function iipRemoveQ(ri,si,fi){
+  const key=ri+'_'+si;
+  if(_iipQueue[key])_iipQueue[key].splice(+fi,1);
+  renderIIPQ(ri,si);
+}
+window.iipRemoveQ=iipRemoveQ;
+
+function iipPreviewQ(ri,si,fi){
+  var f=(_iipQueue[ri+'_'+si]||[])[+fi];
+  if(!f){toast('ไม่พบไฟล์','err');return;}
+  openModal(['<h3>📄 ดูไฟล์ — '+f.fileName+'</h3>',
+    '<div style="height:500px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
+    '<iframe src="'+f.dataUrl+'" style="width:100%;height:100%;border:none"></iframe>',
+    '</div><div class="modal-footer">',
+    '<button class="btn btn-outline" onclick="closeModal()">ปิด</button>',
+    '</div>'].join(''));
+}
+window.iipPreviewQ=iipPreviewQ;
+
+// img cache for thumbnail onclick
+const _ic={};
+function _cache(k,v){_ic[k]=v;}
+function showImg(k){
+  const src=_ic[k]||'';
+  if(!src){toast('ไม่พบรูปภาพ','err');return;}
+  openModal('<h3>🖼️ ดูรูปภาพ</h3><div style="text-align:center"><img src="'+src+'" style="max-width:100%;max-height:500px;border-radius:8px" onerror="this.hidden=true" alt="ภาพ"/></div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ปิด</button></div>');
+}
+window.showImg=showImg;
+
+function viewPDF2(src,name){
+  if(!src){toast('ไม่พบไฟล์','err');return;}
+  var isData=src.startsWith('data:');
+  openModal(['<h3>📄 ดูไฟล์ — '+(name||'แผนการสอน')+'</h3>',
+    '<div style="height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
+    '<iframe src="'+src+'" style="width:100%;height:100%;border:none"></iframe>',
+    '</div><div class="modal-footer">',
+    '<button class="btn btn-outline" onclick="closeModal()">ปิด</button>',
+    isData?'':'<a href="'+src+'" target="_blank" class="btn btn-primary">เปิดแท็บใหม่</a>',
+    '</div>'].join(''));
+}
+window.viewPDF2=viewPDF2;
+
+function loadLocal(){
+  try{const s=localStorage.getItem('autismMIS_v4');if(s){const d=JSON.parse(s);if(d.rooms&&d.rooms.length===3){db=d;db.rooms.forEach(r=>{if(!r.network)r.network=[];if(!r.photos)r.photos=[];r.students.forEach(s=>{if(!s.iep)s.iep=[];if(!s.iip)s.iip=[];});if(!r.schedules)r.schedules=[];if(!r.schedules)r.schedules=[];});}}}catch(e){}
+  try{const s=localStorage.getItem('autismMIS_settings');if(s)settings=JSON.parse(s);}catch(e){}
+  applyLogo();
+}
+function saveLocal(){try{localStorage.setItem('autismMIS_v4',JSON.stringify(db));}catch(e){alert('พื้นที่จัดเก็บเต็ม กรุณาส่งออกข้อมูล');}}
+function saveSettings(){try{localStorage.setItem('autismMIS_settings',JSON.stringify(settings));}catch(e){}}
+
+// ──────────── UTILS ────────────
+function calcAge(dob){if(!dob)return'-';const d=new Date(dob),n=new Date();let y=n.getFullYear()-d.getFullYear();if(n.getMonth()<d.getMonth()||(n.getMonth()===d.getMonth()&&n.getDate()<d.getDate()))y--;return y>0?y+' ปี':'-';}
+function toast(msg,type='ok'){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type;t.style.display='block';clearTimeout(t._t);t._t=setTimeout(()=>t.style.display='none',3000);}
+function openModal(html){document.getElementById('modalBox').innerHTML=html;document.getElementById('modalBg').classList.add('open');}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');}
+document.getElementById('modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal();});
+function mc(){return document.getElementById('mainContent');}
+function render(h){var el=document.getElementById('mainContent');if(el)el.innerHTML=h;}
+function getRooms(){return cu.role==='admin'?[0,1,2]:[cu.roomId];}
+function setNav(p){document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));const n=document.getElementById('nav-'+p);if(n)n.classList.add('active');}
+function roomTabs(ri,fn){
+  return '<div class="room-tabs">'+getRooms().map(function(i){
+    return '<div class="room-tab'+(i===ri?' active':'')+'" onclick="'+fn+'('+i+')">'+RS[i]+'</div>';
+  }).join('')+'</div>';
+}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function todayStr(){return new Date().toISOString().split('T')[0];}
+function fmt(s){return s||'-';}
+function nowMonthStr(){return MONTHS[new Date().getMonth()]+' '+(new Date().getFullYear()+543);}
+
+
+
+
+
+
+async function processImgFile(file, fieldId){
+  const prog = document.getElementById('prog_'+fieldId);
+  const fill = document.getElementById('progfill_'+fieldId);
+  if(prog){ prog.style.display='block'; fill.style.width='30%'; }
+  try{
+    const dataUrl = await fileToDataURL(file);
+    if(fill) fill.style.width='100%';
+    // บันทึกค่าลง hidden input
+    document.getElementById(fieldId).value = dataUrl;
+    // แสดง preview
+    const inner = document.getElementById('zone_inner_'+fieldId);
+    if(inner){
+      inner.innerHTML=`<div class="img-preview-wrap">
+        <img src="${dataUrl}" id="preview_${fieldId}" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);display:block"/>
+        <button class="remove-img" onclick="event.stopPropagation();clearImg('${fieldId}')" title="ลบรูป">✕</button>
+      </div>`;
+    }
+    setTimeout(()=>{ if(prog) prog.style.display='none'; }, 500);
+  }catch(err){
+    if(prog) prog.style.display='none';
+    toast(err.message,'err');
+  }
+}
+
+function clearImg(fieldId){
+  document.getElementById(fieldId).value='';
+  const inner=document.getElementById('zone_inner_'+fieldId);
+  if(inner){inner.innerHTML='<div style="font-size:28px;margin-bottom:6px">📷</div><div>คลิกหรือลากไฟล์รูปมาวางที่นี่</div><div class="text-muted" style="font-size:11px;margin-top:4px">JPG, PNG, GIF — ไม่เกิน 5MB</div>';}
+}
+window.clearImg=clearImg;
+
+// ── PDF UPLOAD HELPERS ─────────────────────────────
+function pdfUploadZoneHtml(fieldId, currentName){
+  const hasFile = !!currentName;
+  return `
+  <div id="pdfzone_${fieldId}">
+    ${hasFile
+      ? `<div class="pdf-ready">
+          <div class="pdf-icon-big">📕</div>
+          <div class="pdf-info">
+            <div class="pdf-name">${currentName}</div>
+            <div class="pdf-size">ไฟล์ที่อัปโหลดแล้ว</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();clearPDF('${fieldId}')">🗑️ ลบ</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();previewPDF('${fieldId}')">👁️ ดู</button>
+        </div>`
+      : `<div class="pdf-upload-zone"
+            id="pdfzone_inner_${fieldId}"
+            onclick="document.getElementById('pdffile_${fieldId}').click()"
+                    +' ondragover="imgDragOver(event)"\'
+                    +' ondragleave="imgDragLeave(event)"\'
+            ondrop="handlePDFDrop(event,'${fieldId}')">
+          <div style="font-size:32px;margin-bottom:6px">📄</div>
+          <div style="font-weight:600">คลิกหรือลากไฟล์ PDF มาวางที่นี่</div>
+          <div class="text-muted" style="font-size:11px;margin-top:4px">รองรับเฉพาะไฟล์ .pdf — ไม่เกิน 10MB</div>
+        </div>`
+    }
+    <input type="file" id="pdffile_${fieldId}" accept=".pdf,application/pdf" style="display:none"
+      onchange="handlePDFFile(event,'${fieldId}')"/>
+    <input type="hidden" id="pdfdata_${fieldId}" value=""/>
+    <input type="hidden" id="pdfname_${fieldId}" value="${currentName||''}"/>
+  </div>`;
+}
+
+async function handlePDFFile(e, fieldId){
+  const file = e.target.files[0];
+  if(!file) return;
+  await processPDFFile(file, fieldId);
+}
+window.handlePDFFile=handlePDFFile;
+
+async function handlePDFDrop(e, fieldId){
+  e.preventDefault();
+  const zone=document.getElementById('pdfzone_inner_'+fieldId);
+  if(zone)zone.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(!file||file.type!=='application/pdf'){toast('กรุณาเลือกไฟล์ PDF เท่านั้น','err');return;}
+  await processPDFFile(file, fieldId);
+}
+window.handlePDFDrop=handlePDFDrop;
+
+async function processPDFFile(file, fieldId){
+  if(file.size > 10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','err');return;}
+  if(file.type !== 'application/pdf' && !file.name.endsWith('.pdf')){toast('กรุณาเลือกไฟล์ PDF เท่านั้น','err');return;}
+  try{
+    const dataUrl = await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=e=>resolve(e.target.result);
+      reader.onerror=()=>reject(new Error('อ่านไฟล์ไม่ได้'));
+      reader.readAsDataURL(file);
+    });
+    // บันทึกลง hidden inputs
+    document.getElementById('pdfdata_'+fieldId).value = dataUrl;
+    document.getElementById('pdfname_'+fieldId).value = file.name;
+    // แสดง ready state
+    const zone = document.getElementById('pdfzone_'+fieldId);
+    if(zone){
+      const sizeKB = (file.size/1024).toFixed(0);
+      const sizeTxt = file.size>1024*1024 ? (file.size/1024/1024).toFixed(1)+' MB' : sizeKB+' KB';
+      zone.innerHTML=`
+        <div class="pdf-ready">
+          <div class="pdf-icon-big">📕</div>
+          <div class="pdf-info">
+            <div class="pdf-name">${file.name}</div>
+            <div class="pdf-size">${sizeTxt}</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();clearPDF('${fieldId}')">🗑️ ลบ</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();previewPDF('${fieldId}')">👁️ ดู</button>
+        </div>
+        <input type="file" id="pdffile_${fieldId}" accept=".pdf,application/pdf" style="display:none" onchange="handlePDFFile(event,'${fieldId}')"/>
+        <input type="hidden" id="pdfdata_${fieldId}" value="${dataUrl}"/>
+        <input type="hidden" id="pdfname_${fieldId}" value="${file.name}"/>`;
+    }
+    toast('โหลดไฟล์ PDF สำเร็จ ✓');
+  }catch(err){
+    toast(err.message,'err');
+  }
+}
+
+function clearPDF(fieldId){
+  const zone=document.getElementById('pdfzone_'+fieldId);
+  if(zone){
+    zone.innerHTML=`
+      <div class="pdf-upload-zone"
+          id="pdfzone_inner_${fieldId}"
+          onclick="document.getElementById('pdffile_${fieldId}').click()"
+                  +' ondragover="imgDragOver(event)"\'
+                  +' ondragleave="imgDragLeave(event)"\'
+          ondrop="handlePDFDrop(event,'${fieldId}')">
+        <div style="font-size:32px;margin-bottom:6px">📄</div>
+        <div style="font-weight:600">คลิกหรือลากไฟล์ PDF มาวางที่นี่</div>
+        <div class="text-muted" style="font-size:11px;margin-top:4px">รองรับเฉพาะไฟล์ .pdf — ไม่เกิน 10MB</div>
+      </div>
+      <input type="file" id="pdffile_${fieldId}" accept=".pdf,application/pdf" style="display:none"
+        onchange="handlePDFFile(event,'${fieldId}')"/>
+      <input type="hidden" id="pdfdata_${fieldId}" value=""/>
+      <input type="hidden" id="pdfname_${fieldId}" value=""/>`;
+  }
+}
+window.clearPDF=clearPDF;
+
+function previewPDF(fieldId){
+  const data = document.getElementById('pdfdata_'+fieldId);
+  const name = document.getElementById('pdfname_'+fieldId);
+  const dataUrl = data?data.value:'';
+  if(!dataUrl){toast('ยังไม่มีไฟล์','err');return;}
+  openModal(`<h3>📄 ดูไฟล์ PDF — ${name?name.value:''}</h3>
+    <div style="height:500px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+      <iframe src="${dataUrl}" style="width:100%;height:100%;border:none"></iframe>
+    </div>
+    <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ปิด</button></div>`);
+}
+window.previewPDF=previewPDF;
+
+// ── ACADEMIC YEAR HELPERS ──────────────────────────
+function getActiveYear(){
+  return settings.academicYears.find(y=>y.id===settings.activeYearId) || settings.academicYears[0];
+}
+function getActiveYearLabel(){
+  const y=getActiveYear();
+  return y?y.name:'ปีการศึกษาปัจจุบัน';
+}
+function getYearDateRange(){
+  const y=getActiveYear();
+  if(!y)return{start:null,end:null};
+  return{start:new Date(y.startDate),end:new Date(y.endDate)};
+}
+function isInActiveYear(dateStr){
+  if(!dateStr)return false;
+  const {start,end}=getYearDateRange();
+  if(!start||!end)return true;
+  const d=new Date(dateStr);
+  return d>=start&&d<=end;
+}
+function getActiveYearMonths(){
+  // คืน [{month:1,year:2024,label:'มกราคม 2567'}, ...]
+  const {start,end}=getYearDateRange();
+  if(!start||!end)return[];
+  const months=[];
+  let cur=new Date(start.getFullYear(),start.getMonth(),1);
+  const endM=new Date(end.getFullYear(),end.getMonth(),1);
+  while(cur<=endM){
+    months.push({month:cur.getMonth()+1,year:cur.getFullYear(),label:MONTHS[cur.getMonth()]+' '+(cur.getFullYear()+543)});
+    cur.setMonth(cur.getMonth()+1);
+  }
+  return months;
+}
+
+function applyLogo(){
+  const url=settings.logoDataUrl;
+  document.getElementById('loginLogoIcon').style.display=url?'none':'';
+  document.getElementById('loginLogoImg').src=url||'';
+  document.getElementById('loginLogoImg').style.display=url?'block':'none';
+  document.getElementById('topbarIcon').style.display=url?'none':'';
+  document.getElementById('topbarLogo').src=url||'';
+  document.getElementById('topbarLogo').style.display=url?'block':'none';
+}
+
+// ──────────── AUTH ────────────
+function doLogin(){
+  const u=document.getElementById('loginUser').value.trim(),p=document.getElementById('loginPass').value;
+  const acc=ACCOUNTS[u];
+  if(acc&&acc.pass===p){
+    cu={...acc,username:u};ar=getRooms()[0];repRoom=ar;
+    document.getElementById('loginError').style.display='none';
+    document.getElementById('loginBg').style.display='none';
+    document.getElementById('appWrap').classList.add('active');
+    document.getElementById('topbarRoom').textContent=cu.room;
+    document.getElementById('topbarYear').textContent=getActiveYearLabel();
+    document.getElementById('topbarUser').textContent=cu.name;
+    renderSidebar();showPage('dashboard');
+  }else{document.getElementById('loginError').style.display='block';}
+}
+function doLogout(){
+  cu=null;
+  document.getElementById('appWrap').classList.remove('active');
+  document.getElementById('loginBg').style.display='flex';
+  document.getElementById('loginUser').value='';document.getElementById('loginPass').value='';
+}
+
+// ──────────── SIDEBAR ────────────
+function renderSidebar(){
+  const items=[
+    {i:'📊',l:'ภาพรวมระบบ',p:'dashboard'},
+    {s:'ข้อมูลบุคลากร'},{i:'👩‍🏫',l:'ข้อมูลผู้สอน',p:'teachers'},
+    {s:'ข้อมูลผู้เรียน'},{i:'🧒',l:'ข้อมูลนักเรียน',p:'students'},
+    {i:'📅',l:'การเข้าเรียน',p:'attendance'},
+    {i:'📝',l:'บันทึกการให้บริการ',p:'services'},
+    {s:'ฝ่ายบุคคล'},{i:'📋',l:'สรุปปฏิบัติงานประจำเดือน',p:'hrmonthly'},
+    {i:'🎓',l:'การสัมมนา/อบรม',p:'training'},
+    {s:'ฝ่ายบริหารทั่วไป'},{i:'🤝',l:'สัมพันธ์ชุมชน/วันสำคัญ',p:'community'},
+    {i:'🏢',l:'ข้อมูลภาคีเครือข่าย',p:'network'},
+    {s:'สื่อและแผน'},{i:'📸',l:'ประมวลภาพการสอน',p:'photos'},
+    {i:'📄',l:'แผนการสอน IEP/IIP',p:'iep'},
+    {i:'📆',l:'ตารางสอน',p:'schedule'},
+    {s:'รายงาน'},{i:'🖨️',l:'รายงานประจำเดือน',p:'report'},
+    {i:'📈',l:'สถิติประจำเดือน',p:'stats'},
+    {s:'ตั้งค่า'},{i:'⚙️',l:'ตั้งค่าระบบ',p:'settings'},
+  ];
+  if(cu.role==='admin'){
+    items.push({i:'📆',l:'ปีการศึกษา',p:'academicYear'});
+    items.push({i:'🛡️',l:'จัดการระบบ',p:'admin'});
+  }
+  document.getElementById('sidebar').innerHTML=items.map(it=>
+    it.s?`<div class="nav-section">${it.s}</div>`:
+    `<div class="nav-item" onclick="showPage('${it.p}')" id="nav-${it.p}">${it.i} ${it.l}</div>`
+  ).join('');
+}
+
+function showPage(p){
+  setNav(p);
+  _curPageFn=null;
+  const map={dashboard:pageDashboard,teachers:()=>pageTeachers(ar),students:()=>pageStudents(ar),attendance:()=>pageAttendance(ar),services:()=>pageServices(ar),hrmonthly:()=>pageHRMonthly(ar),training:()=>pageTraining(ar),community:()=>pageCommunity(ar),network:()=>pageNetwork(ar),photos:()=>pagePhotos(ar),iep:()=>pageIEP(ar),schedule:()=>pageSchedule(ar),report:pageReport,stats:pageStats,settings:pageSettings,admin:pageAdmin,gsSetup:showGsSetup,academicYear:pageAcademicYear};
+  if(map[p])map[p]();
+}
+
+// ──────────── DASHBOARD ────────────
+function pageDashboard(){
+  const now=new Date();
+  const tot=getRooms().reduce((a,i)=>a+db.rooms[i].students.length,0);
+  const totT=getRooms().reduce((a,i)=>a+db.rooms[i].teachers.length,0);
+  let h=`<div class="page-header"><h2>📊 ภาพรวมระบบ</h2><p>ระบบสารสนเทศห้องเรียนคู่ขนานบุคคลออทิสติก ศูนย์การศึกษาพิเศษ เขตการศึกษา 3</p></div>
+  <div style="background:var(--primary-light);border:1px solid var(--primary);border-radius:8px;padding:10px 16px;margin-bottom:1rem;display:flex;align-items:center;gap:10px"><span style="font-size:20px">📆</span><div><div style="font-weight:700;color:var(--primary)">${getActiveYearLabel()}</div><div class="text-muted" style="font-size:11px">${(()=>{const y=getActiveYear();return y?y.startDate+' ถึง '+y.endDate:'ยังไม่กำหนดปีการศึกษา';})()}</div></div></div>`;
+  h+=`<div class="stats-grid"><div class="stat-card"><div class="num">${getRooms().length}</div><div class="lbl">ห้องเรียนคู่ขนาน</div></div><div class="stat-card"><div class="num">${tot}</div><div class="lbl">นักเรียนทั้งหมด</div></div><div class="stat-card"><div class="num">${totT}</div><div class="lbl">ครูผู้สอน</div></div><div class="stat-card"><div class="num">${now.getFullYear()+543}</div><div class="lbl">ปีการศึกษา</div></div></div>`;
+  h+=`<div class="card"><h3>🏫 ห้องเรียนคู่ขนานในสังกัด</h3>`;
+  getRooms().forEach(i=>{const r=db.rooms[i];h+=`<div style="padding:10px 0;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:12px"><div style="width:10px;height:10px;background:var(--primary);border-radius:50%;flex-shrink:0"></div><div style="flex:1"><div style="font-weight:700;font-size:13px">${ROOMS[i]}</div><div class="text-muted" style="margin-top:2px">ครู ${r.teachers.length} คน | นักเรียน ${r.students.length} คน</div></div><span class="badge badge-green">เปิดทำการ</span></div>`;});
+  h+=`</div>`;
+  h+=`<div class="card"><h3>📅 อัตราการเข้าเรียน ${MONTHS[now.getMonth()]} ${now.getFullYear()+543}</h3>`;
+  getRooms().forEach(i=>{const r=db.rooms[i];const key=`${now.getFullYear()}-${now.getMonth()+1}`;const att=r.attendance[key]||{};let p=0,t=0;r.students.forEach(s=>{const d=att[s.name]||{};Object.values(d).forEach(v=>{if(v==='P')p++;if(v!=='H'&&v!=='W')t++;});});const pct=t>0?Math.round(p/t*100):0;h+=`<div style="margin-bottom:12px"><div class="flex" style="justify-content:space-between"><span style="font-size:12px;font-weight:600">${RS[i]}</span><span class="text-muted">${pct}%</span></div><div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div></div>`;});
+  h+=`</div>`;
+  if(settings.scriptUrl){h+=`<div class="card" style="border-color:var(--primary);border-width:2px"><div class="flex" style="justify-content:space-between"><div><div style="font-weight:700">🔗 Google Sheets เชื่อมต่อแล้ว</div><div class="text-muted">กดซิงค์เพื่ออัปเดตข้อมูลล่าสุด</div></div><button class="btn btn-primary btn-sm" onclick="pushAllToSheets()">🔄 ซิงค์ตอนนี้</button></div></div>`;}
+  render(h);
+}
+
+// ──────────── 1. TEACHERS ────────────
+function pageTeachers(ri){
+  ar=ri; _curPageFn=null;
+  var r=db.rooms[ri];
+  var h='<div class="page-header"><h2>👩‍🏫 ข้อมูลผู้สอน</h2></div>';
+  h+=roomTabs(ri,'pageTeachers');
+  h+='<div class="card"><h3>รายชื่อครูผู้สอน — '+RS[ri]+'</h3>'
+    +'<div class="table-wrap"><table><thead><tr>'
+    +'<th>รูป</th><th>ชื่อ-สกุล</th><th>วุฒิการศึกษา</th><th>วิชาเอก</th>'
+    +'<th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th><th>วันที่เริ่มปฏิบัติงาน</th><th>จัดการ</th>'
+    +'</tr></thead><tbody>';
+  r.teachers.forEach(function(t,idx){
+    var ph=t.photoUrl?'<img src="'+t.photoUrl+'" class="teacher-avatar" onerror="this.hidden=true" alt="รูปครู"/>'
+      :'<div class="teacher-avatar-placeholder">👩‍🏫</div>';
+    h+='<tr>'
+      +'<td style="text-align:center">'+ph+'</td>'
+      +'<td><b>'+esc(t.name)+'</b></td>'
+      +'<td>'+esc(t.edu)+'</td>'
+      +'<td>'+esc(t.major)+'</td>'
+      +'<td>'+esc(t.position)+'</td>'
+      +'<td>'+esc(t.org)+'</td>'
+      +'<td>'+esc(t.phone)+'</td>'
+      +'<td>'+esc(t.startDate||'-')+'</td>'
+      +'<td style="white-space:nowrap">'
+      +'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="editTeacher(+this.dataset.ri,+this.dataset.idx)">✏️ แก้ไข</button> '
+      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="delTeacher(+this.dataset.ri,+this.dataset.idx)">🗑️</button>'
+      +'</td></tr>';
+  });
+  if(!r.teachers.length){
+    h+='<tr><td colspan="9" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูลครูผู้สอน</td></tr>';
+  }
+  h+='</tbody></table></div>'
+    +'<div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addTeacher('+ri+')">➕ เพิ่มครูผู้สอน</button></div></div>';
+  render(h);
+}
+window.pageTeachers=pageTeachers;
+
+function teacherForm(t){
+  return '<div class="form-group"><label>ชื่อ-สกุล *</label><input id="t_name" value="'+esc(t?t.name:'')+'"/></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>วุฒิการศึกษา</label><select id="t_edu">'
+    +'<option'+(t&&t.edu==='ปริญญาตรี'?' selected':'')+'>ปริญญาตรี</option>'
+    +'<option'+(t&&t.edu==='ปริญญาโท'?' selected':'')+'>ปริญญาโท</option>'
+    +'<option'+(t&&t.edu==='ปริญญาเอก'?' selected':'')+'>ปริญญาเอก</option>'
+    +'</select></div>'
+    +'<div class="form-group"><label>วิชาเอก</label><input id="t_major" value="'+esc(t?t.major:'')+'"/></div>'
+    +'</div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>ตำแหน่ง</label><input id="t_pos" value="'+esc(t?t.position:'ครูการศึกษาพิเศษ')+'"/></div>'
+    +'<div class="form-group"><label>สังกัด</label><input id="t_org" value="'+esc(t?t.org:'ศูนย์การศึกษาพิเศษ เขต 3')+'"/></div>'
+    +'</div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>เบอร์โทรติดต่อ</label><input id="t_phone" value="'+esc(t?t.phone:'')+'"/></div>'
+    +'<div class="form-group"><label>วันที่เริ่มปฏิบัติงาน</label><input type="date" id="t_start" value="'+(t&&t.startDate?t.startDate:'')+'"/></div>'
+    +'</div>'
+    +imgZoneHtml('t_photo',t?t.photoUrl||'':'','รูปภาพครูผู้สอน (ไม่บังคับ — ไม่แสดงในรายงาน)');
+}
+
+function addTeacher(ri){openModal(`<h3>➕ เพิ่มครูผู้สอน</h3>${teacherForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTeacher(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addTeacher=addTeacher;
+function editTeacher(ri,idx){openModal(`<h3>✏️ แก้ไขข้อมูลครู</h3>${teacherForm(db.rooms[ri].teachers[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTeacher(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editTeacher=editTeacher;
+function saveTeacher(ri,idx){
+  const t={name:document.getElementById('t_name').value.trim(),edu:document.getElementById('t_edu').value,major:document.getElementById('t_major').value,position:document.getElementById('t_pos').value,org:document.getElementById('t_org').value,phone:document.getElementById('t_phone').value,startDate:document.getElementById('t_start')?document.getElementById('t_start').value:'',photoUrl:(document.getElementById('t_photo')?document.getElementById('t_photo').value:'')};
+  if(!t.name){alert('กรุณากรอกชื่อ-สกุล');return;}
+  if(idx===-1)db.rooms[ri].teachers.push(t);else db.rooms[ri].teachers[idx]=t;
+  saveLocal();syncSheet('saveTeachers',ri,db.rooms[ri].teachers);closeModal();toast('บันทึกสำเร็จ ✓');pageTeachers(ri);}
+window.saveTeacher=saveTeacher;
+function delTeacher(ri,idx){if(confirm('ยืนยันการลบ?')){db.rooms[ri].teachers.splice(idx,1);saveLocal();toast('ลบแล้ว');pageTeachers(ri);}}
+window.delTeacher=delTeacher;
+
+// ──────────── 2. STUDENTS ────────────
+function pageStudents(ri){
+  ar=ri; _curPageFn=null;
+  var r=db.rooms[ri];
+  var h='<div class="page-header"><h2>🧒 ข้อมูลนักเรียน</h2></div>';
+  h+=roomTabs(ri,'pageStudents');
+  h+='<div class="card"><h3>รายชื่อนักเรียน — '+RS[ri]+'</h3>'
+    +'<div class="table-wrap"><table><thead><tr>'
+    +'<th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ที่อยู่</th>'
+    +'<th>ประเภทความพิการ</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th><th>จัดการ</th>'
+    +'</tr></thead><tbody>';
+  r.students.forEach(function(s,idx){
+    h+='<tr>'
+      +'<td style="text-align:center">'+(idx+1)+'</td>'
+      +'<td><b>'+esc(s.name)+'</b></td>'
+      +'<td>'+esc(s.dob)+'</td>'
+      +'<td>'+calcAge(s.dob)+'</td>'
+      +'<td>'+esc(s.address)+'</td>'
+      +'<td><span class="badge badge-blue">'+esc(s.type)+'</span></td>'
+      +'<td>'+esc(s.guardian)+'</td>'
+      +'<td>'+esc(s.gphone)+'</td>'
+      +'<td style="white-space:nowrap">'
+      +'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="editStudent(+this.dataset.ri,+this.dataset.idx)">✏️ แก้ไข</button> '
+      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="delStudent(+this.dataset.ri,+this.dataset.idx)">🗑️</button>'
+      +'</td></tr>';
+  });
+  if(!r.students.length){
+    h+='<tr><td colspan="9" style="text-align:center;color:var(--muted)">ยังไม่มีข้อมูลนักเรียน</td></tr>';
+  }
+  h+='</tbody></table></div>'
+    +'<div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addStudent('+ri+')">➕ เพิ่มนักเรียน</button></div></div>';
+  render(h);
+}
+window.pageStudents=pageStudents;
+
+function stuForm(s){const opts=DIS.map(d=>`<option${s&&s.type===d?' selected':''}>${d}</option>`).join('');return`
+<div class="form-group"><label>ชื่อ-สกุล *</label><input id="s_name" value="${esc(s?s.name:'')}"/></div>
+<div class="form-row">
+  <div class="form-group"><label>วันเดือนปีเกิด</label><input type="date" id="s_dob" value="${s?s.dob:''}" oninput="document.getElementById('s_age').textContent=calcAge(this.value)"/></div>
+  <div class="form-group"><label>อายุ (คำนวณอัตโนมัติ)</label><div style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px" id="s_age">${s?calcAge(s.dob):'-'}</div></div>
+</div>
+<div class="form-group"><label>ที่อยู่</label><input id="s_addr" value="${esc(s?s.address:'')}"/></div>
+<div class="form-group"><label>ประเภทความพิการ</label><select id="s_type">${opts}</select></div>
+<div class="form-row">
+  <div class="form-group"><label>ชื่อ-สกุลผู้ปกครอง</label><input id="s_guard" value="${esc(s?s.guardian:'')}"/></div>
+  <div class="form-group"><label>เบอร์โทรติดต่อผู้ปกครอง</label><input id="s_gph" value="${esc(s?s.gphone:'')}"/></div>
+</div>`;}
+function addStudent(ri){openModal(`<h3>➕ เพิ่มนักเรียน</h3>${stuForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveStu(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addStudent=addStudent;
+function editStudent(ri,idx){openModal(`<h3>✏️ แก้ไขข้อมูลนักเรียน</h3>${stuForm(db.rooms[ri].students[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveStu(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editStudent=editStudent;
+function saveStu(ri,idx){
+  const s={name:document.getElementById('s_name').value.trim(),dob:document.getElementById('s_dob').value,address:document.getElementById('s_addr').value,type:document.getElementById('s_type').value,guardian:document.getElementById('s_guard').value,gphone:document.getElementById('s_gph').value,iep:idx>=0?(db.rooms[ri].students[idx].iep||[]):[],iip:idx>=0?(db.rooms[ri].students[idx].iip||[]):[]};
+  if(!s.name){alert('กรุณากรอกชื่อ-สกุล');return;}
+  if(idx===-1)db.rooms[ri].students.push(s);else db.rooms[ri].students[idx]=s;
+  saveLocal();syncSheet('saveStudents',ri,db.rooms[ri].students);closeModal();toast('บันทึกสำเร็จ ✓');pageStudents(ri);}
+window.saveStu=saveStu;
+function delStudent(ri,idx){if(confirm('ยืนยันการลบ?')){db.rooms[ri].students.splice(idx,1);saveLocal();toast('ลบแล้ว');pageStudents(ri);}}
+window.delStudent=delStudent;
+
+// ──────────── 3. ATTENDANCE ────────────
+function pageAttendance(ri){
+  ar=ri;_curPageFn=function(){pageAttendance(ar);};
+  var yr=viewYear,mn=viewMonth,r=db.rooms[ri],key=yr+'-'+mn,att=r.attendance[key]||{};
+  var h='<div class="page-header"><h2>การเข้าเรียนประจำเดือน</h2></div>';
+  h+=monthYearPickerHtml()+roomTabs(ri,'pageAttendance');
+  h+='<div class="card"><h3>การเข้าเรียน '+MONTHS[mn-1]+' '+(yr+543)+' — '+RS[ri]+'</h3>';
+  var dim=new Date(yr,mn,0).getDate(),sDays=[];
+  for(var d=1;d<=dim;d++){if(new Date(yr,mn-1,d).getDay()>0&&new Date(yr,mn-1,d).getDay()<6)sDays.push(d);}
+  h+='<div class="table-wrap"><table><thead><tr><th style="min-width:120px">ชื่อนักเรียน</th>';
+  sDays.slice(0,23).forEach(function(d){h+='<th style="width:26px;text-align:center;font-size:11px">'+d+'</th>';});
+  if(sDays.length>23)h+='<th>+'+(sDays.length-23)+'</th>';
+  h+='<th>มา</th><th>ขาด</th><th>ลา</th><th>หยุด</th></tr></thead><tbody>';
+  r.students.forEach(function(s){
+    var days=att[s.name]||{},pm=0,ab=0,lv=0,wh=0;
+    sDays.forEach(function(d){var v=days[d];if(v==='P')pm++;else if(v==='A')ab++;else if(v==='L')lv++;else if(v==='W')wh++;});
+    h+='<tr><td style="font-size:12px">'+esc(s.name)+'</td>';
+    sDays.slice(0,23).forEach(function(d){
+      var v=days[d]||'',bg='',fc='var(--muted)';
+      if(v==='P'){bg='#c8e6c9';fc='#1b5e20';}else if(v==='A'){bg='#ffcdd2';fc='#b71c1c';}
+      else if(v==='L'){bg='#fff3cd';fc='#856404';}else if(v==='W'){bg='#e8e8e8';fc='#555';}
+      h+='<td style="text-align:center;padding:2px"><span class="att-cell" style="background:'+bg+';color:'+fc+'" data-ri="'+ri+'" data-key="'+key+'" data-name="'+esc(s.name)+'" data-day="'+d+'" onclick="togAtt3(this)">'+( v||'·')+'</span></td>';
+    });
+    if(sDays.length>23)h+='<td></td>';
+    h+='<td style="text-align:center;color:#2d7d3a;font-weight:700">'+pm+'</td><td style="text-align:center;color:#b71c1c;font-weight:700">'+ab+'</td><td style="text-align:center;color:#e65100;font-weight:700">'+lv+'</td><td style="text-align:center;color:#555;font-weight:700">'+wh+'</td></tr>';
+  });
+  if(!r.students.length)h+='<tr><td colspan="28" style="text-align:center;color:var(--muted)">ยังไม่มีนักเรียน</td></tr>';
+  h+='</tbody></table></div></div>';
+  render(h);
+}
+window.pageAttendance=pageAttendance;
+function togAtt3(el){
+  var ri=+el.dataset.ri,key=el.dataset.key,sn=el.dataset.name,day=+el.dataset.day;
+  if(!db.rooms[ri].attendance[key])db.rooms[ri].attendance[key]={};
+  if(!db.rooms[ri].attendance[key][sn])db.rooms[ri].attendance[key][sn]={};
+  var cur=db.rooms[ri].attendance[key][sn][day]||'',nxt={'':'P','P':'A','A':'L','L':'W','W':''}[cur];
+  if(nxt)db.rooms[ri].attendance[key][sn][day]=nxt;else delete db.rooms[ri].attendance[key][sn][day];
+  var bg='',fc='var(--muted)';
+  if(nxt==='P'){bg='#c8e6c9';fc='#1b5e20';}else if(nxt==='A'){bg='#ffcdd2';fc='#b71c1c';}
+  else if(nxt==='L'){bg='#fff3cd';fc='#856404';}else if(nxt==='W'){bg='#e8e8e8';fc='#555';}
+  el.style.background=bg;el.style.color=fc;el.textContent=nxt||'·';
+  saveLocal();
+  var row=el.closest('tr');
+  if(row){var d2=db.rooms[ri].attendance[key][sn]||{},pm=0,ab=0,lv=0,wh=0;
+    Object.values(d2).forEach(function(v){if(v==='P')pm++;else if(v==='A')ab++;else if(v==='L')lv++;else if(v==='W')wh++;});
+    var tds=row.querySelectorAll('td'),last=tds.length;
+    if(tds[last-4])tds[last-4].textContent=pm;if(tds[last-3])tds[last-3].textContent=ab;
+    if(tds[last-2])tds[last-2].textContent=lv;if(tds[last-1])tds[last-1].textContent=wh;}
+}
+window.togAtt3=togAtt3;
+function togAtt(ri,key,sn,day){
+  if(!db.rooms[ri].attendance[key])db.rooms[ri].attendance[key]={};
+  if(!db.rooms[ri].attendance[key][sn])db.rooms[ri].attendance[key][sn]={};
+  const cur=db.rooms[ri].attendance[key][sn][day]||'';const nxt={'':'P','P':'A','A':'L','L':'W','W':''}[cur];
+  if(nxt)db.rooms[ri].attendance[key][sn][day]=nxt;else delete db.rooms[ri].attendance[key][sn][day];
+  saveLocal();
+  // sync attendance ห้องนั้น
+  const attObj=db.rooms[ri].attendance[key]||{};
+  const stuList=Object.entries(attObj).map(([name,days])=>({name,days}));
+  syncSheet('saveAttendance',ri,{key,students:stuList});
+  pageAttendance(ri);}
+window.togAtt=togAtt;
+
+// ──────────── 4. SERVICES ────────────
+function pageServices(ri){
+  ar=ri;_curPageFn=function(){pageServices(ar);};
+  var r=db.rooms[ri],dp=viewYear+'-'+String(viewMonth).padStart(2,'0');
+  var all=r.services||[],fl=all.filter(function(sv){return!sv.date||sv.date.startsWith(dp);});
+  var h='<div class="page-header"><h2>บันทึกการให้บริการทางวิชาการ</h2></div>';
+  h+=monthYearPickerHtml()+roomTabs(ri,'pageServices');
+  h+='<div class="card"><h3>รายการบริการ '+MONTHS[viewMonth-1]+' '+(viewYear+543)+' — '+RS[ri]+'</h3>'
+    +'<div class="table-wrap"><table><thead><tr><th>วันที่</th><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียด</th><th>ผู้ให้บริการ</th><th>จัดการ</th></tr></thead><tbody>';
+  fl.forEach(function(sv){var i2=all.indexOf(sv);
+    h+='<tr><td>'+esc(sv.date)+'</td><td>'+esc(sv.student)+'</td><td>'+esc(sv.detail)+'</td><td>'+esc(sv.provider)+'</td>'
+      +'<td><button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="editService(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
+      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delService(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
+  });
+  if(!fl.length)h+='<tr><td colspan="5" style="text-align:center;color:var(--muted)">ไม่มีรายการ</td></tr>';
+  h+='</tbody></table></div><div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addService('+ri+')">➕ เพิ่มรายการ</button></div></div>';
+  render(h);
+}
+window.pageServices=pageServices;
+function serviceForm(ri,sv){
+  const stuOpts=db.rooms[ri].students.map(s=>`<option${sv&&sv.student===s.name?' selected':''}>${esc(s.name)}</option>`).join('');
+  const tchOpts=db.rooms[ri].teachers.map(t=>`<option${sv&&sv.provider===t.name?' selected':''}>${esc(t.name)}</option>`).join('');
+  return`<div class="form-group"><label>วันที่</label><input type="date" id="sv_date" value="${sv?sv.date:todayStr()}"/></div>
+<div class="form-group"><label>ชื่อ-สกุลนักเรียน</label><select id="sv_stu">${stuOpts||'<option>— กรุณาเพิ่มนักเรียนก่อน —</option>'}</select></div>
+<div class="form-group"><label>รายละเอียดการให้บริการ</label><textarea id="sv_det" placeholder="อธิบายรายละเอียดการให้บริการ...">${sv?esc(sv.detail):''}</textarea></div>
+<div class="form-group"><label>ผู้ให้บริการ</label><select id="sv_pro">${tchOpts||'<option>— กรุณาเพิ่มครูก่อน —</option>'}</select></div>`;}
+function addService(ri){openModal(`<h3>➕ เพิ่มบันทึกการให้บริการ</h3>${serviceForm(ri,null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveSvc(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addService=addService;
+function editService(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ</h3>${serviceForm(ri,db.rooms[ri].services[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveSvc(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editService=editService;
+function saveSvc(ri,idx){
+  const sv={date:document.getElementById('sv_date').value,student:document.getElementById('sv_stu').value,detail:document.getElementById('sv_det').value,provider:document.getElementById('sv_pro').value};
+  if(!db.rooms[ri].services)db.rooms[ri].services=[];
+  if(idx===-1)db.rooms[ri].services.push(sv);else db.rooms[ri].services[idx]=sv;
+  saveLocal();syncSheet('saveServices',ri,db.rooms[ri].services);closeModal();toast('บันทึกสำเร็จ ✓');pageServices(ri);}
+window.saveSvc=saveSvc;
+function delService(ri,idx){if(confirm('ยืนยันการลบ?')){db.rooms[ri].services.splice(idx,1);saveLocal();syncSheet('saveServices',ri,db.rooms[ri].services);toast('ลบแล้ว');pageServices(ri);}}
+window.delService=delService;
+
+// ──────────── 5. HR MONTHLY ────────────
+function pageHRMonthly(ri){
+  ar=ri;_curPageFn=function(){pageHRMonthly(ar);};
+  var r=db.rooms[ri],mn2=MONTHS[viewMonth-1],yr2=String(viewYear+543);
+  var all=r.hrMonthly||[],fl=all.filter(function(it){return it.period&&it.period.includes(mn2)&&it.period.includes(yr2);});
+  var h='<div class="page-header"><h2>สรุปการปฏิบัติงานประจำเดือน</h2></div>';
+  h+=monthYearPickerHtml()+roomTabs(ri,'pageHRMonthly');
+  h+='<div class="card"><h3>สรุปการปฏิบัติงาน '+mn2+' '+yr2+' — '+RS[ri]+'</h3>'
+    +'<div class="table-wrap"><table><thead><tr><th>เดือน/ปี</th><th>ชื่อ-สกุล</th><th>ลากิจ</th><th>ลาป่วย</th><th>ลาพักผ่อน</th><th>ลาอื่นๆ</th><th>มาสาย</th><th>ออกนอก</th><th>จัดการ</th></tr></thead><tbody>';
+  fl.forEach(function(it){var i2=all.indexOf(it);
+    h+='<tr><td>'+esc(it.period)+'</td><td>'+esc(it.person)+'</td><td style="text-align:center">'+(it.leaveB||0)+'</td><td style="text-align:center">'+(it.leaveSick||0)+'</td><td style="text-align:center">'+(it.leaveRest||0)+'</td><td style="text-align:center">'+(it.leaveOther||0)+'</td><td style="text-align:center">'+(it.late||0)+'</td><td style="text-align:center">'+(it.outSite||0)+'</td>'
+      +'<td><button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="editHR(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
+      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delHR(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
+  });
+  if(!fl.length)h+='<tr><td colspan="9" style="text-align:center;color:var(--muted)">ไม่มีรายการ</td></tr>';
+  h+='</tbody></table></div><div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addHR('+ri+')">➕ เพิ่มรายการ</button></div></div>';
+  render(h);
+}
+window.pageHRMonthly=pageHRMonthly;
+function hrForm(ri,it){
+  const now=new Date();const po=db.rooms[ri].teachers.map(t=>`<option${it&&it.person===t.name?' selected':''}>${esc(t.name)}</option>`).join('');
+  return`<div class="form-row">
+  <div class="form-group"><label>เดือน</label><select id="hr_m">${MONTHS.map((m,i)=>`<option value="${i+1}"${it?it.period.includes(m)?'selected':'':(i===now.getMonth()?' selected':'')}>${m}</option>`).join('')}</select></div>
+  <div class="form-group"><label>ปี (พ.ศ.)</label><input id="hr_y" value="${it?it.period.split(' ')[1]:now.getFullYear()+543}"/></div>
+  </div>
+  <div class="form-group"><label>ชื่อ-สกุลครูผู้สอน</label><select id="hr_p">${po||'<option>กรุณาเพิ่มครูก่อน</option>'}</select></div>
+  <div class="form-row3">
+    <div class="form-group"><label>ลากิจ (วัน)</label><input type="number" id="hr_lb" min="0" value="${it?it.leaveB||0:0}"/></div>
+    <div class="form-group"><label>ลาป่วย (วัน)</label><input type="number" id="hr_ls" min="0" value="${it?it.leaveSick||0:0}"/></div>
+    <div class="form-group"><label>ลาพักผ่อน (วัน)</label><input type="number" id="hr_lr" min="0" value="${it?it.leaveRest||0:0}"/></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>ลาอื่นๆ (วัน)</label><input type="number" id="hr_lo" min="0" value="${it?it.leaveOther||0:0}"/></div>
+    <div class="form-group"><label>ระบุประเภทลาอื่นๆ</label><input id="hr_lon" value="${esc(it?it.leaveOtherNote:'')}"/></div>
+  </div>
+  <div class="form-row">
+    <div class="form-group"><label>จำนวนการมาสาย (ครั้ง)</label><input type="number" id="hr_late" min="0" value="${it?it.late||0:0}"/></div>
+    <div class="form-group"><label>จำนวนการขอออกนอกสถานที่ (ครั้ง)</label><input type="number" id="hr_out" min="0" value="${it?it.outSite||0:0}"/></div>
+  </div>`;}
+function addHR(ri){openModal(`<h3>➕ สรุปการปฏิบัติงานประจำเดือน</h3>${hrForm(ri,null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveHR(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addHR=addHR;
+function editHR(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ</h3>${hrForm(ri,db.rooms[ri].hrMonthly[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveHR(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editHR=editHR;
+function saveHR(ri,idx){
+  const m=document.getElementById('hr_m').value;const y=document.getElementById('hr_y').value;
+  const it={period:`${MONTHS[m-1]} ${y}`,person:document.getElementById('hr_p').value,leaveB:+document.getElementById('hr_lb').value,leaveSick:+document.getElementById('hr_ls').value,leaveRest:+document.getElementById('hr_lr').value,leaveOther:+document.getElementById('hr_lo').value,leaveOtherNote:document.getElementById('hr_lon').value,late:+document.getElementById('hr_late').value,outSite:+document.getElementById('hr_out').value};
+  if(!db.rooms[ri].hrMonthly)db.rooms[ri].hrMonthly=[];
+  if(idx===-1)db.rooms[ri].hrMonthly.push(it);else db.rooms[ri].hrMonthly[idx]=it;
+  saveLocal();syncSheet('saveHRMonthly',ri,db.rooms[ri].hrMonthly);closeModal();toast('บันทึกสำเร็จ ✓');pageHRMonthly(ri);}
+window.saveHR=saveHR;
+function delHR(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].hrMonthly.splice(idx,1);saveLocal();syncSheet('saveHRMonthly',ri,db.rooms[ri].hrMonthly);toast('ลบแล้ว');pageHRMonthly(ri);}}
+window.delHR=delHR;
+
+// ──────────── 6. TRAINING ────────────
+function pageTraining(ri){
+  ar=ri;_curPageFn=function(){pageTraining(ar);};
+  var r=db.rooms[ri],dp=viewYear+'-'+String(viewMonth).padStart(2,'0');
+  var all=r.training||[],fl=all.filter(function(t){return!t.date||t.date.startsWith(dp);});
+  var h='<div class="page-header"><h2>การสัมมนา/ฝึกอบรม/ศึกษาดูงาน</h2></div>';
+  h+=monthYearPickerHtml()+roomTabs(ri,'pageTraining');
+  h+='<div class="card"><h3>รายการ '+MONTHS[viewMonth-1]+' '+(viewYear+543)+' — '+RS[ri]+'</h3>'
+    +'<div class="table-wrap"><table><thead><tr><th>ชื่อ-สกุล</th><th>หลักสูตร/อบรม</th><th>หน่วยงาน</th><th>วันที่</th><th>หลักฐาน</th><th>จัดการ</th></tr></thead><tbody>';
+  fl.forEach(function(t){var i2=all.indexOf(t),tImg=t.imgUrl||'',trKey='tr_'+ri+'_'+i2;
+    if(tImg)_cache(trKey,tImg);
+    var tThumb=tImg?'<img src="'+tImg+'" style="width:60px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer" data-k="'+trKey+'" onclick="showImg(this.dataset.k)" onerror="this.hidden=true"/>':'-';
+    h+='<tr><td>'+esc(t.person)+'</td><td>'+esc(t.course)+'</td><td>'+esc(t.org)+'</td><td>'+esc(t.date)+'</td><td style="text-align:center">'+tThumb+'</td>'
+      +'<td><button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="editTraining(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
+      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delTraining(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
+  });
+  if(!fl.length)h+='<tr><td colspan="6" style="text-align:center;color:var(--muted)">ไม่มีรายการ</td></tr>';
+  h+='</tbody></table></div><div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addTraining('+ri+')">➕ เพิ่มรายการ</button></div></div>';
+  render(h);
+}
+window.pageTraining=pageTraining;
+function trainingForm(ri,t){
+  const po=db.rooms[ri].teachers.map(tc=>`<option${t&&t.person===tc.name?' selected':''}>${esc(tc.name)}</option>`).join('');
+  return`<div class="form-group"><label>ชื่อ-สกุล</label><select id="tr_p">${po||'<option>กรุณาเพิ่มครูก่อน</option>'}</select></div>
+<div class="form-group"><label>ชื่อหลักสูตร/อบรม/สัมมนา/ศึกษาดูงาน</label><input id="tr_c" value="${esc(t?t.course:'')}"/></div>
+<div class="form-row">
+  <div class="form-group"><label>หน่วยงานที่จัดอบรม</label><input id="tr_o" value="${esc(t?t.org:'')}"/></div>
+  <div class="form-group"><label>วันที่</label><input type="date" id="tr_d" value="${t?t.date:todayStr()}"/></div>
+</div>
+${imgUploadZoneHtml('tr_img', t?t.imgUrl:'', 'แนบภาพหลักฐาน')}`;}
+function addTraining(ri){openModal(`<h3>➕ เพิ่มการสัมมนา/อบรม</h3>${trainingForm(ri,null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addTraining=addTraining;
+function editTraining(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ</h3>${trainingForm(ri,db.rooms[ri].training[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editTraining=editTraining;
+function saveTr(ri,idx){
+  const t={person:document.getElementById('tr_p').value,course:document.getElementById('tr_c').value,org:document.getElementById('tr_o').value,date:document.getElementById('tr_d').value,imgUrl:document.getElementById('tr_img').value};
+  if(!db.rooms[ri].training)db.rooms[ri].training=[];
+  if(idx===-1)db.rooms[ri].training.push(t);else db.rooms[ri].training[idx]=t;
+  saveLocal();syncSheet('saveTraining',ri,db.rooms[ri].training);closeModal();toast('บันทึกสำเร็จ ✓');pageTraining(ri);}
+window.saveTr=saveTr;
+function delTraining(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].training.splice(idx,1);saveLocal();syncSheet('saveTraining',ri,db.rooms[ri].training);toast('ลบแล้ว');pageTraining(ri);}}
+window.delTraining=delTraining;
+
+// ──────────── 7. COMMUNITY ────────────
+function pageCommunity(ri){
+  ar=ri;_curPageFn=function(){pageCommunity(ar);};
+  var r=db.rooms[ri],dp=viewYear+'-'+String(viewMonth).padStart(2,'0');
+  var all=r.community||[],fl=all.filter(function(c){return!c.date||c.date.startsWith(dp);});
+  var h='<div class="page-header"><h2>สัมพันธ์ชุมชน/การเข้าร่วมกิจกรรมวันสำคัญ</h2></div>';
+  h+=monthYearPickerHtml()+roomTabs(ri,'pageCommunity');
+  h+='<div class="card"><h3>รายการกิจกรรม '+MONTHS[viewMonth-1]+' '+(viewYear+543)+' — '+RS[ri]+'</h3>'
+    +'<div class="table-wrap"><table><thead><tr><th>วันที่</th><th>กิจกรรม</th><th>หน่วยงาน/สถานที่</th><th>หลักฐาน</th><th>จัดการ</th></tr></thead><tbody>';
+  fl.forEach(function(c){var i2=all.indexOf(c),cImg=c.imgUrl||'',cmKey='cm_'+ri+'_'+i2;
+    if(cImg)_cache(cmKey,cImg);
+    var cThumb=cImg?'<img src="'+cImg+'" style="width:60px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer" data-k="'+cmKey+'" onclick="showImg(this.dataset.k)" onerror="this.hidden=true"/>':'-';
+    h+='<tr><td>'+esc(c.date)+'</td><td>'+esc(c.activity)+'</td><td>'+esc(c.place)+'</td><td style="text-align:center">'+cThumb+'</td>'
+      +'<td><button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="editCom(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
+      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delCom(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
+  });
+  if(!fl.length)h+='<tr><td colspan="5" style="text-align:center;color:var(--muted)">ไม่มีรายการ</td></tr>';
+  h+='</tbody></table></div><div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addCom('+ri+')">➕ เพิ่มกิจกรรม</button></div></div>';
+  render(h);
+}
+window.pageCommunity=pageCommunity;
+function comForm(c){return`<div class="form-group"><label>วันที่</label><input type="date" id="cm_d" value="${c?c.date:todayStr()}"/></div>
+<div class="form-group"><label>รายการ/กิจกรรม</label><input id="cm_a" value="${esc(c?c.activity:'')}"/></div>
+<div class="form-group"><label>หน่วยงาน/สถานที่</label><input id="cm_p" value="${esc(c?c.place:'')}"/></div>
+${imgUploadZoneHtml('cm_img', c?c.imgUrl:'', 'หลักฐานอ้างอิง (แนบรูปภาพ)')}`;}
+function addCom(ri){openModal(`<h3>➕ เพิ่มกิจกรรมสัมพันธ์ชุมชน</h3>${comForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addCom=addCom;
+function editCom(ri,idx){openModal(`<h3>✏️ แก้ไขกิจกรรม</h3>${comForm(db.rooms[ri].community[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editCom=editCom;
+function saveCom(ri,idx){
+  const c={date:document.getElementById('cm_d').value,activity:document.getElementById('cm_a').value,place:document.getElementById('cm_p').value,imgUrl:document.getElementById('cm_img').value};
+  if(!db.rooms[ri].community)db.rooms[ri].community=[];
+  if(idx===-1)db.rooms[ri].community.push(c);else db.rooms[ri].community[idx]=c;
+  saveLocal();syncSheet('saveCommunity',ri,db.rooms[ri].community);closeModal();toast('บันทึกสำเร็จ ✓');pageCommunity(ri);}
+window.saveCom=saveCom;
+function delCom(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].community.splice(idx,1);saveLocal();syncSheet('saveCommunity',ri,db.rooms[ri].community);toast('ลบแล้ว');pageCommunity(ri);}}
+window.delCom=delCom;
+
+// ──────────── 8. NETWORK ────────────
+function pageNetwork(ri){ar=ri;const r=db.rooms[ri];
+  let h=`<div class="page-header"><h2>🏢 ข้อมูลภาคีเครือข่าย</h2></div>${roomTabs(ri,'pageNetwork')}<div class="card"><h3>รายชื่อภาคีเครือข่าย — ${RS[ri]}</h3><div class="table-wrap"><table><thead><tr><th>ลำดับ</th><th>หน่วยงาน</th><th>ชื่อผู้ประสานงาน</th><th>หมายเลขโทรศัพท์</th><th>ตำแหน่ง</th><th>จัดการ</th></tr></thead><tbody>`;
+  (r.network||[]).forEach((n,idx)=>{h+=`<tr><td>${idx+1}</td><td>${esc(n.org)}</td><td>${esc(n.contact)}</td><td>${esc(n.phone)}</td><td>${esc(n.position)}</td><td style="white-space:nowrap"><button class="btn btn-outline btn-sm" onclick="editNet(${ri},${idx})">✏️</button> <button class="btn btn-danger btn-sm" onclick="delNet(${ri},${idx})">🗑️</button></td></tr>`;});
+  if(!(r.network||[]).length)h+=`<tr><td colspan="6" style="text-align:center;color:var(--muted)">ยังไม่มีรายการ</td></tr>`;
+  h+=`</tbody></table></div><div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addNet(${ri})">➕ เพิ่มภาคีเครือข่าย</button></div></div>`;render(h);}
+window.pageNetwork=pageNetwork;
+function netForm(n){return`<div class="form-group"><label>หน่วยงาน</label><input id="nt_o" value="${esc(n?n.org:'')}"/></div>
+<div class="form-row">
+  <div class="form-group"><label>ชื่อผู้ประสานงาน</label><input id="nt_c" value="${esc(n?n.contact:'')}"/></div>
+  <div class="form-group"><label>ตำแหน่ง</label><input id="nt_pos" value="${esc(n?n.position:'')}"/></div>
+</div>
+<div class="form-group"><label>หมายเลขโทรศัพท์</label><input id="nt_ph" value="${esc(n?n.phone:'')}"/></div>`;}
+function addNet(ri){openModal(`<h3>➕ เพิ่มภาคีเครือข่าย</h3>${netForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveNet(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addNet=addNet;
+function editNet(ri,idx){openModal(`<h3>✏️ แก้ไขภาคีเครือข่าย</h3>${netForm(db.rooms[ri].network[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveNet(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editNet=editNet;
+function saveNet(ri,idx){
+  const n={org:document.getElementById('nt_o').value,contact:document.getElementById('nt_c').value,position:document.getElementById('nt_pos').value,phone:document.getElementById('nt_ph').value};
+  if(!db.rooms[ri].network)db.rooms[ri].network=[];
+  if(idx===-1)db.rooms[ri].network.push(n);else db.rooms[ri].network[idx]=n;
+  saveLocal();syncSheet('saveNetwork',ri,db.rooms[ri].network);closeModal();toast('บันทึกสำเร็จ ✓');pageNetwork(ri);}
+window.saveNet=saveNet;
+function delNet(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].network.splice(idx,1);saveLocal();syncSheet('saveNetwork',ri,db.rooms[ri].network);toast('ลบแล้ว');pageNetwork(ri);}}
+window.delNet=delNet;
+
+// ──────────── 9. PHOTOS ────────────
+function pagePhotos(ri){
+  ar=ri; _curPageFn=function(){pagePhotos(ar);};
+  var r=db.rooms[ri];
+  var mn=MONTHS[viewMonth-1],yr=String(viewYear+543);
+  var filtered=(r.photos||[]).filter(function(p){return!p.month||p.month===mn;});
+  var h='<div class="page-header"><h2>📸 ประมวลภาพการปฏิบัติงาน</h2></div>';
+  h+=monthYearPickerHtml();
+  h+=roomTabs(ri,'pagePhotos');
+  h+='<div class="card"><h3>ภาพกิจกรรม '+mn+' '+yr+' — '+RS[ri]+'</h3>';
+  h+='<div class="photo-grid">';
+  filtered.forEach(function(p,idx){
+    var imgSrc=p.imgUrl||'';
+    var realIdx=(r.photos||[]).indexOf(p);
+    h+='<div class="photo-item">'
+      +(imgSrc?'<img src="'+imgSrc+'" class="img-thumb" onerror="this.hidden=true" alt="ภาพ"/>'
+        :'<div style="height:120px;background:var(--bg);display:flex;align-items:center;justify-content:center;font-size:32px">📷</div>')
+      +'<div class="photo-caption"><div style="font-size:12px;font-weight:600">'+esc(p.caption)+'</div>'
+      +'<div class="text-muted">ประจำเดือน: '+esc(p.month)+' | '+esc(p.date)+'</div></div>'
+      +'<div style="padding:0 8px 8px;display:flex;gap:4px">'
+      +'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+realIdx+'" onclick="editPhoto(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
+      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+realIdx+'" onclick="delPhoto(+this.dataset.ri,+this.dataset.idx)">🗑️</button>'
+      +'</div></div>';
+  });
+  h+='<div class="photo-slot" onclick="addPhoto('+ri+')">'
+    +'<span style="font-size:24px">➕</span><span>เพิ่มภาพ</span></div></div>';
+  if(!filtered.length){
+    h+='<p class="text-muted mt-1">ไม่มีภาพในเดือน '+mn+' '+yr+' — กรุณาเลือกเดือนอื่น หรือเพิ่มภาพใหม่</p>';
+  }
+  h+='<div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addPhoto('+ri+')">➕ เพิ่มภาพ/กิจกรรม</button></div></div>';
+  render(h);
+}
+window.pagePhotos=pagePhotos;
+function photoForm(p){
+  var selMonth = p?p.month:MONTHS[viewMonth-1];
+  var mOpts = MONTHS.map(function(m){return '<option'+(m===selMonth?' selected':'')+'>'+m+'</option>';}).join('');
+  return '<div class="form-group"><label>รายละเอียดรูปภาพ/คำบรรยาย</label><input id="ph_cap" value="'+esc(p?p.caption:'')+'"/></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>ประจำเดือน</label><select id="ph_m">'+mOpts+'</select></div>'
+    +'<div class="form-group"><label>วันที่</label><input type="date" id="ph_d" value="'+(p?p.date:todayStr())+'"/></div>'
+    +'</div>'
+    +imgZoneHtml('ph_url',p?p.imgUrl||'':'','แนบรูปภาพ (คลิกหรือลากไฟล์มาวาง)');
+}
+
+function addPhoto(ri){openModal(`<h3>➕ เพิ่มภาพกิจกรรม</h3>${photoForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="savePh(${ri},-1)">💾 บันทึก</button></div>`);}
+window.addPhoto=addPhoto;
+function editPhoto(ri,idx){openModal(`<h3>✏️ แก้ไขภาพ</h3>${photoForm(db.rooms[ri].photos[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="savePh(${ri},${idx})">💾 บันทึก</button></div>`);}
+window.editPhoto=editPhoto;
+function savePh(ri,idx){
+  const p={caption:document.getElementById('ph_cap').value,month:document.getElementById('ph_m').value,date:document.getElementById('ph_d').value,imgUrl:document.getElementById('ph_url').value};
+  if(!db.rooms[ri].photos)db.rooms[ri].photos=[];
+  if(idx===-1)db.rooms[ri].photos.push(p);else db.rooms[ri].photos[idx]=p;
+  saveLocal();syncSheet('savePhotos',ri,db.rooms[ri].photos);closeModal();toast('บันทึกสำเร็จ ✓');pagePhotos(ri);}
+window.savePh=savePh;
+function delPhoto(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].photos.splice(idx,1);saveLocal();syncSheet('savePhotos',ri,db.rooms[ri].photos);toast('ลบแล้ว');pagePhotos(ri);}}
+window.delPhoto=delPhoto;
+
+// ──────────── 10. IEP/IIP ────────────
+// ── SCHEDULE PAGE ─────────────────────────────────
+
+
+
+
+
+function pageSchedule(ri){
+  ar=ri; _curPageFn=null;
+  var r=db.rooms[ri];
+  var h='<div class="page-header"><h2>📆 ตารางสอน</h2><p>อัปโหลดตารางสอนเป็นไฟล์ PDF แยกตามภาคเรียนหรือปีการศึกษา</p></div>';
+  h+=roomTabs(ri,'pageSchedule');
+  h+='<div class="card"><h3>ตารางสอนทั้งหมด — '+RS[ri]+'</h3>';
+  var scheds = r.schedules||[];
+  if(scheds.length){
+    scheds.forEach(function(sc,idx){
+      h+='<div class="pdf-item">'
+        +'<div class="pdf-icon">📆</div>'
+        +'<div style="flex:1">'
+        +'<div style="font-weight:700;font-size:13px">'+esc(sc.name)+'</div>'
+        +'<div class="text-muted">'+esc(sc.period)+' | อัปโหลด: '+esc(sc.date)+'</div>'
+        +'</div>'
+        +(sc.dataUrl?'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="previewSchedule(+this.dataset.ri,+this.dataset.idx)">👁️ ดู</button> ':'')
+        +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="delSchedule(+this.dataset.ri,+this.dataset.idx)">🗑️</button>'
+        +'</div>';
+    });
+  } else {
+    h+='<p class="text-muted">ยังไม่มีตารางสอน กรุณาอัปโหลด</p>';
+  }
+  h+='<div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addSchedule('+ri+')">➕ เพิ่มตารางสอน</button></div></div>';
+  render(h);
+}
+window.pageSchedule=pageSchedule;
+function addSchedule(ri){
+  var fid='schedpdf_'+ri+'_'+Date.now();
+  openModal('<h3>➕ เพิ่มตารางสอน</h3>'
+    +'<div class="form-group"><label>ชื่อตารางสอน *</label>'
+    +'<input id="sch_name" placeholder="เช่น ตารางสอน ภาคเรียนที่ 1/2567"/></div>'
+    +'<div class="form-group"><label>ภาคเรียน/ปีการศึกษา</label>'
+    +'<input id="sch_period" placeholder="เช่น ภาคเรียนที่ 1 ปีการศึกษา 2567 หรือ ปีการศึกษา 2566"/></div>'
+    +pdfZoneHtml(fid,'')
+    +'<div class="modal-footer">'
+    +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+    +'<button class="btn btn-primary" data-ri="'+ri+'" data-fid="'+fid+'" onclick="saveSchedule(+this.dataset.ri,this.dataset.fid)">💾 บันทึก</button>'
+    +'</div>');
+}
+window.addSchedule=addSchedule;
+function saveSchedule(ri,fid){
+  var n=(document.getElementById('sch_name')||{}).value||'';
+  var p=(document.getElementById('sch_period')||{}).value||'';
+  var pd=document.getElementById('pdfdata_'+fid),pn=document.getElementById('pdfname_'+fid);
+  if(!n.trim()){alert('กรุณากรอกชื่อตารางสอน');return;}
+  if(!pd||!pd.value){alert('กรุณาอัปโหลดไฟล์ PDF ก่อน');return;}
+  if(!db.rooms[ri].schedules)db.rooms[ri].schedules=[];
+  db.rooms[ri].schedules.push({name:n.trim(),period:p,fileName:pn?pn.value:'',dataUrl:pd.value,date:new Date().toLocaleDateString('th-TH')});
+  saveLocal();closeModal();toast('บันทึกสำเร็จ ✓');pageSchedule(ri);
+}
+window.saveSchedule=saveSchedule;
+function previewSchedule(ri,idx){
+  var sc=(db.rooms[ri].schedules||[])[idx];
+  if(!sc||!sc.dataUrl){toast('ไม่พบไฟล์','err');return;}
+  openModal(['<h3>📆 '+esc(sc.name)+'</h3>',
+    '<div style="height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
+    '<iframe src="'+sc.dataUrl+'" style="width:100%;height:100%;border:none"></iframe>',
+    '</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ปิด</button></div>'].join(''));
+}
+window.previewSchedule=previewSchedule;
+function delSchedule(ri,idx){
+  if(confirm('ยืนยันการลบ?')){db.rooms[ri].schedules.splice(idx,1);saveLocal();toast('ลบแล้ว');pageSchedule(ri);}
+}
+window.delSchedule=delSchedule;
+
+function pageIEP(ri){ar=ri;const r=db.rooms[ri];
+  let h=`<div class="page-header"><h2>📄 แผนการสอน IEP / IIP</h2></div>${roomTabs(ri,'pageIEP')}`;
+  if(!r.students.length){h+=`<div class="card"><p class="text-muted">ยังไม่มีข้อมูลนักเรียน กรุณาเพิ่มในหน้าข้อมูลนักเรียนก่อน</p></div>`;}
+  r.students.forEach((s,si)=>{
+    h+=`<div class="card"><h3>🧒 ${esc(s.name)}</h3>`;
+    h+=`<div style="margin-bottom:8px"><b style="font-size:12px;color:var(--primary)">แผน IEP (แผนการจัดการศึกษาเฉพาะบุคคล)</b></div>`;
+    (s.iep||[]).forEach((f,fi)=>{
+      const src=f.dataUrl||f.url||'';
+      const hasFile=!!src;
+      h+=`<div class="pdf-item">
+        <div class="pdf-icon">📕</div>
+        <div style="flex:1">
+          <div style="font-weight:600">${esc(f.name)}</div>
+          <div class="text-muted">${f.fileName?esc(f.fileName)+' | ':''} อัปโหลด: ${esc(f.date)}</div>
+        </div>
+        ${hasFile?`<button class="btn btn-outline btn-sm" data-src="${src}" data-name="${esc(f.name)}" onclick="viewPDF2(this.dataset.src,this.dataset.name)">👁️ ดู</button>`:'<span class="text-muted" style="font-size:11px">ไม่มีไฟล์</span>'}
+        <button class="btn btn-danger btn-sm" onclick="delIEP(${ri},${si},'iep',${fi})">🗑️</button>
+      </div>`;});
+    h+=`<button class="btn btn-outline btn-sm" style="margin-bottom:12px" onclick="addIEP(${ri},${si},'iep')">➕ เพิ่มแผน IEP</button>`;
+    h+=`<hr class="dashed"/><div style="margin-bottom:8px"><b style="font-size:12px;color:var(--primary)">แผน IIP (แผนการสอนเฉพาะบุคคล)</b></div>`;
+    (s.iip||[]).forEach((f,fi)=>{
+      const src=f.dataUrl||f.url||'';
+      const hasFile=!!src;
+      h+=`<div class="pdf-item">
+        <div class="pdf-icon">📗</div>
+        <div style="flex:1">
+          <div style="font-weight:600">${esc(f.name)}</div>
+          <div class="text-muted">${f.fileName?esc(f.fileName)+' | ':''} อัปโหลด: ${esc(f.date)}</div>
+        </div>
+        ${hasFile?`<button class="btn btn-outline btn-sm" data-src="${src}" data-name="${esc(f.name)}" onclick="viewPDF2(this.dataset.src,this.dataset.name)">👁️ ดู</button>`:'<span class="text-muted" style="font-size:11px">ไม่มีไฟล์</span>'}
+        <button class="btn btn-danger btn-sm" onclick="delIEP(${ri},${si},'iip',${fi})">🗑️</button>
+      </div>`;});
+    h+=`<button class="btn btn-outline btn-sm" onclick="addIEP(${ri},${si},'iip')">➕ เพิ่มแผน IIP</button></div>`;
+  });
+  render(h);}
+window.pageIEP=pageIEP;
+function addIEP(ri,si,type){
+  if(type==='iip'){
+    _iipQueue[ri+'_'+si]=[];
+    openModal('<h3>➕ อัปโหลดแผน IIP (หลายไฟล์)</h3>'
+      +'<p class="text-muted" style="margin-bottom:10px">อัปโหลดได้หลายไฟล์พร้อมกัน</p>'
+      +iipMultiZoneHtml(ri,si)
+      +'<div class="modal-footer">'
+      +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+      +'<button class="btn btn-primary" data-ri="'+ri+'" data-si="'+si+'" onclick="saveIIPMulti(+this.dataset.ri,+this.dataset.si)">💾 บันทึกทั้งหมด</button>'
+      +'</div>');
+  }else{
+    var fid='ieppdf_'+ri+'_'+si;
+    openModal('<h3>➕ อัปโหลดแผน IEP</h3>'
+      +'<div class="form-group"><label>ชื่อแผน/ปีการศึกษา *</label>'
+      +'<input id="iep_n" placeholder="เช่น IEP ปีการศึกษา 2567"/></div>'
+      +pdfZoneHtml(fid,'')
+      +'<div class="modal-footer">'
+      +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+      +'<button class="btn btn-primary" data-ri="'+ri+'" data-si="'+si+'" onclick="saveIEP(+this.dataset.ri,+this.dataset.si)">💾 บันทึก</button>'
+      +'</div>');
+  }
+}
+window.addIEP=addIEP;
+function saveIEP(ri,si){
+  ri=+ri;si=+si;var type='iep';
+  const nameVal=(document.getElementById('iep_n')||{}).value||'';
+  const fid='ieppdf_'+ri+'_'+si;
+  const pdfData=document.getElementById('pdfdata_'+fid);
+  const pdfName=document.getElementById('pdfname_'+fid);
+  if(!nameVal.trim()){alert('กรุณากรอกชื่อแผน/ปีการศึกษา');return;}
+  if(!pdfData||!pdfData.value){alert('กรุณาอัปโหลดไฟล์ PDF ก่อน');return;}
+  const f={name:nameVal.trim(),fileName:pdfName?pdfName.value:'',dataUrl:pdfData.value,url:'',date:new Date().toLocaleDateString('th-TH')};
+  if(!db.rooms[ri].students[si][type])db.rooms[ri].students[si][type]=[];
+  db.rooms[ri].students[si][type].push(f);
+  saveLocal();closeModal();toast('บันทึกสำเร็จ ✓');pageIEP(ri);}
+function saveIIPMulti(ri,si){
+  ri=+ri;si=+si;
+  const key=ri+'_'+si;const q=_iipQueue[key]||[];
+  if(!q.length){alert('กรุณาอัปโหลดไฟล์ PDF อย่างน้อย 1 ไฟล์');return;}
+  if(!db.rooms[ri].students[si].iip)db.rooms[ri].students[si].iip=[];
+  const dt=new Date().toLocaleDateString('th-TH');
+  q.forEach(f=>{db.rooms[ri].students[si].iip.push({name:f.fileName,fileName:f.fileName,dataUrl:f.dataUrl,url:'',date:dt});});
+  _iipQueue[key]=[];saveLocal();closeModal();toast('บันทึก '+q.length+' ไฟล์ IIP สำเร็จ ✓');pageIEP(ri);
+}
+window.saveIIPMulti=saveIIPMulti;
+window.saveIEP=saveIEP;
+// imgCache
+const _imgCache={};
+
+
+
+
+// ──────────── UTILS ────────────
+document.getElementById('modalBg').addEventListener('click',e=>{if(e.target.id==='modalBg')closeModal();});
+
+// ──────────── LOGO ────────────
+// ── IMAGE UPLOAD HELPERS ───────────────────────────
+// แปลงไฟล์รูปเป็น base64 dataURL
+
+// สร้าง upload zone HTML
+
+async function handleImgFile(e, fieldId){
+  const file = e.target.files[0];
+  if(!file) return;
+  await processImgFile(file, fieldId);
+}
+window.handleImgFile=handleImgFile;
+
+async function handleImgDrop(e, fieldId){
+  e.preventDefault();
+  document.getElementById('zone_'+fieldId).classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if(!file||!file.type.startsWith('image/')) return;
+  await processImgFile(file, fieldId);
+}
+window.handleImgDrop=handleImgDrop;
+
+async function processImgFile(file, fieldId){
+  const prog = document.getElementById('prog_'+fieldId);
+  const fill = document.getElementById('progfill_'+fieldId);
+  if(prog){ prog.style.display='block'; fill.style.width='30%'; }
+  try{
+    const dataUrl = await fileToDataURL(file);
+    if(fill) fill.style.width='100%';
+    // บันทึกค่าลง hidden input
+    document.getElementById(fieldId).value = dataUrl;
+    // แสดง preview
+    const inner = document.getElementById('zone_inner_'+fieldId);
+    if(inner){
+      inner.innerHTML=`<div class="img-preview-wrap">
+        <img src="${dataUrl}" id="preview_${fieldId}" style="max-width:100%;max-height:180px;border-radius:8px;border:1px solid var(--border);display:block"/>
+        <button class="remove-img" onclick="event.stopPropagation();clearImg('${fieldId}')" title="ลบรูป">✕</button>
+      </div>`;
+    }
+    setTimeout(()=>{ if(prog) prog.style.display='none'; }, 500);
+  }catch(err){
+    if(prog) prog.style.display='none';
+    toast(err.message,'err');
+  }
+}
+
+
+// ── PDF UPLOAD HELPERS ─────────────────────────────
+
+async function handlePDFFile(e, fieldId){
+  const file = e.target.files[0];
+  if(!file) return;
+  await processPDFFile(file, fieldId);
+}
+window.handlePDFFile=handlePDFFile;
+
+async function handlePDFDrop(e, fieldId){
+  e.preventDefault();
+  const zone=document.getElementById('pdfzone_inner_'+fieldId);
+  if(zone)zone.classList.remove('dragover');
+  const file=e.dataTransfer.files[0];
+  if(!file||file.type!=='application/pdf'){toast('กรุณาเลือกไฟล์ PDF เท่านั้น','err');return;}
+  await processPDFFile(file, fieldId);
+}
+window.handlePDFDrop=handlePDFDrop;
+
+async function processPDFFile(file, fieldId){
+  if(file.size > 10*1024*1024){toast('ไฟล์ใหญ่เกิน 10MB','err');return;}
+  if(file.type !== 'application/pdf' && !file.name.endsWith('.pdf')){toast('กรุณาเลือกไฟล์ PDF เท่านั้น','err');return;}
+  try{
+    const dataUrl = await new Promise((resolve,reject)=>{
+      const reader=new FileReader();
+      reader.onload=e=>resolve(e.target.result);
+      reader.onerror=()=>reject(new Error('อ่านไฟล์ไม่ได้'));
+      reader.readAsDataURL(file);
+    });
+    // บันทึกลง hidden inputs
+    document.getElementById('pdfdata_'+fieldId).value = dataUrl;
+    document.getElementById('pdfname_'+fieldId).value = file.name;
+    // แสดง ready state
+    const zone = document.getElementById('pdfzone_'+fieldId);
+    if(zone){
+      const sizeKB = (file.size/1024).toFixed(0);
+      const sizeTxt = file.size>1024*1024 ? (file.size/1024/1024).toFixed(1)+' MB' : sizeKB+' KB';
+      zone.innerHTML=`
+        <div class="pdf-ready">
+          <div class="pdf-icon-big">📕</div>
+          <div class="pdf-info">
+            <div class="pdf-name">${file.name}</div>
+            <div class="pdf-size">${sizeTxt}</div>
+          </div>
+          <button class="btn btn-outline btn-sm" onclick="event.stopPropagation();clearPDF('${fieldId}')">🗑️ ลบ</button>
+          <button class="btn btn-danger btn-sm" onclick="event.stopPropagation();previewPDF('${fieldId}')">👁️ ดู</button>
+        </div>
+        <input type="file" id="pdffile_${fieldId}" accept=".pdf,application/pdf" style="display:none" onchange="handlePDFFile(event,'${fieldId}')"/>
+        <input type="hidden" id="pdfdata_${fieldId}" value="${dataUrl}"/>
+        <input type="hidden" id="pdfname_${fieldId}" value="${file.name}"/>`;
+    }
+    toast('โหลดไฟล์ PDF สำเร็จ ✓');
+  }catch(err){
+    toast(err.message,'err');
+  }
+}
+
+
+
+// ── ACADEMIC YEAR HELPERS ──────────────────────────
+
+
+// ──────────── AUTH ────────────
+
+// ──────────── SIDEBAR ────────────
+
+
+// ──────────── DASHBOARD ────────────
+
+// ──────────── 1. TEACHERS ────────────
+
+
+// ──────────── 2. STUDENTS ────────────
+
+
+// ──────────── 3. ATTENDANCE ────────────
+
+// ──────────── 4. SERVICES ────────────
+
+// ──────────── 5. HR MONTHLY ────────────
+
+// ──────────── 6. TRAINING ────────────
+
+// ──────────── 7. COMMUNITY ────────────
+
+// ──────────── 8. NETWORK ────────────
+
+// ──────────── 9. PHOTOS ────────────
+
+// ──────────── 10. IEP/IIP ────────────
+// ── SCHEDULE PAGE ─────────────────────────────────
+
+
+
+
+
+window.saveIEP=saveIEP;
+
+function cacheImg(k,v){_ic[k]=v;}
+window.cacheImg=cacheImg;
+
+function viewPDF(src,fname){
+  if(!src){toast('ไม่พบไฟล์','err');return;}
+  const isData=src.startsWith('data:');
+  openModal(`<h3>📄 ดูไฟล์ — ${fname||'แผนการสอน'}</h3>
+    <div style="height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">
+      <iframe src="${src}" style="width:100%;height:100%;border:none"></iframe>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-outline" onclick="closeModal()">ปิด</button>
+      ${!isData?`<a href="${src}" target="_blank" class="btn btn-primary">เปิดแท็บใหม่</a>`:''}
+    </div>`);}
+window.viewPDF=viewPDF;
+function delIEP(ri,si,type,fi){if(confirm('ยืนยัน?')){db.rooms[ri].students[si][type].splice(fi,1);saveLocal();toast('ลบแล้ว');pageIEP(ri);}}
+window.delIEP=delIEP;
+
+// ──────────── 11. REPORT ────────────
+function pageReport(){
+  repRoom=getRooms()[0];const now=new Date();
+  const ayMonths=getActiveYearMonths();
+  const curKey=`${now.getFullYear()}-${now.getMonth()+1}`;
+  const defMonth=ayMonths.find(m=>`${m.year}-${m.month}`===curKey)||ayMonths[ayMonths.length-1]||{month:now.getMonth()+1,year:now.getFullYear()};
+  repMonth=defMonth.month; repYear=defMonth.year+543;
+  let h=`<div class="page-header"><h2>🖨️ รายงานประจำเดือน</h2><p>${getActiveYearLabel()}</p></div>${roomTabs(repRoom,'selRepRoom')}`;
+  h+=`<div class="card"><div class="flex">
+    <div class="form-group" style="margin:0"><label>เลือกเดือน (${getActiveYearLabel()})</label>
+    <select id="rep_m" onchange="const sel=this.value.split('-');repMonth=+sel[1];repYear=+sel[0]+543;buildReport()">
+    ${ayMonths.length?ayMonths.map(m=>{const v=`${m.year}-${m.month}`;const sel=m.month===defMonth.month&&m.year===defMonth.year?' selected':'';return`<option value="${v}"${sel}>${m.label}</option>`;}).join(''):`<option value="${now.getFullYear()+'-'+(now.getMonth()+1)}">${MONTHS[now.getMonth()]} ${now.getFullYear()+543}</option>`}
+    </select></div>
+    <button class="btn btn-primary" onclick="printReport()">🖨️ พิมพ์รายงาน</button>
+  </div></div><div id="repPreview"></div>`;
+  render(h);buildReport();}
+window.selRepRoom=function(ri){
+  repRoom=+ri;
+  document.querySelectorAll('#repRoomTabs .room-tab').forEach(function(el){
+    el.classList.toggle('active',+el.dataset.ri===repRoom);
+  });
+  buildReport();
+};
+
+function buildReport(){
+  const ri=repRoom;const r=db.rooms[ri];const mn=MONTHS[repMonth-1];const yr=repYear;
+  const key=`${yr-543}-${repMonth}`;const att=r.attendance[key]||{};
+  let pres=0,abs=0,lv=0,wday=0;r.students.forEach(s=>{const d=att[s.name]||{};Object.values(d).forEach(v=>{if(v==='P')pres++;else if(v==='A')abs++;else if(v==='L')lv++;else if(v==='W')wday++;});});
+  const tot=pres+abs+lv;const pct=tot>0?Math.round(pres/tot*100):0;
+  const dp=`${yr-543}-${String(repMonth).padStart(2,'0')}`;
+  const svcs=(r.services||[]).filter(s=>s.date&&s.date.startsWith(dp));
+  const coms=(r.community||[]).filter(c=>c.date&&c.date.startsWith(dp));
+  const trns=(r.training||[]).filter(t=>t.date&&t.date.startsWith(dp));
+  const hrs=(r.hrMonthly||[]).filter(h=>h.period&&h.period.includes(mn));
+  const logoHtml=settings.logoDataUrl
+    ?`<div style="text-align:center;margin-bottom:12px"><img src="${settings.logoDataUrl}" style="height:72px;width:auto;object-fit:contain" alt="โลโก้"/></div>`
+    :`<div style="text-align:center;font-size:40px;margin-bottom:8px">🏫</div>`;
+  const tchSign=r.teachers.length?r.teachers[0].name:'................................................';
+
+  let h=`<div class="rep-preview" id="repContent">${logoHtml}
+  <h1>รายงานสรุปผลการดำเนินงานประจำเดือน ${mn} ${yr}</h1>
+  <h2>${ROOMS[ri]}</h2>
+  <p style="text-align:center;font-size:12px;font-weight:600;color:#1a5fa8;margin-bottom:2px">${getActiveYearLabel()}</p>
+  <p style="text-align:center;font-size:12px;color:#666">ฝ่ายบริหารวิชาการ ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา</p>
+
+  <div class="rep-section"><h3>1. ข้อมูลบุคลากรประจำห้องเรียน</h3>
+  <table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วุฒิการศึกษา</th><th>วิชาเอก</th><th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th></tr></thead><tbody>`;
+  r.teachers.forEach((t,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(t.name)}</td><td>${esc(t.edu)}</td><td>${esc(t.major)}</td><td>${esc(t.position)}</td><td>${esc(t.org)}</td><td>${esc(t.phone)}</td></tr>`);
+  if(!r.teachers.length)h+=`<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>`;
+  h+=`</tbody></table></div>
+
+  <div class="rep-section"><h3>2. ข้อมูลผู้เรียน</h3>
+  <table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ประเภทความพิการ</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>`;
+  r.students.forEach((s,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(s.name)}</td><td>${esc(s.dob)}</td><td>${calcAge(s.dob)}</td><td>${esc(s.type)}</td><td>${esc(s.guardian)}</td><td>${esc(s.gphone)}</td></tr>`);
+  if(!r.students.length)h+=`<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>`;
+  h+=`</tbody></table></div>
+
+  <div class="rep-section"><h3>3. สถิติการเข้าเรียน ${mn} ${yr}</h3>
+  <table class="rep-table" style="margin-bottom:10px"><thead><tr>
+    <th>จำนวนนักเรียน</th><th>มาเรียน (รวม)</th><th>ขาดเรียน (รวม)</th><th>ลา (รวม)</th><th>วันหยุด (รวม)</th><th>อัตราการมาเรียน</th>
+  </tr></thead><tbody><tr>
+    <td style="text-align:center">${r.students.length} คน</td>
+    <td style="text-align:center;color:#2d7d3a;font-weight:700">${pres} ครั้ง</td>
+    <td style="text-align:center;color:#b71c1c;font-weight:700">${abs} ครั้ง</td>
+    <td style="text-align:center;color:#e65100;font-weight:700">${lv} ครั้ง</td>
+    <td style="text-align:center;color:#555;font-weight:700">${wday} ครั้ง</td>
+    <td style="text-align:center;font-weight:700">${pct}%</td>
+  </tr></tbody></table>
+  <p style="font-size:12px;font-weight:600;color:#1a5fa8;margin-bottom:6px">รายละเอียดการเข้าเรียนรายบุคคล</p>
+  <table class="rep-table"><thead><tr>
+    <th>ลำดับ</th><th>ชื่อ-สกุล</th><th>ประเภทความพิการ</th>
+    <th style="color:#2d7d3a">มาเรียน</th><th style="color:#b71c1c">ขาดเรียน</th>
+    <th style="color:#e65100">ลา</th><th style="color:#555">วันหยุด</th>
+    <th>รวมวันเรียน</th><th>อัตรา (%)</th>
+  </tr></thead><tbody>
+  ${(function(){
+    var rows='';
+    r.students.forEach(function(s,si){
+      var sd=att[s.name]||{};
+      var sp=0,sa=0,sl=0,sw=0;
+      Object.values(sd).forEach(function(v){
+        if(v==='P')sp++;else if(v==='A')sa++;else if(v==='L')sl++;else if(v==='W')sw++;
+      });
+      var stot=sp+sa+sl;
+      var spct=stot>0?Math.round(sp/stot*100):0;
+      rows+='<tr>'
+        +'<td style="text-align:center">'+(si+1)+'</td>'
+        +'<td>'+esc(s.name)+'</td>'
+        +'<td>'+esc(s.type)+'</td>'
+        +'<td style="text-align:center;color:#2d7d3a;font-weight:600">'+sp+'</td>'
+        +'<td style="text-align:center;color:#b71c1c;font-weight:600">'+sa+'</td>'
+        +'<td style="text-align:center;color:#e65100;font-weight:600">'+sl+'</td>'
+        +'<td style="text-align:center;color:#555;font-weight:600">'+sw+'</td>'
+        +'<td style="text-align:center">'+stot+'</td>'
+        +'<td style="text-align:center;font-weight:700">'+spct+'%</td>'
+        +'</tr>';
+    });
+    if(!r.students.length)rows='<tr><td colspan="9" style="text-align:center;color:#999">ไม่มีข้อมูลนักเรียน</td></tr>';
+    return rows;
+  })()}
+  </tbody></table>
+
+  <div class="rep-section"><h3>4. บันทึกการให้บริการทางวิชาการ (${svcs.length} ครั้ง)</h3>`;
+  if(svcs.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียดการให้บริการ</th><th>ผู้ให้บริการ</th></tr></thead><tbody>`;svcs.forEach(sv=>h+=`<tr><td>${esc(sv.date)}</td><td>${esc(sv.student)}</td><td>${esc(sv.detail)}</td><td>${esc(sv.provider)}</td></tr>`);h+=`</tbody></table>`;}
+  else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
+
+  h+=`</div><div class="rep-section"><h3>5. สรุปการปฏิบัติงานบุคลากร</h3>`;
+  if(hrs.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ลากิจ</th><th>ลาป่วย</th><th>ลาพักผ่อน</th><th>ลาอื่นๆ</th><th>มาสาย</th><th>ออกนอกสถานที่</th></tr></thead><tbody>`;hrs.forEach(it=>h+=`<tr><td>${esc(it.person)}</td><td style="text-align:center">${it.leaveB||0} วัน</td><td style="text-align:center">${it.leaveSick||0} วัน</td><td style="text-align:center">${it.leaveRest||0} วัน</td><td style="text-align:center">${it.leaveOther||0} วัน${it.leaveOtherNote?' ('+esc(it.leaveOtherNote)+')':''}</td><td style="text-align:center">${it.late||0} ครั้ง</td><td style="text-align:center">${it.outSite||0} ครั้ง</td></tr>`);h+=`</tbody></table>`;}
+  else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
+
+  h+=`</div><div class="rep-section"><h3>6. การสัมมนา/ฝึกอบรม/ศึกษาดูงาน (${trns.length} รายการ)</h3>`;
+  if(trns.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ชื่อหลักสูตร/อบรม</th><th>หน่วยงานที่จัด</th><th>วันที่</th></tr></thead><tbody>`;trns.forEach(t=>h+=`<tr><td>${esc(t.person)}</td><td>${esc(t.course)}</td><td>${esc(t.org)}</td><td>${esc(t.date)}</td></tr>`);h+=`</tbody></table>`;}
+  else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
+
+  h+=`</div><div class="rep-section"><h3>7. งานสัมพันธ์ชุมชน/การเข้าร่วมกิจกรรมวันสำคัญ (${coms.length} กิจกรรม)</h3>`;
+  if(coms.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>รายการ/กิจกรรม</th><th>หน่วยงาน/สถานที่</th></tr></thead><tbody>`;coms.forEach(c=>h+=`<tr><td>${esc(c.date)}</td><td>${esc(c.activity)}</td><td>${esc(c.place)}</td></tr>`);h+=`</tbody></table>`;}
+  else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
+
+  h+=`</div><div class="rep-section"><h3>8. ภาคีเครือข่ายที่ทำงานร่วมกัน</h3>`;
+  if((r.network||[]).length){h+=`<table class="rep-table"><thead><tr><th>หน่วยงาน</th><th>ชื่อผู้ประสานงาน</th><th>ตำแหน่ง</th><th>เบอร์โทร</th></tr></thead><tbody>`;r.network.forEach(n=>h+=`<tr><td>${esc(n.org)}</td><td>${esc(n.contact)}</td><td>${esc(n.position)}</td><td>${esc(n.phone)}</td></tr>`);h+=`</tbody></table>`;}
+  else h+=`<p style="font-size:12px;color:#999">ไม่มีข้อมูลภาคีเครือข่าย</p>`;
+
+  h+=`</div>
+  <div class="rep-section"><h3>9. ประมวลภาพกิจกรรมประจำเดือน</h3>`;
+  const repPhotos=(r.photos||[]).filter(p=>p.month&&p.month===mn).map(p=>({...p,imgUrl:p.imgUrl||p.dataUrl||''}));
+  if(repPhotos.length){
+    h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">`;
+    repPhotos.forEach(p=>{
+      if(p.imgUrl){h+=`<div style="text-align:center"><img src="${esc(p.imgUrl)}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.1)" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<div style=\"height:80px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px\">โหลดรูปไม่ได้</div>'" alt="ภาพกิจกรรม"/><div style="font-size:10px;color:#666;margin-top:3px">${esc(p.caption)}</div></div>`;}
+      else{h+=`<div style="text-align:center;background:#f5f5f5;border-radius:4px;padding:10px;font-size:11px;color:#999">📷 ${esc(p.caption)}</div>`;}
+    });
+    h+=`</div>`;
+  }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน ${mn} (กรุณาเพิ่มภาพในหน้าประมวลภาพการสอน)</p>`;}
+
+  h+=`</div><div class="rep-section"><h3>10. ภาพหลักฐานการสัมมนา/อบรม</h3>`;
+  const repTrImg=trns.filter(t=>t.imgUrl||t.dataUrl).map(t=>({...t,imgUrl:t.imgUrl||t.dataUrl||''}));
+  if(repTrImg.length){
+    h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">`;
+    repTrImg.forEach(t=>{h+=`<div style="text-align:center"><img src="${esc(t.imgUrl)}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.1)" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<div style=\"height:80px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px\">โหลดรูปไม่ได้</div>'" alt="หลักฐาน"/><div style="font-size:10px;color:#666;margin-top:3px">${esc(t.course)}</div></div>`;});
+    h+=`</div>`;
+  }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานการอบรมในเดือนนี้</p>`;}
+
+  h+=`</div><div class="rep-section"><h3>11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</h3>`;
+  const repComImg=coms.filter(c=>c.imgUrl||c.dataUrl).map(c=>({...c,imgUrl:c.imgUrl||c.dataUrl||''}));
+  if(repComImg.length){
+    h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">`;
+    repComImg.forEach(c=>{h+=`<div style="text-align:center"><img src="${esc(c.imgUrl)}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.1)" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<div style=\"height:80px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px\">โหลดรูปไม่ได้</div>'" alt="หลักฐาน"/><div style="font-size:10px;color:#666;margin-top:3px">${esc(c.activity)}</div></div>`;});
+    h+=`</div>`;
+  }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
+
+  h+=`</div>
+  <div style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px">
+    <div style="text-align:center">
+      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
+        ลงชื่อ .....................................................<br>
+        ( ${esc(tchSign)} )<br>
+        ครูผู้รับผิดชอบ${esc(ROOMS[ri])}<br>
+        วันที่ ........../........../..........
+      </div>
+    </div>
+    <div style="text-align:center">
+      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
+        ลงชื่อ .....................................................<br>
+        (........................................)<br>
+        หัวหน้าฝ่ายบริหารวิชาการ<br>
+        วันที่ ........../........../..........
+      </div>
+    </div>
+    <div style="text-align:center">
+      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
+        ลงชื่อ .....................................................<br>
+        (........................................)<br>
+        รองผู้อำนวยการฝ่ายบริหารวิชาการ<br>
+        วันที่ ........../........../..........
+      </div>
+    </div>
+    <div style="text-align:center">
+      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
+        ลงชื่อ .....................................................<br>
+        (........................................)<br>
+        ผู้อำนวยการศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา<br>
+        วันที่ ........../........../..........
+      </div>
+    </div>
+  </div>
+  </div>`;
+  const el=document.getElementById('repPreview');if(el)el.innerHTML=h;
+}
+window.buildReport=buildReport;
+
+function printReport(){
+  const c=document.getElementById('repContent');
+  if(!c){alert('กรุณารอโหลดรายงานก่อน');return;}
+  // สร้าง style สำหรับพิมพ์
+  const ayLabel=getActiveYearLabel();
+  const printStyle=`
+    <style>
+      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
+      *{box-sizing:border-box;margin:0;padding:0}
+      body{font-family:'Sarabun',sans-serif;font-size:12px;color:#000;line-height:1.8;background:#fff}
+      h1{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px}
+      h2{font-size:13px;font-weight:600;text-align:center;color:#333;margin-bottom:4px}
+      h3{font-size:12px;font-weight:700;border-bottom:1.5px solid #999;padding-bottom:3px;margin:14px 0 7px;color:#1a5fa8}
+      table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px}
+      th,td{border:1px solid #bbb;padding:5px 7px}
+      th{background:#f0f0f0;font-weight:700;text-align:center}
+      .rep-section{margin-top:14px}
+      img{max-width:100%;height:auto;border-radius:4px}
+      .photo-grid-print{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
+      .photo-cell{text-align:center;break-inside:avoid}
+      .photo-cell img{width:100%;max-height:130px;object-fit:cover;border:1px solid #ccc;border-radius:4px}
+      .photo-cell div{font-size:10px;color:#555;margin-top:3px}
+      p{font-size:11px;color:#777;margin:4px 0}
+      @page{margin:15mm}
+      @media print{
+        body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+        .rep-section{page-break-inside:avoid}
+        table{page-break-inside:auto}
+        tr{page-break-inside:avoid}
+      }
+    </style>`;
+
+  // clone innerHTML แล้วแทนที่ class photo grid
+  let html = c.innerHTML;
+  // แทน grid style ให้เข้ากับการพิมพ์
+  html = html.replace(/display:grid;grid-template-columns:repeat\(3,1fr\)/g, 'display:grid;grid-template-columns:repeat(3,1fr)');
+
+  const fullHtml=`<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8"/>
+<title>รายงานประจำเดือน</title>
+${printStyle}
+</head>
+<body>${html}</body>
+</html>`;
+
+  // ใช้ Blob + iframe เพื่อหลีกเลี่ยงการบล็อก popup
+  const blob = new Blob([fullHtml], {type:'text/html;charset=utf-8'});
+  const blobUrl = URL.createObjectURL(blob);
+
+  // สร้าง iframe ซ่อน แล้วสั่ง print
+  let iframe = document.getElementById('printFrame');
+  if(!iframe){
+    iframe = document.createElement('iframe');
+    iframe.id = 'printFrame';
+    iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;opacity:0';
+    document.body.appendChild(iframe);
+  }
+  iframe.src = blobUrl;
+  iframe.onload = function(){
+    try{
+      iframe.contentWindow.focus();
+      iframe.contentWindow.print();
+    }catch(e){
+      // fallback: เปิด tab ใหม่
+      window.open(blobUrl,'_blank');
+    }
+    setTimeout(()=>URL.revokeObjectURL(blobUrl), 10000);
+  };
+}
+window.printReport=printReport;
+
+// ──────────── 12. STATS ────────────
+function pageStats(){
+  _curPageFn=function(){pageStats();};
+  var mn=viewMonth,yr=viewYear,key=yr+'-'+mn,dp=yr+'-'+String(mn).padStart(2,'0');
+  var h='<div class="page-header"><h2>สถิติประจำเดือน</h2><p>'+MONTHS[mn-1]+' '+(yr+543)+'</p></div>';
+  h+=monthYearPickerHtml();
+  h+='<div class="card"><h3>จำนวนนักเรียน</h3><table><thead><tr><th>ห้องเรียน</th><th>จำนวน</th></tr></thead><tbody>';
+  getRooms().forEach(function(i){h+='<tr><td>'+RS[i]+'</td><td style="text-align:center;font-weight:700">'+db.rooms[i].students.length+' คน</td></tr>';});
+  h+='</tbody></table></div>';
+  h+='<div class="card"><h3>สถิติการเข้าเรียน '+MONTHS[mn-1]+' '+(yr+543)+'</h3><table><thead><tr><th>ห้องเรียน</th><th>มา</th><th>ขาด</th><th>ลา</th><th>หยุด</th><th>อัตรา</th></tr></thead><tbody>';
+  getRooms().forEach(function(i){
+    var r=db.rooms[i],att=r.attendance[key]||{},p=0,a=0,l=0,w=0;
+    r.students.forEach(function(s){Object.values(att[s.name]||{}).forEach(function(v){if(v==='P')p++;else if(v==='A')a++;else if(v==='L')l++;else if(v==='W')w++;});});
+    var tot=p+a+l,pct=tot>0?Math.round(p/tot*100):0;
+    h+='<tr><td>'+RS[i]+'</td><td style="text-align:center;color:var(--success);font-weight:700">'+p+'</td><td style="text-align:center;color:var(--danger);font-weight:700">'+a+'</td><td style="text-align:center;color:var(--warn);font-weight:700">'+l+'</td><td style="text-align:center;color:#555;font-weight:700">'+w+'</td><td style="text-align:center;font-weight:700">'+pct+'%</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  h+='<div class="card"><h3>สถิติการรับบริการ</h3><table><thead><tr><th>ห้องเรียน</th><th>จำนวนครั้ง</th><th>จำนวนนักเรียน</th></tr></thead><tbody>';
+  getRooms().forEach(function(i){
+    var svcs=(db.rooms[i].services||[]).filter(function(s){return s.date&&s.date.startsWith(dp);});
+    var uniq=new Set(svcs.map(function(s){return s.student;}));
+    h+='<tr><td>'+RS[i]+'</td><td style="text-align:center;font-weight:700">'+svcs.length+'</td><td style="text-align:center;font-weight:700">'+uniq.size+'</td></tr>';
+  });
+  h+='</tbody></table></div>';
+  render(h);
+}
+
+function pageAcademicYear(){
+  setNav('academicYear');
+  const ay=settings.academicYears;
+  let h=`<div class="page-header"><h2>📆 จัดการปีการศึกษา</h2><p>กำหนดช่วงวันเดือนปีของแต่ละปีการศึกษา ระบบจะกรองข้อมูลตามปีที่เปิดใช้งาน</p></div>`;
+
+  // Active year banner
+  const act=getActiveYear();
+  if(act){h+=`<div class="card" style="border-left:4px solid var(--success);background:var(--success-light)"><div class="flex"><div><div style="font-weight:700;font-size:14px">📗 ${esc(act.name)}</div><div class="text-muted">${act.startDate} ถึง ${act.endDate} <span class="badge badge-green">กำลังใช้งาน</span></div></div></div></div>`;}
+
+  h+=`<div class="card"><h3>รายการปีการศึกษาทั้งหมด</h3>
+  <div class="table-wrap"><table>
+  <thead><tr><th>ลำดับ</th><th>ชื่อปีการศึกษา</th><th>วันเริ่มต้น</th><th>วันสิ้นสุด</th><th>สถานะ</th><th>จัดการ</th></tr></thead><tbody>`;
+  ay.forEach((y,idx)=>{
+    h+=`<tr>
+      <td>${idx+1}</td>
+      <td><b>${esc(y.name)}</b></td>
+      <td>${y.startDate}</td>
+      <td>${y.endDate}</td>
+      <td>${y.id===settings.activeYearId?'<span class="badge badge-green">✓ ใช้งานอยู่</span>':'<span class="badge badge-gray">ไม่ได้ใช้งาน</span>'}</td>
+      <td style="white-space:nowrap">
+        ${y.id!==settings.activeYearId?`<button class="btn btn-success btn-sm" onclick="setActiveYear(${y.id})">✓ เลือกใช้</button> `:''}
+        <button class="btn btn-outline btn-sm" onclick="editAcYear(${idx})">✏️ แก้ไข</button>
+        ${ay.length>1?`<button class="btn btn-danger btn-sm" onclick="delAcYear(${idx})">🗑️</button>`:''}
+      </td>
+    </tr>`;
+  });
+  h+=`</tbody></table></div>
+  <div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addAcYear()">➕ เพิ่มปีการศึกษาใหม่</button></div></div>
+
+  <div class="card" style="border-left:4px solid var(--primary)"><h3>💡 วิธีใช้งาน</h3>
+  <ul style="font-size:13px;line-height:2;padding-left:18px">
+    <li>กด <b>เพิ่มปีการศึกษาใหม่</b> ทุกต้นปีการศึกษา (เช่น พฤษภาคม ของทุกปี)</li>
+    <li>กด <b>เลือกใช้</b> เพื่อสลับไปยังปีการศึกษาที่ต้องการ</li>
+    <li>ข้อมูลเดิมของปีก่อนหน้า<b>ไม่หาย</b> สามารถสลับกลับมาดูได้เสมอ</li>
+    <li>รายงานประจำเดือนจะกรองข้อมูลเฉพาะ<b>ปีการศึกษาที่กำลังใช้งาน</b></li>
+  </ul></div>`;
+  render(h);
+}
+window.pageAcademicYear=pageAcademicYear;
+
+function acYearForm(y){
+  return`<div class="form-group"><label>ชื่อปีการศึกษา *</label><input id="ay_name" value="${esc(y?y.name:'ปีการศึกษา '+(new Date().getFullYear()+543))}" placeholder="เช่น ปีการศึกษา 2568"/></div>
+  <div class="form-row">
+    <div class="form-group"><label>วันเริ่มต้น</label><input type="date" id="ay_start" value="${y?y.startDate:''}"/></div>
+    <div class="form-group"><label>วันสิ้นสุด</label><input type="date" id="ay_end" value="${y?y.endDate:''}"/></div>
+  </div>
+  <p class="text-muted">💡 ปกติภาคเรียนที่ 1 เริ่ม พ.ค. และภาคเรียนที่ 2 สิ้นสุด มี.ค. ของปีถัดไป</p>`;}
+
+function addAcYear(){
+  openModal(`<h3>➕ เพิ่มปีการศึกษาใหม่</h3>${acYearForm(null)}
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>
+  <button class="btn btn-primary" onclick="saveAcYear(-1)">💾 บันทึก</button></div>`);
+}
+window.addAcYear=addAcYear;
+
+function editAcYear(idx){
+  openModal(`<h3>✏️ แก้ไขปีการศึกษา</h3>${acYearForm(settings.academicYears[idx])}
+  <div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>
+  <button class="btn btn-primary" onclick="saveAcYear(${idx})">💾 บันทึก</button></div>`);
+}
+window.editAcYear=editAcYear;
+
+function saveAcYear(idx){
+  const name=document.getElementById('ay_name').value.trim();
+  const start=document.getElementById('ay_start').value;
+  const end=document.getElementById('ay_end').value;
+  if(!name){alert('กรุณากรอกชื่อปีการศึกษา');return;}
+  if(start&&end&&start>end){alert('วันเริ่มต้นต้องก่อนวันสิ้นสุด');return;}
+  if(idx===-1){
+    const newId=Math.max(...settings.academicYears.map(y=>y.id))+1;
+    settings.academicYears.push({id:newId,name,startDate:start,endDate:end,active:false});
+  }else{
+    settings.academicYears[idx]={...settings.academicYears[idx],name,startDate:start,endDate:end};
+  }
+  saveSettings();closeModal();toast('บันทึกสำเร็จ ✓');pageAcademicYear();
+}
+window.saveAcYear=saveAcYear;
+
+function setActiveYear(id){
+  settings.activeYearId=id;
+  saveSettings();
+  document.getElementById('topbarYear').textContent=getActiveYearLabel();
+  toast('เปลี่ยนปีการศึกษาสำเร็จ ✓');
+  pageAcademicYear();
+}
+window.setActiveYear=setActiveYear;
+
+function delAcYear(idx){
+  if(settings.academicYears[idx].id===settings.activeYearId){alert('ไม่สามารถลบปีการศึกษาที่กำลังใช้งานอยู่ได้');return;}
+  if(confirm('ยืนยันการลบปีการศึกษานี้? ข้อมูลที่บันทึกไว้จะยังคงอยู่')){
+    settings.academicYears.splice(idx,1);
+    saveSettings();toast('ลบแล้ว');pageAcademicYear();
+  }
+}
+window.delAcYear=delAcYear;
+
+function pageSettings(){
+  const hasUrl=!!settings.scriptUrl;
+  let h=`<div class="page-header"><h2>⚙️ ตั้งค่าระบบ</h2></div>
+  <div class="card"><h3>🖼️ โลโก้ระบบ</h3>
+  <div class="flex">
+    <div>${settings.logoDataUrl?`<img src="${settings.logoDataUrl}" style="height:72px;border-radius:8px;border:1px solid var(--border);padding:4px" alt="โลโก้"/>`:`<div style="width:72px;height:72px;background:var(--bg);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:32px">🏫</div>`}</div>
+    <div style="flex:1">
+      <div class="logo-upload-area" onclick="document.getElementById('logoInput').click()">📤 คลิกเพื่ออัปโหลดโลโก้ใหม่<br><span class="text-muted">PNG, JPG, SVG — ไม่เกิน 500KB</span></div>
+      <input type="file" id="logoInput" accept="image/*" style="display:none" onchange="handleLogo(event)"/>
+      ${settings.logoDataUrl?`<button class="btn btn-outline btn-sm mt-1" onclick="removeLogo()">🗑️ ลบโลโก้ (ใช้ไอคอนเริ่มต้น)</button>`:''}
+    </div>
+  </div></div>
+  <div class="card"><h3>🔗 เชื่อมต่อ Google Sheets <span class="badge ${hasUrl?'badge-green':'badge-red'}">${hasUrl?'✓ เชื่อมต่อแล้ว':'ยังไม่ได้ตั้งค่า'}</span></h3>
+  <div class="form-group"><label>Google Apps Script URL</label><input id="scriptIn" value="${esc(settings.scriptUrl)}" placeholder="https://script.google.com/macros/s/XXXXXX/exec"/></div>
+  <div class="flex">
+    <button class="btn btn-success" onclick="saveUrl()">💾 บันทึก URL</button>
+    <button class="btn btn-primary" onclick="pushAllToSheets()">🔄 ซิงค์ข้อมูลทั้งหมด</button>
+    <button class="btn btn-outline" onclick="showPage('gsSetup')">📖 วิธีตั้งค่า Google Sheets</button>
+  </div></div>
+  <div class="card"><h3>💾 สำรองข้อมูล</h3>
+  <div class="flex">
+    <button class="btn btn-primary" onclick="exportJSON()">📤 ส่งออก JSON</button>
+    <button class="btn btn-outline" onclick="importJSON()">📥 นำเข้า JSON</button>
+  </div></div>`;
+  render(h);}
+function handleLogo(e){const f=e.target.files[0];if(!f)return;if(f.size>500000){toast('ไฟล์ใหญ่เกิน 500KB','err');return;}const r=new FileReader();r.onload=ev=>{settings.logoDataUrl=ev.target.result;saveSettings();applyLogo();toast('เปลี่ยนโลโก้สำเร็จ ✓');pageSettings();};r.readAsDataURL(f);}
+window.handleLogo=handleLogo;
+function removeLogo(){settings.logoDataUrl='';saveSettings();applyLogo();toast('ลบโลโก้แล้ว');pageSettings();}
+window.removeLogo=removeLogo;
+function saveUrl(){settings.scriptUrl=document.getElementById('scriptIn').value.trim();saveSettings();toast('บันทึก URL สำเร็จ ✓');pageSettings();}
+window.saveUrl=saveUrl;
+
+function showGsSetup(){
+  const code=`const SHEET_ID = 'YOUR_SPREADSHEET_ID';
+
+function doPost(e) {
+  try {
+    const data = JSON.parse(e.postData.contents);
+    const ss = SpreadsheetApp.openById(SHEET_ID);
+    const names = ['ร.ร.เทศบาล 2','ร.ร.วัดเจริญภูผา','ร.ร.บ้านทำเนียบ'];
+    
+    if (data.action === 'pushAll') {
+      data.data.rooms.forEach((room, i) => {
+        // นักเรียน
+        let sh = ss.getSheetByName('นักเรียน_'+names[i]) || ss.insertSheet('นักเรียน_'+names[i]);
+        sh.clearContents();
+        sh.appendRow(['ชื่อ-สกุล','วันเกิด','ที่อยู่','ประเภทความพิการ','ผู้ปกครอง','เบอร์โทร']);
+        room.students.forEach(s => sh.appendRow([s.name,s.dob,s.address,s.type,s.guardian,s.gphone]));
+        
+        // ครู
+        let th = ss.getSheetByName('ครู_'+names[i]) || ss.insertSheet('ครู_'+names[i]);
+        th.clearContents();
+        th.appendRow(['ชื่อ-สกุล','วุฒิ','วิชาเอก','ตำแหน่ง','สังกัด','เบอร์โทร']);
+        room.teachers.forEach(t => th.appendRow([t.name,t.edu,t.major,t.position,t.org,t.phone]));
+        
+        // บริการ
+        let svh = ss.getSheetByName('บริการ_'+names[i]) || ss.insertSheet('บริการ_'+names[i]);
+        svh.clearContents();
+        svh.appendRow(['วันที่','นักเรียน','รายละเอียด','ผู้ให้บริการ']);
+        (room.services||[]).forEach(sv => svh.appendRow([sv.date,sv.student,sv.detail,sv.provider]));
+      });
+      
+      return ContentService.createTextOutput(JSON.stringify({status:'ok'})).setMimeType(ContentService.MimeType.JSON);
+    }
+  } catch(err) {
+    return ContentService.createTextOutput(JSON.stringify({status:'error',message:err.toString()})).setMimeType(ContentService.MimeType.JSON);
+  }
+}`;
+  let h=`<div class="page-header"><h2>📖 วิธีตั้งค่า Google Sheets</h2><p>ทำตามขั้นตอนด้านล่าง ใช้เวลาประมาณ 10 นาที</p></div>
+  <div class="step-box"><h4>ขั้นที่ 1 — สร้าง Google Sheets</h4><ul><li>ไปที่ <b>sheets.google.com</b> → สร้าง Spreadsheet ใหม่</li><li>ตั้งชื่อ <b>"ระบบสารสนเทศห้องเรียนคู่ขนานออทิสติก"</b></li><li>คัดลอก <b>Spreadsheet ID</b> จาก URL ช่วง <code>.../spreadsheets/d/<b>[ID]</b>/edit</code></li></ul></div>
+  <div class="step-box"><h4>ขั้นที่ 2 — เปิด Apps Script</h4><ul><li>คลิกเมนู <b>ส่วนขยาย → Apps Script</b></li><li>ลบโค้ดเดิมออก แล้ววางโค้ดด้านล่าง</li><li>แก้ไข <code>YOUR_SPREADSHEET_ID</code> เป็น ID จากขั้นที่ 1</li></ul><div class="code-blk" id="scriptCode">${esc(code)}</div><button class="btn btn-outline btn-sm" onclick="copyCode()">📋 คัดลอกโค้ด</button></div>
+  <div class="step-box"><h4>ขั้นที่ 3 — Deploy เป็น Web App</h4><ul><li>คลิก <b>Deploy → New deployment</b></li><li>Type = <b>Web app</b> | Execute as = <b>Me</b> | Who has access = <b>Anyone</b></li><li>คลิก <b>Deploy</b> → <b>Authorize access</b></li><li>คัดลอก <b>Web app URL</b> ที่ได้</li></ul></div>
+  <div class="step-box" style="border-color:var(--success)"><h4>ขั้นที่ 4 — ใส่ URL ในระบบ</h4><ul><li>กลับมาหน้า <b>ตั้งค่าระบบ</b> → ใส่ URL ลงในช่อง Google Apps Script URL</li><li>กด <b>บันทึก URL</b> → กด <b>ซิงค์ข้อมูลทั้งหมด</b></li><li>ตรวจสอบข้อมูลใน Google Sheets ✓</li></ul></div>
+  <button class="btn btn-primary" onclick="pageSettings()">⬅️ กลับหน้าตั้งค่า</button>`;
+  render(h);}
+function copyCode(){const c=document.getElementById('scriptCode');if(!c)return;const t=c.innerText;navigator.clipboard.writeText(t).then(()=>toast('คัดลอกโค้ดแล้ว ✓')).catch(()=>toast('กรุณาคัดลอกด้วยตนเอง','err'));}
+window.copyCode=copyCode;
+
+// ──────────── ADMIN ────────────
+function pageAdmin(){
+  const now=new Date();const dp=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+  let h=`<div class="page-header"><h2>🛡️ จัดการระบบ (Admin)</h2></div>
+  <div class="card"><h3>ภาพรวมทุกห้องเรียน</h3><table><thead><tr><th>ห้องเรียน</th><th>ครู</th><th>นักเรียน</th><th>บริการเดือนนี้</th><th>ภาคีเครือข่าย</th></tr></thead><tbody>`;
+  db.rooms.forEach((r,i)=>{const sv=(r.services||[]).filter(s=>s.date&&s.date.startsWith(dp)).length;h+=`<tr><td>${RS[i]}</td><td style="text-align:center">${r.teachers.length} คน</td><td style="text-align:center">${r.students.length} คน</td><td style="text-align:center">${sv} ครั้ง</td><td style="text-align:center">${(r.network||[]).length} หน่วยงาน</td></tr>`;});
+  h+=`</tbody></table></div>
+  <div class="card"><h3>บัญชีผู้ใช้งาน</h3><table><thead><tr><th>ชื่อผู้ใช้</th><th>ชื่อ</th><th>ห้องเรียน</th><th>สิทธิ์</th></tr></thead><tbody>
+  <tr><td>admin</td><td>ผู้ดูแลระบบ</td><td>ทุกห้องเรียน</td><td><span class="badge badge-blue">Admin</span></td></tr>
+  <tr><td>room1</td><td>ครูห้องเรียน 1</td><td>${RS[0]}</td><td><span class="badge badge-green">ครู</span></td></tr>
+  <tr><td>room2</td><td>ครูห้องเรียน 2</td><td>${RS[1]}</td><td><span class="badge badge-green">ครู</span></td></tr>
+  <tr><td>room3</td><td>ครูห้องเรียน 3</td><td>${RS[2]}</td><td><span class="badge badge-green">ครู</span></td></tr>
+  </tbody></table></div>`;
+  render(h);}
+
+// ──────────── GOOGLE SHEETS ────────────
+// ── REAL-TIME SYNC TO GOOGLE SHEETS ──────────────────
+async function syncSheet(action, roomIndex, data){
+  if(!settings.scriptUrl) return; // ยังไม่ตั้งค่า URL ข้ามได้
+  try{
+    await fetch(settings.scriptUrl,{
+      method:'POST',
+      mode:'no-cors', // ป้องกัน CORS error (Apps Script ตอบเสมอ)
+      body:JSON.stringify({action, roomIndex, data})
+    });
+  }catch(e){
+    console.warn('Sheets sync warn:',e.message);
+  }
+}
+
+async function pushAllToSheets(){
+  if(!settings.scriptUrl){toast('กรุณาตั้งค่า API URL ก่อน','err');return;}
+  toast('กำลังซิงค์ข้อมูลทั้งหมด...');
+  try{
+    await fetch(settings.scriptUrl,{
+      method:'POST',
+      mode:'no-cors',
+      body:JSON.stringify({action:'pushAll', allData:db})
+    });
+    toast('ส่งข้อมูลไป Google Sheets แล้ว ✓');
+  }catch(e){toast('เชื่อมต่อไม่ได้: '+e.message,'err');}
+}
+window.pushAllToSheets=pushAllToSheets;
+
+// ──────────── EXPORT/IMPORT ────────────
+function exportJSON(){const b=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});const u=URL.createObjectURL(b);const a=document.createElement('a');a.href=u;a.download=`autism_mis_${new Date().toISOString().split('T')[0]}.json`;a.click();URL.revokeObjectURL(u);toast('ส่งออกสำเร็จ ✓');}
+window.exportJSON=exportJSON;
+function importJSON(){const i=document.createElement('input');i.type='file';i.accept='.json';i.onchange=e=>{const f=e.target.files[0];const r=new FileReader();r.onload=ev=>{try{const d=JSON.parse(ev.target.result);if(!d.rooms||d.rooms.length!==3){alert('ไฟล์ไม่ถูกต้อง');return;}db=d;db.rooms.forEach(r=>{if(!r.network)r.network=[];if(!r.photos)r.photos=[];r.students.forEach(s=>{if(!s.iep)s.iep=[];if(!s.iip)s.iip=[];});if(!r.schedules)r.schedules=[];if(!r.schedules)r.schedules=[];});saveLocal();toast('นำเข้าสำเร็จ ✓');showPage('dashboard');}catch(err){alert('ไฟล์ไม่ถูกต้อง: '+err.message);}};r.readAsText(f);};i.click();}
+window.importJSON=importJSON;
+
+// ──────────── INIT ────────────
+loadLocal();
+</script>
+</body>
+</html>
