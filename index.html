@@ -172,10 +172,18 @@ hr.dashed{border:none;border-top:1px dashed var(--border);margin:1rem 0}
 .pdf-ready .pdf-name{font-weight:700;font-size:13px;color:var(--danger)}
 .pdf-ready .pdf-size{font-size:11px;color:var(--muted);margin-top:2px}
 @media print{
-  .sidebar,.topbar,.btn,.room-tabs,.modal-bg,.toast{display:none!important}
+  .sidebar,.topbar,.btn,.room-tabs,.modal-bg,.toast,
+  #repRoomTabs,.page-header{display:none!important}
   .main{padding:0!important}
-  .rep-preview{border:none;box-shadow:none;padding:1rem}
-  body{background:#fff}
+  .body-wrap{display:block!important}
+  .rep-preview{border:none!important;box-shadow:none!important;padding:0 5mm!important;margin:0!important}
+  body{background:#fff!important;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* ทุกอย่างไหลต่อเนื่อง */
+  *{page-break-inside:auto!important;break-inside:auto!important}
+  h1,h2,h3,p,table,tr,td,th{page-break-inside:auto!important;break-inside:auto!important}
+  .rep-section{page-break-inside:auto!important;break-inside:auto!important;margin-bottom:8px!important}
+  /* ข้อ 11 + ลายเซ็น อยู่ด้วยกันเสมอ */
+  .rep-last-block{page-break-inside:avoid!important;break-inside:avoid!important}
 }
 </style>
 </head>
@@ -229,7 +237,7 @@ const ACCOUNTS={
   room2:{pass:'room2pass',role:'room',roomId:1,name:'ครูห้องเรียน 2',room:'ร.ร.วัดเจริญภูผา'},
   room3:{pass:'room3pass',role:'room',roomId:2,name:'ครูห้องเรียน 3',room:'ร.ร.บ้านทำเนียบ'}
 };
-const ROOMS=['ห้องเรียนคู่ขนานบุคคลออทิสติก โรงเรียนเทศบาล 2 (บ้านหาดใหญ่)','ห้องเรียนคู่ขนานบุคคลออทิสติก โรงเรียนวัดเจริญภูผา','ห้องเรียนคู่ขนานบุคคลออทิสติก โรงเรียนบ้านทำเนียบ'];
+const ROOMS=['โรงเรียนเทศบาล 2 (บ้านหาดใหญ่)','โรงเรียนวัดเจริญภูผา','โรงเรียนบ้านทำเนียบ'];
 const RS=['ร.ร.เทศบาล 2','ร.ร.วัดเจริญภูผา','ร.ร.บ้านทำเนียบ'];
 const MONTHS=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
 const DIS=['บุคคลที่มีความบกพร่องทางการเห็น','บุคคลที่มีความบกพร่องทางการได้ยิน','บุคคลที่มีความบกพร่องทางสติปัญญา','บุคคลที่มีความบกพร่องทางร่างกายหรือการเคลื่อนไหวหรือสุขภาพ','บุคคลที่มีความบกพร่องทางการเรียนรู้','บุคคลที่มีความบกพร่องทางการพูดและภาษา','บุคคลที่มีความบกพร่องทางพฤติกรรมหรืออารมณ์','บุคคลออทิสติก','บุคคลพิการซ้อน'];
@@ -246,7 +254,7 @@ let settings={
   activeYearId:1
 };
 let cu=null,ar=0,repRoom=0,repMonth=new Date().getMonth()+1,repYear=new Date().getFullYear()+543;
-let viewMonth=new Date().getMonth()+1,viewYear=new Date().getFullYear();
+let viewMonth=new Date().getMonth()+1,viewYear=new Date().getFullYear(),viewAcYear=new Date().getFullYear()+543;
 let _curPageFn=null;
 function setViewDate(m,y){viewMonth=+m;viewYear=+y;if(_curPageFn)_curPageFn();}
 window.setViewDate=setViewDate;
@@ -260,7 +268,7 @@ function monthYearPickerHtml(){
     +'<div class="form-group" style="margin:0"><label>เดือน</label>'
     +'<select id="vMonth" onchange="setViewDate(this.value,viewYear)">'+mOpts+'</select></div>'
     +'<div class="form-group" style="margin:0"><label>ปี (พ.ศ.)</label>'
-    +'<select id="vYear" onchange="setViewDate(viewMonth,+this.value-543)">'+yOpts+'</select></div>'
+    +'<select id="vYear" onchange="setViewDate(viewMonth,+this.value)">'+yOpts+'</select></div>'
     +'<span style="background:var(--primary-light);color:var(--primary);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600">'
     +'กำลังดู: '+MONTHS[viewMonth-1]+' '+(viewYear+543)+'</span>'
     +'</div></div>';
@@ -577,6 +585,187 @@ function viewPDF2(src,name){
     '</div>'].join(''));
 }
 window.viewPDF2=viewPDF2;
+
+// ── DRIVE UPLOAD ─────────────────────────────────────
+function uploadToDrive(base64Data, fileName, mimeType, subFolder, callback){
+  var scriptUrl = settings.scriptUrl;
+  if(!scriptUrl||!base64Data||!base64Data.startsWith('data:')){
+    if(callback)callback(null);
+    return;
+  }
+  fetch(scriptUrl,{
+    method:'POST',
+    body:JSON.stringify({
+      action:'uploadFile',
+      data:base64Data,
+      fileName:fileName||'file',
+      mimeType:mimeType||'image/jpeg',
+      subFolder:subFolder||'ไฟล์แนบ'
+    })
+  })
+  .then(function(r){return r.json();})
+  .then(function(res){
+    if(res.status==='ok'&&res.url){
+      if(callback)callback(res.url);
+    } else {
+      if(callback)callback(null);
+    }
+  })
+  .catch(function(){if(callback)callback(null);});
+}
+window.uploadToDrive=uploadToDrive;
+
+// อัปโหลดรูปไป Drive แล้วแทน base64 ด้วย URL
+// ใช้ก่อน saveLocal เมื่อมีรูปใหม่
+function syncImgToDrive(imgData, fileName, subFolder, onDone){
+  if(!imgData||!imgData.startsWith('data:')||!settings.scriptUrl){
+    onDone(imgData); return;
+  }
+  var mime = imgData.split(';')[0].split(':')[1]||'image/jpeg';
+  uploadToDrive(imgData, fileName||'img_'+Date.now()+'.jpg', mime, subFolder, function(url){
+    onDone(url||imgData); // ถ้าอัปโหลดไม่ได้ใช้ base64 เดิม
+  });
+}
+window.syncImgToDrive=syncImgToDrive;
+
+function syncPdfToDrive(pdfData, fileName, subFolder, onDone){
+  if(!pdfData||!pdfData.startsWith('data:')||!settings.scriptUrl){
+    onDone(pdfData); return;
+  }
+  uploadToDrive(pdfData, fileName||'file_'+Date.now()+'.pdf', 'application/pdf', subFolder, function(url){
+    onDone(url||pdfData);
+  });
+}
+window.syncPdfToDrive=syncPdfToDrive;
+
+
+function saveIIPMulti(ri,si){
+  ri=+ri; si=+si;
+  var key=ri+'_'+si;
+  var q=_iipQueue[key]||[];
+  if(!q.length){alert('กรุณาอัปโหลดไฟล์ PDF อย่างน้อย 1 ไฟล์');return;}
+  var subFolder='IIP_'+(RS[ri]||('ห้อง'+ri));
+  var dt=new Date().toLocaleDateString('th-TH');
+  if(!db.rooms[ri].students[si].iip)db.rooms[ri].students[si].iip=[];
+  var total=q.length,done=0;
+  toast('กำลังอัปโหลด IIP '+total+' ไฟล์...');
+  q.forEach(function(f){
+    if(f.dataUrl&&f.dataUrl.startsWith('data:')&&settings.scriptUrl){
+      syncPdfToDrive(f.dataUrl,f.fileName,'IIP_'+(RS[ri]||ri),function(finalUrl){
+        db.rooms[ri].students[si].iip.push({name:f.fileName,fileName:f.fileName,dataUrl:finalUrl,url:'',date:dt});
+        done++;
+        if(done===total){_iipQueue[key]=[];saveLocal();closeModal();toast('บันทึก '+total+' ไฟล์ IIP สำเร็จ ✓');pageIEP(ri);}
+      });
+    } else {
+      db.rooms[ri].students[si].iip.push({name:f.fileName,fileName:f.fileName,dataUrl:f.dataUrl,url:'',date:dt});
+      done++;
+      if(done===total){_iipQueue[key]=[];saveLocal();closeModal();toast('บันทึก '+total+' ไฟล์ IIP สำเร็จ ✓');pageIEP(ri);}
+    }
+  });
+}
+window.saveIIPMulti=saveIIPMulti;
+function driveImgSrc(url){
+  if(!url||url==='(ไฟล์ในเครื่อง)')return '';
+  if(url.startsWith('data:'))return url; // base64 — ใช้ตรงๆ
+  // Drive URL → direct image
+  var _dm=url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if(_dm)return 'https://lh3.googleusercontent.com/d/'+_dm[1]+'=s400';
+  return url;
+}
+window.driveImgSrc=driveImgSrc;
+
+function trigIipFile(ri,si){
+  var el=document.getElementById('iipfiles_'+ri+'_'+si);
+  if(el){el.click();return;}
+  var inp=document.createElement('input');
+  inp.type='file';inp.accept='.pdf,application/pdf';inp.multiple=true;
+  inp.addEventListener('change',function(e){iipChange(e,ri,si);});
+  inp.click();
+}
+window.trigIipFile=trigIipFile;
+
+function academicYearPickerHtml(currentYear,fnName,riParam){
+  var now=new Date();
+  var maxY=now.getFullYear()+543;
+  var yOpts='';
+  for(var y=maxY;y>=maxY-5;y--){
+    yOpts+='<option value="'+y+'"'+(y===currentYear?' selected':'')+'>ปีการศึกษา '+y+'</option>';
+  }
+  return '<div class="card" style="padding:.75rem 1.25rem;margin-bottom:1rem;border-left:3px solid var(--primary)">'
+    +'<div class="flex" style="gap:12px;align-items:flex-end;flex-wrap:wrap">'
+    +'<span style="font-size:13px;font-weight:600;color:var(--primary)">📚 เลือกปีการศึกษา</span>'
+    +'<div class="form-group" style="margin:0">'
+    +'<select id="ayPicker" style="min-width:180px" onchange="'+fnName+'('+riParam+',+this.value)">'+yOpts+'</select>'
+    +'</div>'
+    +'<span style="background:var(--primary-light);color:var(--primary);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600">'
+    +'กำลังดู: ปีการศึกษา '+currentYear+'</span>'
+    +'</div></div>';
+}
+window.academicYearPickerHtml=academicYearPickerHtml;
+
+function viewIEPFile(btn){
+  var url=btn.dataset.url||'';
+  var ri=+btn.dataset.ri,si=+btn.dataset.si,idx=+btn.dataset.idx;
+  if(url&&url.startsWith('http')){window.open(url,'_blank');return;}
+  var s=db.rooms[ri].students[si];
+  var f=(s.iep||[])[idx]||(s.iip||[])[idx];
+  if(f&&f.dataUrl){
+    openModal(['<h3>📄 '+esc(f.name)+'</h3>',
+      '<div style="height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
+      '<iframe src="'+f.dataUrl+'" style="width:100%;height:100%;border:none"></iframe>',
+      '</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ปิด</button></div>'].join(''));
+  } else {
+    toast('ไม่พบไฟล์','err');
+  }
+}
+window.viewIEPFile=viewIEPFile;
+
+// Debug: แสดงข้อมูล hrMonthly จริงๆ
+function debugHR(ri){
+  var r=db.rooms[ri||0];
+  var all=r.hrMonthly||[];
+  console.log('hrMonthly count:', all.length);
+  all.forEach(function(it,i){
+    console.log('HR['+i+']:', JSON.stringify(it));
+  });
+  var svcs=r.services||[];
+  console.log('services count:', svcs.length);
+  svcs.slice(0,3).forEach(function(sv,i){
+    console.log('SV['+i+']:', JSON.stringify(sv));
+  });
+  alert('hrMonthly: '+all.length+' records\n'
+    +(all.length?'period[0]: '+all[0].period:'(empty)')
+    +'\n\nservices: '+svcs.length+' records\n'
+    +(svcs.length?'date[0]: '+svcs[0].date:'(empty)')
+    +'\n\nviewYear: '+viewYear+', viewMonth: '+viewMonth
+  );
+}
+window.debugHR=debugHR;
+
+// แก้ period ที่เป็น "undefined ..." ใน hrMonthly
+function fixHRPeriods(){
+  var count=0;
+  db.rooms.forEach(function(r){
+    (r.hrMonthly||[]).forEach(function(it){
+      if(it.period&&it.period.indexOf('undefined')>=0){
+        // ใช้ปีจาก period เดิม ถ้ามี
+        var parts=it.period.split(' ');
+        var yr=parts[parts.length-1];
+        // ใช้เดือนปัจจุบัน
+        it.period=MONTHS[viewMonth-1]+' '+yr;
+        count++;
+      }
+    });
+  });
+  if(count>0){
+    saveLocal();
+    toast('แก้ไข period ที่ผิด '+count+' รายการ ✓');
+    if(_curPageFn)_curPageFn();
+  } else {
+    toast('ไม่มี period ที่ต้องแก้ไข');
+  }
+}
+window.fixHRPeriods=fixHRPeriods;
 
 function loadLocal(){
   try{const s=localStorage.getItem('autismMIS_v4');if(s){const d=JSON.parse(s);if(d.rooms&&d.rooms.length===3){db=d;db.rooms.forEach(r=>{if(!r.network)r.network=[];if(!r.photos)r.photos=[];r.students.forEach(s=>{if(!s.iep)s.iep=[];if(!s.iip)s.iip=[];});if(!r.schedules)r.schedules=[];if(!r.schedules)r.schedules=[];});}}}catch(e){}
@@ -991,18 +1180,30 @@ function pageStudents(ri){
 }
 window.pageStudents=pageStudents;
 
-function stuForm(s){const opts=DIS.map(d=>`<option${s&&s.type===d?' selected':''}>${d}</option>`).join('');return`
-<div class="form-group"><label>ชื่อ-สกุล *</label><input id="s_name" value="${esc(s?s.name:'')}"/></div>
-<div class="form-row">
-  <div class="form-group"><label>วันเดือนปีเกิด</label><input type="date" id="s_dob" value="${s?s.dob:''}" oninput="document.getElementById('s_age').textContent=calcAge(this.value)"/></div>
-  <div class="form-group"><label>อายุ (คำนวณอัตโนมัติ)</label><div style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px" id="s_age">${s?calcAge(s.dob):'-'}</div></div>
-</div>
-<div class="form-group"><label>ที่อยู่</label><input id="s_addr" value="${esc(s?s.address:'')}"/></div>
-<div class="form-group"><label>ประเภทความพิการ</label><select id="s_type">${opts}</select></div>
-<div class="form-row">
-  <div class="form-group"><label>ชื่อ-สกุลผู้ปกครอง</label><input id="s_guard" value="${esc(s?s.guardian:'')}"/></div>
-  <div class="form-group"><label>เบอร์โทรติดต่อผู้ปกครอง</label><input id="s_gph" value="${esc(s?s.gphone:'')}"/></div>
-</div>`;}
+function stuForm(s){
+  var opts=DIS.map(function(d){return '<option'+(s&&s.type===d?' selected':'')+'>'+d+'</option>';}).join('');
+  return '<div class="form-group"><label>ชื่อ-สกุล *</label>'
+    +'<input id="s_name" value="'+esc(s?s.name:'')+'"/></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>วันเดือนปีเกิด</label>'
+    +'<input type="date" id="s_dob" value="'+(s?s.dob:'')+'" '
+    +'oninput="document.getElementById(&quot;s_age&quot;).textContent=calcAge(this.value)"/></div>'
+    +'<div class="form-group"><label>อายุ (คำนวณอัตโนมัติ)</label>'
+    +'<div style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px" id="s_age">'
+    +(s?calcAge(s.dob):'-')+'</div></div>'
+    +'</div>'
+    +'<div class="form-group"><label>ที่อยู่</label>'
+    +'<input id="s_addr" value="'+esc(s?s.address:'')+'"/></div>'
+    +'<div class="form-group"><label>ประเภทความพิการ</label>'
+    +'<select id="s_type">'+opts+'</select></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>ชื่อ-สกุลผู้ปกครอง</label>'
+    +'<input id="s_guard" value="'+esc(s?s.guardian:'')+'"/></div>'
+    +'<div class="form-group"><label>เบอร์โทรติดต่อผู้ปกครอง</label>'
+    +'<input id="s_gph" value="'+esc(s?s.gphone:'')+'"/></div>'
+    +'</div>';
+}
+
 function addStudent(ri){openModal(`<h3>➕ เพิ่มนักเรียน</h3>${stuForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveStu(${ri},-1)">💾 บันทึก</button></div>`);}
 window.addStudent=addStudent;
 function editStudent(ri,idx){openModal(`<h3>✏️ แก้ไขข้อมูลนักเรียน</h3>${stuForm(db.rooms[ri].students[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveStu(${ri},${idx})">💾 บันทึก</button></div>`);}
@@ -1083,7 +1284,15 @@ window.togAtt=togAtt;
 function pageServices(ri){
   ar=ri;_curPageFn=function(){pageServices(ar);};
   var r=db.rooms[ri],dp=viewYear+'-'+String(viewMonth).padStart(2,'0');
-  var all=r.services||[],fl=all.filter(function(sv){return!sv.date||sv.date.startsWith(dp);});
+  var all=r.services||[];
+  // debug: แสดง dp ใน title
+  var fl=all.filter(function(sv){
+    if(!sv.date)return true;
+    // รองรับ zero-padded และ non-padded
+    var _dp1=String(viewYear)+'-'+String(viewMonth).padStart(2,'0');
+    var _dp2=String(viewYear)+'-'+String(viewMonth);
+    return sv.date.startsWith(_dp1)||sv.date.startsWith(_dp2);
+  });
   var h='<div class="page-header"><h2>บันทึกการให้บริการทางวิชาการ</h2></div>';
   h+=monthYearPickerHtml()+roomTabs(ri,'pageServices');
   h+='<div class="card"><h3>รายการบริการ '+MONTHS[viewMonth-1]+' '+(viewYear+543)+' — '+RS[ri]+'</h3>'
@@ -1138,25 +1347,37 @@ function pageHRMonthly(ri){
 }
 window.pageHRMonthly=pageHRMonthly;
 function hrForm(ri,it){
-  const now=new Date();const po=db.rooms[ri].teachers.map(t=>`<option${it&&it.person===t.name?' selected':''}>${esc(t.name)}</option>`).join('');
-  return`<div class="form-row">
-  <div class="form-group"><label>เดือน</label><select id="hr_m">${MONTHS.map((m,i)=>`<option value="${i+1}"${it?it.period.includes(m)?'selected':'':(i===now.getMonth()?' selected':'')}>${m}</option>`).join('')}</select></div>
-  <div class="form-group"><label>ปี (พ.ศ.)</label><input id="hr_y" value="${it?it.period.split(' ')[1]:now.getFullYear()+543}"/></div>
-  </div>
-  <div class="form-group"><label>ชื่อ-สกุลครูผู้สอน</label><select id="hr_p">${po||'<option>กรุณาเพิ่มครูก่อน</option>'}</select></div>
-  <div class="form-row3">
-    <div class="form-group"><label>ลากิจ (วัน)</label><input type="number" id="hr_lb" min="0" value="${it?it.leaveB||0:0}"/></div>
-    <div class="form-group"><label>ลาป่วย (วัน)</label><input type="number" id="hr_ls" min="0" value="${it?it.leaveSick||0:0}"/></div>
-    <div class="form-group"><label>ลาพักผ่อน (วัน)</label><input type="number" id="hr_lr" min="0" value="${it?it.leaveRest||0:0}"/></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>ลาอื่นๆ (วัน)</label><input type="number" id="hr_lo" min="0" value="${it?it.leaveOther||0:0}"/></div>
-    <div class="form-group"><label>ระบุประเภทลาอื่นๆ</label><input id="hr_lon" value="${esc(it?it.leaveOtherNote:'')}"/></div>
-  </div>
-  <div class="form-row">
-    <div class="form-group"><label>จำนวนการมาสาย (ครั้ง)</label><input type="number" id="hr_late" min="0" value="${it?it.late||0:0}"/></div>
-    <div class="form-group"><label>จำนวนการขอออกนอกสถานที่ (ครั้ง)</label><input type="number" id="hr_out" min="0" value="${it?it.outSite||0:0}"/></div>
-  </div>`;}
+  var now=new Date();
+  var po=db.rooms[ri].teachers.map(function(t){
+    return '<option'+(it&&it.person===t.name?' selected':'')+'>'+esc(t.name)+'</option>';
+  }).join('');
+  var curMN=it?it.period.split(' ')[0]:'';
+  var curYR=it?it.period.split(' ')[1]:String(now.getFullYear()+543);
+  var mOpts=MONTHS.map(function(mo,i){
+    var sel=(curMN?mo===curMN:i===now.getMonth())?'selected':'';
+    return '<option value="'+mo+'" '+sel+'>'+mo+'</option>';
+  }).join('');
+  return '<div class="form-row">'
+    +'<div class="form-group"><label>เดือน</label><select id="hr_m">'+mOpts+'</select></div>'
+    +'<div class="form-group"><label>ปี (พ.ศ.)</label><input id="hr_y" value="'+curYR+'"/></div>'
+    +'</div>'
+    +'<div class="form-group"><label>ชื่อ-สกุลครูผู้สอน</label>'
+    +'<select id="hr_p">'+(po||'<option>กรุณาเพิ่มครูก่อน</option>')+'</select></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>ลากิจ (วัน)</label><input type="number" id="hr_lb" min="0" value="'+(it?it.leaveB||0:0)+'"/></div>'
+    +'<div class="form-group"><label>ลาป่วย (วัน)</label><input type="number" id="hr_ls" min="0" value="'+(it?it.leaveSick||0:0)+'"/></div>'
+    +'<div class="form-group"><label>ลาพักผ่อน (วัน)</label><input type="number" id="hr_lr" min="0" value="'+(it?it.leaveRest||0:0)+'"/></div>'
+    +'</div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>ลาอื่นๆ (วัน)</label><input type="number" id="hr_lo" min="0" value="'+(it?it.leaveOther||0:0)+'"/></div>'
+    +'<div class="form-group"><label>ระบุประเภทลาอื่นๆ</label><input id="hr_lon" value="'+esc(it?it.leaveOtherNote||'':'')+'"/></div>'
+    +'</div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>มาสาย (ครั้ง)</label><input type="number" id="hr_late" min="0" value="'+(it?it.late||0:0)+'"/></div>'
+    +'<div class="form-group"><label>ออกนอกสถานที่ (ครั้ง)</label><input type="number" id="hr_out" min="0" value="'+(it?it.outSite||0:0)+'"/></div>'
+    +'</div>';
+}
+
 function addHR(ri){openModal(`<h3>➕ สรุปการปฏิบัติงานประจำเดือน</h3>${hrForm(ri,null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveHR(${ri},-1)">💾 บันทึก</button></div>`);}
 window.addHR=addHR;
 function editHR(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ</h3>${hrForm(ri,db.rooms[ri].hrMonthly[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveHR(${ri},${idx})">💾 บันทึก</button></div>`);}
@@ -1193,24 +1414,62 @@ function pageTraining(ri){
 }
 window.pageTraining=pageTraining;
 function trainingForm(ri,t){
-  const po=db.rooms[ri].teachers.map(tc=>`<option${t&&t.person===tc.name?' selected':''}>${esc(tc.name)}</option>`).join('');
-  return`<div class="form-group"><label>ชื่อ-สกุล</label><select id="tr_p">${po||'<option>กรุณาเพิ่มครูก่อน</option>'}</select></div>
-<div class="form-group"><label>ชื่อหลักสูตร/อบรม/สัมมนา/ศึกษาดูงาน</label><input id="tr_c" value="${esc(t?t.course:'')}"/></div>
-<div class="form-row">
-  <div class="form-group"><label>หน่วยงานที่จัดอบรม</label><input id="tr_o" value="${esc(t?t.org:'')}"/></div>
-  <div class="form-group"><label>วันที่</label><input type="date" id="tr_d" value="${t?t.date:todayStr()}"/></div>
-</div>
-${imgUploadZoneHtml('tr_img', t?t.imgUrl:'', 'แนบภาพหลักฐาน')}`;}
-function addTraining(ri){openModal(`<h3>➕ เพิ่มการสัมมนา/อบรม</h3>${trainingForm(ri,null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr(${ri},-1)">💾 บันทึก</button></div>`);}
+  var po=db.rooms[ri].teachers.map(function(tc){
+    return '<option'+(t&&t.person===tc.name?' selected':'')+'>'+esc(tc.name)+'</option>';
+  }).join('');
+  return '<div class="form-group"><label>ชื่อ-สกุล</label>'
+    +'<select id="tr_p">'+(po||'<option>กรุณาเพิ่มครูก่อน</option>')+'</select></div>'
+    +'<div class="form-group"><label>ชื่อหลักสูตร/อบรม/สัมมนา/ศึกษาดูงาน</label>'
+    +'<input id="tr_c" value="'+esc(t?t.course:'')+'"/></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>หน่วยงานที่จัดอบรม</label>'
+    +'<input id="tr_o" value="'+esc(t?t.org:'')+'"/></div>'
+    +'<div class="form-group"><label>วันที่</label>'
+    +'<input type="date" id="tr_d" value="'+(t?t.date:todayStr())+'"/></div>'
+    +'</div>'
+    +imgZoneHtml('tr_img',t?t.imgUrl||'':'','แนบภาพหลักฐาน');
+}
+
+function addTraining(ri){
+  openModal('<h3>➕ เพิ่มการสัมมนา/อบรม</h3>'
+    +trainingForm(ri,null)
+    +'<div class="modal-footer">'
+    +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+    +'<button class="btn btn-primary" data-ri="'+ri+'" onclick="saveTr(+this.dataset.ri,-1)">💾 บันทึก</button>'
+    +'</div>');
+}
 window.addTraining=addTraining;
 function editTraining(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ</h3>${trainingForm(ri,db.rooms[ri].training[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr(${ri},${idx})">💾 บันทึก</button></div>`);}
 window.editTraining=editTraining;
 function saveTr(ri,idx){
-  const t={person:document.getElementById('tr_p').value,course:document.getElementById('tr_c').value,org:document.getElementById('tr_o').value,date:document.getElementById('tr_d').value,imgUrl:document.getElementById('tr_img').value};
-  if(!db.rooms[ri].training)db.rooms[ri].training=[];
-  if(idx===-1)db.rooms[ri].training.push(t);else db.rooms[ri].training[idx]=t;
-  saveLocal();syncSheet('saveTraining',ri,db.rooms[ri].training);closeModal();toast('บันทึกสำเร็จ ✓');pageTraining(ri);}
+  ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
+  var imgVal = document.getElementById('tr_img') ? document.getElementById('tr_img').value : '';
+  var imgName = 'training_'+ri+'_'+Date.now()+'.jpg';
+  var subFolder = 'อบรม_' + (RS[ri]||('ห้อง'+ri));
+  if(imgVal && imgVal.startsWith('data:') && settings.scriptUrl){
+    toast('กำลังอัปโหลดรูปไป Google Drive...');
+    syncImgToDrive(imgVal, imgName, subFolder, function(finalUrl){
+      _saveTrData(ri, idx, finalUrl);
+    });
+  } else {
+    _saveTrData(ri, idx, imgVal);
+  }
+}
 window.saveTr=saveTr;
+function _saveTrData(ri, idx, imgUrl){
+  var t = {
+    person: document.getElementById('tr_p').value,
+    course: document.getElementById('tr_c').value,
+    org:    document.getElementById('tr_o').value,
+    date:   document.getElementById('tr_d').value,
+    imgUrl: imgUrl
+  };
+  if(!db.rooms[ri].training) db.rooms[ri].training=[];
+  if(idx===-1) db.rooms[ri].training.push(t); else db.rooms[ri].training[idx]=t;
+  saveLocal(); syncSheet('saveTraining',ri,db.rooms[ri].training);
+  closeModal(); toast('บันทึกสำเร็จ ✓'); pageTraining(ri);
+}
+window._saveTrData=_saveTrData;
 function delTraining(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].training.splice(idx,1);saveLocal();syncSheet('saveTraining',ri,db.rooms[ri].training);toast('ลบแล้ว');pageTraining(ri);}}
 window.delTraining=delTraining;
 
@@ -1235,20 +1494,55 @@ function pageCommunity(ri){
   render(h);
 }
 window.pageCommunity=pageCommunity;
-function comForm(c){return`<div class="form-group"><label>วันที่</label><input type="date" id="cm_d" value="${c?c.date:todayStr()}"/></div>
-<div class="form-group"><label>รายการ/กิจกรรม</label><input id="cm_a" value="${esc(c?c.activity:'')}"/></div>
-<div class="form-group"><label>หน่วยงาน/สถานที่</label><input id="cm_p" value="${esc(c?c.place:'')}"/></div>
-${imgUploadZoneHtml('cm_img', c?c.imgUrl:'', 'หลักฐานอ้างอิง (แนบรูปภาพ)')}`;}
-function addCom(ri){openModal(`<h3>➕ เพิ่มกิจกรรมสัมพันธ์ชุมชน</h3>${comForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom(${ri},-1)">💾 บันทึก</button></div>`);}
+function comForm(c){
+  return '<div class="form-group"><label>วันที่</label>'
+    +'<input type="date" id="cm_d" value="'+(c?c.date:todayStr())+'"/></div>'
+    +'<div class="form-group"><label>รายการ/กิจกรรม</label>'
+    +'<input id="cm_a" value="'+esc(c?c.activity:'')+'"/></div>'
+    +'<div class="form-group"><label>หน่วยงาน/สถานที่</label>'
+    +'<input id="cm_p" value="'+esc(c?c.place:'')+'"/></div>'
+    +imgZoneHtml('cm_img',c?c.imgUrl||'':'','หลักฐานอ้างอิง (แนบรูปภาพ)');
+}
+
+function addCom(ri){
+  openModal('<h3>➕ เพิ่มกิจกรรมสัมพันธ์ชุมชน</h3>'
+    +comForm(null)
+    +'<div class="modal-footer">'
+    +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+    +'<button class="btn btn-primary" data-ri="'+ri+'" onclick="saveCom(+this.dataset.ri,-1)">💾 บันทึก</button>'
+    +'</div>');
+}
 window.addCom=addCom;
 function editCom(ri,idx){openModal(`<h3>✏️ แก้ไขกิจกรรม</h3>${comForm(db.rooms[ri].community[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom(${ri},${idx})">💾 บันทึก</button></div>`);}
 window.editCom=editCom;
 function saveCom(ri,idx){
-  const c={date:document.getElementById('cm_d').value,activity:document.getElementById('cm_a').value,place:document.getElementById('cm_p').value,imgUrl:document.getElementById('cm_img').value};
-  if(!db.rooms[ri].community)db.rooms[ri].community=[];
-  if(idx===-1)db.rooms[ri].community.push(c);else db.rooms[ri].community[idx]=c;
-  saveLocal();syncSheet('saveCommunity',ri,db.rooms[ri].community);closeModal();toast('บันทึกสำเร็จ ✓');pageCommunity(ri);}
+  ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
+  var imgVal = document.getElementById('cm_img') ? document.getElementById('cm_img').value : '';
+  var imgName = 'community_'+ri+'_'+Date.now()+'.jpg';
+  var subFolder = 'ชุมชน_' + (RS[ri]||('ห้อง'+ri));
+  if(imgVal && imgVal.startsWith('data:') && settings.scriptUrl){
+    toast('กำลังอัปโหลดรูปไป Google Drive...');
+    syncImgToDrive(imgVal, imgName, subFolder, function(finalUrl){
+      _saveComData(ri, idx, finalUrl);
+    });
+  } else {
+    _saveComData(ri, idx, imgVal);
+  }
+}
 window.saveCom=saveCom;
+function _saveComData(ri, idx, imgUrl){
+  var c = {
+    date:     document.getElementById('cm_d').value,
+    activity: document.getElementById('cm_a').value,
+    place:    document.getElementById('cm_p').value,
+    imgUrl:   imgUrl
+  };
+  if(!db.rooms[ri].community) db.rooms[ri].community=[];
+  if(idx===-1) db.rooms[ri].community.push(c); else db.rooms[ri].community[idx]=c;
+  saveLocal(); syncSheet('saveCommunity',ri,db.rooms[ri].community);
+  closeModal(); toast('บันทึกสำเร็จ ✓'); pageCommunity(ri);
+}
+window._saveComData=_saveComData;
 function delCom(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].community.splice(idx,1);saveLocal();syncSheet('saveCommunity',ri,db.rooms[ri].community);toast('ลบแล้ว');pageCommunity(ri);}}
 window.delCom=delCom;
 
@@ -1259,12 +1553,19 @@ function pageNetwork(ri){ar=ri;const r=db.rooms[ri];
   if(!(r.network||[]).length)h+=`<tr><td colspan="6" style="text-align:center;color:var(--muted)">ยังไม่มีรายการ</td></tr>`;
   h+=`</tbody></table></div><div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addNet(${ri})">➕ เพิ่มภาคีเครือข่าย</button></div></div>`;render(h);}
 window.pageNetwork=pageNetwork;
-function netForm(n){return`<div class="form-group"><label>หน่วยงาน</label><input id="nt_o" value="${esc(n?n.org:'')}"/></div>
-<div class="form-row">
-  <div class="form-group"><label>ชื่อผู้ประสานงาน</label><input id="nt_c" value="${esc(n?n.contact:'')}"/></div>
-  <div class="form-group"><label>ตำแหน่ง</label><input id="nt_pos" value="${esc(n?n.position:'')}"/></div>
-</div>
-<div class="form-group"><label>หมายเลขโทรศัพท์</label><input id="nt_ph" value="${esc(n?n.phone:'')}"/></div>`;}
+function netForm(n){
+  return '<div class="form-group"><label>หน่วยงาน/องค์กร</label>'
+    +'<input id="nt_o" value="'+esc(n?n.org:'')+'"/></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>ชื่อผู้ประสานงาน</label>'
+    +'<input id="nt_c" value="'+esc(n?n.contact:'')+'"/></div>'
+    +'<div class="form-group"><label>ตำแหน่ง</label>'
+    +'<input id="nt_pos" value="'+esc(n?n.position:'')+'"/></div>'
+    +'</div>'
+    +'<div class="form-group"><label>หมายเลขโทรศัพท์</label>'
+    +'<input id="nt_ph" value="'+esc(n?n.phone:'')+'"/></div>';
+}
+
 function addNet(ri){openModal(`<h3>➕ เพิ่มภาคีเครือข่าย</h3>${netForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveNet(${ri},-1)">💾 บันทึก</button></div>`);}
 window.addNet=addNet;
 function editNet(ri,idx){openModal(`<h3>✏️ แก้ไขภาคีเครือข่าย</h3>${netForm(db.rooms[ri].network[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveNet(${ri},${idx})">💾 บันทึก</button></div>`);}
@@ -1322,9 +1623,52 @@ function photoForm(p){
     +imgZoneHtml('ph_url',p?p.imgUrl||'':'','แนบรูปภาพ (คลิกหรือลากไฟล์มาวาง)');
 }
 
-function addPhoto(ri){openModal(`<h3>➕ เพิ่มภาพกิจกรรม</h3>${photoForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="savePh(${ri},-1)">💾 บันทึก</button></div>`);}
+function savePhoto(ri,idx){
+  ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
+  var imgVal = document.getElementById('ph_url') ? document.getElementById('ph_url').value : '';
+  var imgName = 'photo_'+ri+'_'+Date.now()+'.jpg';
+  var subFolder = 'ภาพกิจกรรม_' + (RS[ri]||('ห้อง'+ri));
+  if(imgVal && imgVal.startsWith('data:') && settings.scriptUrl){
+    toast('กำลังอัปโหลดรูปไป Google Drive...');
+    syncImgToDrive(imgVal, imgName, subFolder, function(finalUrl){
+      _savePhotoData(ri, idx, finalUrl);
+    });
+  } else {
+    _savePhotoData(ri, idx, imgVal);
+  }
+}
+window.savePhoto=savePhoto;
+function _savePhotoData(ri, idx, imgUrl){
+  var mn = document.getElementById('ph_m') ? document.getElementById('ph_m').value : MONTHS[viewMonth-1];
+  var p = {
+    caption: document.getElementById('ph_cap') ? document.getElementById('ph_cap').value : '',
+    month:   mn,
+    date:    document.getElementById('ph_d') ? document.getElementById('ph_d').value : todayStr(),
+    imgUrl:  imgUrl
+  };
+  if(!db.rooms[ri].photos) db.rooms[ri].photos=[];
+  if(idx===-1) db.rooms[ri].photos.push(p); else db.rooms[ri].photos[idx]=p;
+  saveLocal(); syncSheet('savePhotos',ri,db.rooms[ri].photos);
+  closeModal(); toast('บันทึกภาพสำเร็จ ✓'); pagePhotos(ri);
+}
+window._savePhotoData=_savePhotoData;
+function addPhoto(ri){
+  openModal('<h3>➕ เพิ่มภาพกิจกรรม</h3>'
+    +photoForm(null)
+    +'<div class="modal-footer">'
+    +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+    +'<button class="btn btn-primary" data-ri="'+ri+'" onclick="savePhoto(+this.dataset.ri,-1)">💾 บันทึก</button>'
+    +'</div>');
+}
 window.addPhoto=addPhoto;
-function editPhoto(ri,idx){openModal(`<h3>✏️ แก้ไขภาพ</h3>${photoForm(db.rooms[ri].photos[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="savePh(${ri},${idx})">💾 บันทึก</button></div>`);}
+function editPhoto(ri,idx){
+  openModal('<h3>✏️ แก้ไขภาพกิจกรรม</h3>'
+    +photoForm(db.rooms[ri].photos[idx])
+    +'<div class="modal-footer">'
+    +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+    +'<button class="btn btn-primary" data-ri="'+ri+'" data-idx="'+idx+'" onclick="savePhoto(+this.dataset.ri,+this.dataset.idx)">💾 บันทึก</button>'
+    +'</div>');
+}
 window.editPhoto=editPhoto;
 function savePh(ri,idx){
   const p={caption:document.getElementById('ph_cap').value,month:document.getElementById('ph_m').value,date:document.getElementById('ph_d').value,imgUrl:document.getElementById('ph_url').value};
@@ -1383,23 +1727,56 @@ function addSchedule(ri){
 }
 window.addSchedule=addSchedule;
 function saveSchedule(ri,fid){
-  var n=(document.getElementById('sch_name')||{}).value||'';
-  var p=(document.getElementById('sch_period')||{}).value||'';
-  var pd=document.getElementById('pdfdata_'+fid),pn=document.getElementById('pdfname_'+fid);
+  var n = (document.getElementById('sch_name')||{}).value||'';
+  var p = (document.getElementById('sch_period')||{}).value||'';
+  var pd = document.getElementById('pdfdata_'+fid);
+  var pn = document.getElementById('pdfname_'+fid);
   if(!n.trim()){alert('กรุณากรอกชื่อตารางสอน');return;}
   if(!pd||!pd.value){alert('กรุณาอัปโหลดไฟล์ PDF ก่อน');return;}
-  if(!db.rooms[ri].schedules)db.rooms[ri].schedules=[];
-  db.rooms[ri].schedules.push({name:n.trim(),period:p,fileName:pn?pn.value:'',dataUrl:pd.value,date:new Date().toLocaleDateString('th-TH')});
-  saveLocal();closeModal();toast('บันทึกสำเร็จ ✓');pageSchedule(ri);
+  var pdfVal = pd.value;
+  var pdfName = pn?pn.value:('schedule_'+ri+'_'+Date.now()+'.pdf');
+  var subFolder = 'ตารางสอน_' + (RS[ri]||('ห้อง'+ri));
+  if(pdfVal.startsWith('data:') && settings.scriptUrl){
+    toast('กำลังอัปโหลด PDF ไป Google Drive...');
+    syncPdfToDrive(pdfVal, pdfName, subFolder, function(finalUrl){
+      _saveScheduleData(ri, n, p, pdfName, finalUrl);
+    });
+  } else {
+    _saveScheduleData(ri, n, p, pdfName, pdfVal);
+  }
 }
 window.saveSchedule=saveSchedule;
+function _saveScheduleData(ri, name, period, fileName, dataUrl){
+  if(!db.rooms[ri].schedules) db.rooms[ri].schedules=[];
+  db.rooms[ri].schedules.push({
+    name: name, period: period, fileName: fileName,
+    dataUrl: dataUrl, date: new Date().toLocaleDateString('th-TH')
+  });
+  saveLocal();
+  // sync ตารางสอน ไป Sheets
+  var schedRows = (db.rooms[ri].schedules||[]).map(function(sc){
+    return {name:sc.name, period:sc.period, fileName:sc.fileName,
+      url:(!sc.dataUrl||sc.dataUrl.startsWith('data:'))?'(PDF ในเครื่อง)':sc.dataUrl,
+      date:sc.date};
+  });
+  syncSheet('saveSchedules', ri, schedRows);
+  closeModal(); toast('บันทึกตารางสอนสำเร็จ ✓'); pageSchedule(ri);
+}
+window._saveScheduleData=_saveScheduleData;
 function previewSchedule(ri,idx){
-  var sc=(db.rooms[ri].schedules||[])[idx];
+  var sc = (db.rooms[ri].schedules||[])[idx];
   if(!sc||!sc.dataUrl){toast('ไม่พบไฟล์','err');return;}
-  openModal(['<h3>📆 '+esc(sc.name)+'</h3>',
-    '<div style="height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
-    '<iframe src="'+sc.dataUrl+'" style="width:100%;height:100%;border:none"></iframe>',
-    '</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ปิด</button></div>'].join(''));
+  if(sc.dataUrl.startsWith('http')){
+    // Drive URL — เปิด tab ใหม่
+    window.open(sc.dataUrl,'_blank');
+  } else {
+    openModal(['<h3>📆 ดูตารางสอน — '+esc(sc.name)+'</h3>',
+      '<div style="height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
+      '<iframe src="'+sc.dataUrl+'" style="width:100%;height:100%;border:none"></iframe>',
+      '</div><div class="modal-footer">',
+      '<button class="btn btn-outline" onclick="closeModal()">ปิด</button>',
+      '</div>'].join(''));
+  }
 }
 window.previewSchedule=previewSchedule;
 function delSchedule(ri,idx){
@@ -1407,41 +1784,91 @@ function delSchedule(ri,idx){
 }
 window.delSchedule=delSchedule;
 
-function pageIEP(ri){ar=ri;const r=db.rooms[ri];
-  let h=`<div class="page-header"><h2>📄 แผนการสอน IEP / IIP</h2></div>${roomTabs(ri,'pageIEP')}`;
-  if(!r.students.length){h+=`<div class="card"><p class="text-muted">ยังไม่มีข้อมูลนักเรียน กรุณาเพิ่มในหน้าข้อมูลนักเรียนก่อน</p></div>`;}
-  r.students.forEach((s,si)=>{
-    h+=`<div class="card"><h3>🧒 ${esc(s.name)}</h3>`;
-    h+=`<div style="margin-bottom:8px"><b style="font-size:12px;color:var(--primary)">แผน IEP (แผนการจัดการศึกษาเฉพาะบุคคล)</b></div>`;
-    (s.iep||[]).forEach((f,fi)=>{
-      const src=f.dataUrl||f.url||'';
-      const hasFile=!!src;
-      h+=`<div class="pdf-item">
-        <div class="pdf-icon">📕</div>
-        <div style="flex:1">
-          <div style="font-weight:600">${esc(f.name)}</div>
-          <div class="text-muted">${f.fileName?esc(f.fileName)+' | ':''} อัปโหลด: ${esc(f.date)}</div>
-        </div>
-        ${hasFile?`<button class="btn btn-outline btn-sm" data-src="${src}" data-name="${esc(f.name)}" onclick="viewPDF2(this.dataset.src,this.dataset.name)">👁️ ดู</button>`:'<span class="text-muted" style="font-size:11px">ไม่มีไฟล์</span>'}
-        <button class="btn btn-danger btn-sm" onclick="delIEP(${ri},${si},'iep',${fi})">🗑️</button>
-      </div>`;});
-    h+=`<button class="btn btn-outline btn-sm" style="margin-bottom:12px" onclick="addIEP(${ri},${si},'iep')">➕ เพิ่มแผน IEP</button>`;
-    h+=`<hr class="dashed"/><div style="margin-bottom:8px"><b style="font-size:12px;color:var(--primary)">แผน IIP (แผนการสอนเฉพาะบุคคล)</b></div>`;
-    (s.iip||[]).forEach((f,fi)=>{
-      const src=f.dataUrl||f.url||'';
-      const hasFile=!!src;
-      h+=`<div class="pdf-item">
-        <div class="pdf-icon">📗</div>
-        <div style="flex:1">
-          <div style="font-weight:600">${esc(f.name)}</div>
-          <div class="text-muted">${f.fileName?esc(f.fileName)+' | ':''} อัปโหลด: ${esc(f.date)}</div>
-        </div>
-        ${hasFile?`<button class="btn btn-outline btn-sm" data-src="${src}" data-name="${esc(f.name)}" onclick="viewPDF2(this.dataset.src,this.dataset.name)">👁️ ดู</button>`:'<span class="text-muted" style="font-size:11px">ไม่มีไฟล์</span>'}
-        <button class="btn btn-danger btn-sm" onclick="delIEP(${ri},${si},'iip',${fi})">🗑️</button>
-      </div>`;});
-    h+=`<button class="btn btn-outline btn-sm" onclick="addIEP(${ri},${si},'iip')">➕ เพิ่มแผน IIP</button></div>`;
+function pageIEP(ri, acYear){
+  ar=ri; _curPageFn=null;
+  if(acYear!==undefined) viewAcYear=+acYear;
+  var r=db.rooms[ri];
+  var ayStr=String(viewAcYear);
+
+  var h='<div class="page-header"><h2>📄 แผนการสอน IEP / IIP</h2></div>';
+  h+=academicYearPickerHtml(viewAcYear,'pageIEP',ri);
+  h+=roomTabs(ri,'pageIEP');
+
+  if(!r.students.length){
+    h+='<div class="card"><p class="text-muted">ยังไม่มีข้อมูลนักเรียน กรุณาเพิ่มในหน้าข้อมูลนักเรียนก่อน</p></div>';
+  }
+
+  r.students.forEach(function(s,si){
+    var iepAll=s.iep||[];
+    var iipAll=s.iip||[];
+
+    // filter เฉพาะปีการศึกษาที่เลือก
+    // ถ้าไม่มีการระบุ acYear ใน record ให้แสดงทั้งหมด
+    var iepFl=iepAll.filter(function(f){
+      if(!f.acYear) return true; // เก่าที่ไม่มี acYear แสดงทุกปี
+      return f.acYear.indexOf(ayStr)>=0;
+    });
+    var iipFl=iipAll.filter(function(f){
+      if(!f.acYear) return true;
+      return f.acYear.indexOf(ayStr)>=0;
+    });
+
+    h+='<div class="card">'
+      +'<h3>🧒 '+esc(s.name)
+      +'<span style="font-size:11px;color:var(--muted);margin-left:8px">'+esc(s.type)+'</span></h3>'
+      +'<div class="flex" style="gap:1.5rem;flex-wrap:wrap">';
+
+    // ─── IEP ───
+    h+='<div style="flex:1;min-width:260px">'
+      +'<div style="font-weight:700;color:var(--primary);margin-bottom:6px">📋 แผนการจัดการศึกษาเฉพาะบุคคล (IEP)</div>';
+    if(iepFl.length){
+      iepFl.forEach(function(f){
+        var realIdx=iepAll.indexOf(f);
+        var url=f.dataUrl||f.url||'';
+        var isHttp=url.startsWith('http');
+        h+='<div class="pdf-item">'
+          +'<div class="pdf-icon">📋</div>'
+          +'<div style="flex:1">'
+          +'<div style="font-weight:600;font-size:12px">'+esc(f.name)+'</div>'
+          +'<div class="text-muted">ปีการศึกษา '+(f.acYear||'ไม่ระบุ')+' | '+esc(f.date)+'</div>'
+          +'</div>'
+          +(url?'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-type="iep" data-idx="'+realIdx+'" onclick="viewIEPFile(this)">👁️ ดู</button> ':'')
+          +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-type="iep" data-idx="'+realIdx+'" onclick="delIEP(+this.dataset.ri,+this.dataset.si,this.dataset.type,+this.dataset.idx)">🗑️</button>'
+          +'</div>';
+      });
+    } else {
+      h+='<p class="text-muted">ไม่มีแผน IEP ปีการศึกษา '+ayStr+'</p>';
+    }
+    h+='<div class="mt-1"><button class="btn btn-primary btn-sm" data-ri="'+ri+'" data-si="'+si+'" onclick="addIEP(+this.dataset.ri,+this.dataset.si)">➕ เพิ่มแผน IEP</button></div></div>';
+
+    // ─── IIP ───
+    h+='<div style="flex:1;min-width:260px">'
+      +'<div style="font-weight:700;color:#e65100;margin-bottom:6px">📘 แผนการสอนเฉพาะบุคคล (IIP)</div>';
+    if(iipFl.length){
+      iipFl.forEach(function(f){
+        var realIdx=iipAll.indexOf(f);
+        var url=f.dataUrl||f.url||'';
+        var isHttp=url.startsWith('http');
+        h+='<div class="pdf-item">'
+          +'<div class="pdf-icon" style="color:#e65100">📘</div>'
+          +'<div style="flex:1">'
+          +'<div style="font-weight:600;font-size:12px">'+esc(f.name)+'</div>'
+          +'<div class="text-muted">ปีการศึกษา '+(f.acYear||'ไม่ระบุ')+' | '+esc(f.date)+'</div>'
+          +'</div>'
+          +(url?'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-type="iip" data-idx="'+realIdx+'" onclick="viewIEPFile(this)">👁️ ดู</button> ':'')
+          +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-type="iip" data-idx="'+realIdx+'" onclick="delIEP(+this.dataset.ri,+this.dataset.si,this.dataset.type,+this.dataset.idx)">🗑️</button>'
+          +'</div>';
+      });
+    } else {
+      h+='<p class="text-muted">ไม่มีแผน IIP ปีการศึกษา '+ayStr+'</p>';
+    }
+    h+='<div class="mt-1"><button class="btn btn-primary btn-sm" style="background:var(--warn);border-color:var(--warn)" data-ri="'+ri+'" data-si="'+si+'" onclick="addIIP(+this.dataset.ri,+this.dataset.si)">➕ เพิ่มแผน IIP (หลายไฟล์)</button></div></div>';
+
+    h+='</div></div>';
   });
-  render(h);}
+
+  render(h);
+}
 window.pageIEP=pageIEP;
 function addIEP(ri,si,type){
   if(type==='iip'){
@@ -1467,28 +1894,45 @@ function addIEP(ri,si,type){
 }
 window.addIEP=addIEP;
 function saveIEP(ri,si){
-  ri=+ri;si=+si;var type='iep';
-  const nameVal=(document.getElementById('iep_n')||{}).value||'';
-  const fid='ieppdf_'+ri+'_'+si;
-  const pdfData=document.getElementById('pdfdata_'+fid);
-  const pdfName=document.getElementById('pdfname_'+fid);
+  ri=+ri; si=+si; var type='iep';
+  var nameVal = (document.getElementById('iep_n')||{}).value||'';
+  var fid = 'ieppdf_'+ri+'_'+si;
+  var pdata = document.getElementById('pdfdata_'+fid);
+  var pname = document.getElementById('pdfname_'+fid);
   if(!nameVal.trim()){alert('กรุณากรอกชื่อแผน/ปีการศึกษา');return;}
-  if(!pdfData||!pdfData.value){alert('กรุณาอัปโหลดไฟล์ PDF ก่อน');return;}
-  const f={name:nameVal.trim(),fileName:pdfName?pdfName.value:'',dataUrl:pdfData.value,url:'',date:new Date().toLocaleDateString('th-TH')};
-  if(!db.rooms[ri].students[si][type])db.rooms[ri].students[si][type]=[];
-  db.rooms[ri].students[si][type].push(f);
-  saveLocal();closeModal();toast('บันทึกสำเร็จ ✓');pageIEP(ri);}
-function saveIIPMulti(ri,si){
-  ri=+ri;si=+si;
-  const key=ri+'_'+si;const q=_iipQueue[key]||[];
-  if(!q.length){alert('กรุณาอัปโหลดไฟล์ PDF อย่างน้อย 1 ไฟล์');return;}
-  if(!db.rooms[ri].students[si].iip)db.rooms[ri].students[si].iip=[];
-  const dt=new Date().toLocaleDateString('th-TH');
-  q.forEach(f=>{db.rooms[ri].students[si].iip.push({name:f.fileName,fileName:f.fileName,dataUrl:f.dataUrl,url:'',date:dt});});
-  _iipQueue[key]=[];saveLocal();closeModal();toast('บันทึก '+q.length+' ไฟล์ IIP สำเร็จ ✓');pageIEP(ri);
+  if(!pdata||!pdata.value){alert('กรุณาอัปโหลดไฟล์ PDF ก่อน');return;}
+  var pdfVal = pdata.value;
+  var pdfName = pname?pname.value:('iep_'+ri+'_'+si+'_'+Date.now()+'.pdf');
+  var subFolder = 'IEP_' + (RS[ri]||('ห้อง'+ri));
+  if(pdfVal.startsWith('data:') && settings.scriptUrl){
+    toast('กำลังอัปโหลด IEP ไป Google Drive...');
+    syncPdfToDrive(pdfVal, pdfName, subFolder, function(finalUrl){
+      _saveIEPData(ri, si, type, nameVal, pdfName, finalUrl);
+    });
+  } else {
+    _saveIEPData(ri, si, type, nameVal, pdfName, pdfVal);
+  }
 }
-window.saveIIPMulti=saveIIPMulti;
 window.saveIEP=saveIEP;
+function _saveIEPData(ri, si, type, nameVal, fileName, dataUrl){
+  var f = {name:nameVal, fileName:fileName, dataUrl:dataUrl, url:'', date:new Date().toLocaleDateString('th-TH')};
+  if(!db.rooms[ri].students[si][type]) db.rooms[ri].students[si][type]=[];
+  db.rooms[ri].students[si][type].push(f);
+  saveLocal();
+  // sync IEP/IIP ไป Sheets
+  var iepRows = [];
+  db.rooms[ri].students.forEach(function(s,si2){
+    (s.iep||[]).forEach(function(plan){
+      iepRows.push({student:s.name,type:'IEP',name:plan.name,fileName:plan.fileName,url:(!plan.dataUrl||plan.dataUrl.startsWith('data:'))?'(PDF ในเครื่อง)':plan.dataUrl,date:plan.date});
+    });
+    (s.iip||[]).forEach(function(plan){
+      iepRows.push({student:s.name,type:'IIP',name:plan.name,fileName:plan.fileName,url:(!plan.dataUrl||plan.dataUrl.startsWith('data:'))?'(PDF ในเครื่อง)':plan.dataUrl,date:plan.date});
+    });
+  });
+  syncSheet('saveIEP', ri, iepRows);
+  closeModal(); toast('บันทึกสำเร็จ ✓'); pageIEP(ri);
+}
+window._saveIEPData=_saveIEPData;
 // imgCache
 const _imgCache={};
 
@@ -1663,20 +2107,57 @@ window.delIEP=delIEP;
 
 // ──────────── 11. REPORT ────────────
 function pageReport(){
-  repRoom=getRooms()[0];const now=new Date();
-  const ayMonths=getActiveYearMonths();
-  const curKey=`${now.getFullYear()}-${now.getMonth()+1}`;
-  const defMonth=ayMonths.find(m=>`${m.year}-${m.month}`===curKey)||ayMonths[ayMonths.length-1]||{month:now.getMonth()+1,year:now.getFullYear()};
-  repMonth=defMonth.month; repYear=defMonth.year+543;
-  let h=`<div class="page-header"><h2>🖨️ รายงานประจำเดือน</h2><p>${getActiveYearLabel()}</p></div>${roomTabs(repRoom,'selRepRoom')}`;
-  h+=`<div class="card"><div class="flex">
-    <div class="form-group" style="margin:0"><label>เลือกเดือน (${getActiveYearLabel()})</label>
-    <select id="rep_m" onchange="const sel=this.value.split('-');repMonth=+sel[1];repYear=+sel[0]+543;buildReport()">
-    ${ayMonths.length?ayMonths.map(m=>{const v=`${m.year}-${m.month}`;const sel=m.month===defMonth.month&&m.year===defMonth.year?' selected':'';return`<option value="${v}"${sel}>${m.label}</option>`;}).join(''):`<option value="${now.getFullYear()+'-'+(now.getMonth()+1)}">${MONTHS[now.getMonth()]} ${now.getFullYear()+543}</option>`}
-    </select></div>
-    <button class="btn btn-primary" onclick="printReport()">🖨️ พิมพ์รายงาน</button>
-  </div></div><div id="repPreview"></div>`;
-  render(h);buildReport();}
+  repRoom=getRooms()[0];
+  var _now=new Date();
+  repMonth=_now.getMonth()+1;
+  repYear=_now.getFullYear()+543;
+
+  var h='<div class="page-header"><h2>🖨️ รายงานประจำเดือน</h2></div>';
+
+  // room tabs
+  h+='<div class="room-tabs" id="repRoomTabs">';
+  getRooms().forEach(function(_r2){
+    h+='<div class="room-tab'+(_r2===repRoom?' active':'')+'" data-ri="'+_r2+'" onclick="selRepRoom('+_r2+')">'+RS[_r2]+'</div>';
+  });
+  h+='</div>';
+
+  // controls card
+  h+='<div class="card">'
+    +'<div class="flex" style="gap:12px;align-items:flex-end;flex-wrap:wrap">'
+    +'<div class="form-group" style="margin:0">'
+    +'<label>เลือกเดือน/ปี</label>'
+    +'<select id="rep_m" style="min-width:180px" onchange="_repSelChange(this.value)">'
+    +'<option value="">-- เลือกเดือน --</option>'
+    +'</select>'
+    +'</div>'
+    +'<button class="btn btn-primary" onclick="buildReport()">📋 แสดงรายงาน</button>'
+    +'<button class="btn btn-outline" onclick="printReport()">🖨️ พิมพ์รายงาน</button>'
+    +'</div></div>';
+  h+='<div id="repPreview" class="rep-preview" style="margin-top:1rem"></div>';
+  render(h);
+
+  // populate select หลัง render
+  var sel=document.getElementById('rep_m');
+  if(sel){
+    sel.innerHTML='';
+    for(var _mi2=0;_mi2<24;_mi2++){
+      var _dd2=new Date(_now.getFullYear(),_now.getMonth()-_mi2,1);
+      var _mo2=_dd2.getMonth()+1,_yy2=_dd2.getFullYear();
+      var _opt=document.createElement('option');
+      _opt.value=_yy2+'-'+_mo2;
+      _opt.textContent=MONTHS[_mo2-1]+' '+(_yy2+543);
+      if(_mi2===0)_opt.selected=true;
+      sel.appendChild(_opt);
+    }
+  }
+  buildReport();
+}
+window._repSelChange=function(v){
+  if(!v)return;
+  var _vv=v.split('-');
+  repMonth=+_vv[1];repYear=+_vv[0]+543;
+  buildReport();
+};
 window.selRepRoom=function(ri){
   repRoom=+ri;
   document.querySelectorAll('#repRoomTabs .room-tab').forEach(function(el){
@@ -1687,17 +2168,17 @@ window.selRepRoom=function(ri){
 
 function buildReport(){
   const ri=repRoom;const r=db.rooms[ri];const mn=MONTHS[repMonth-1];const yr=repYear;
-  const key=`${yr-543}-${repMonth}`;const att=r.attendance[key]||{};
-  let pres=0,abs=0,lv=0,wday=0;r.students.forEach(s=>{const d=att[s.name]||{};Object.values(d).forEach(v=>{if(v==='P')pres++;else if(v==='A')abs++;else if(v==='L')lv++;else if(v==='W')wday++;});});
+  const key=String(yr-543)+'-'+repMonth;const att=r.attendance[key]||{};
+  let pres=0,abs=0,lv=0,wday=0;r.students.forEach(function(s){var dd2=att[s.name]||{};Object.values(dd2).forEach(function(v){if(v==='P')pres++;else if(v==='A')abs++;else if(v==='L')lv++;else if(v==='W')wday++;});});
   const tot=pres+abs+lv;const pct=tot>0?Math.round(pres/tot*100):0;
-  const dp=`${yr-543}-${String(repMonth).padStart(2,'0')}`;
-  const svcs=(r.services||[]).filter(s=>s.date&&s.date.startsWith(dp));
-  const coms=(r.community||[]).filter(c=>c.date&&c.date.startsWith(dp));
-  const trns=(r.training||[]).filter(t=>t.date&&t.date.startsWith(dp));
-  const hrs=(r.hrMonthly||[]).filter(h=>h.period&&h.period.includes(mn));
+  const dp=String(yr-543)+'-'+String(repMonth).padStart(2,'0');
+  const svcs=(r.services||[]).filter(function(s){return s.date&&s.date.startsWith(dp);});
+  const coms=(r.community||[]).filter(function(c){return c.date&&c.date.startsWith(dp);});
+  const trns=(r.training||[]).filter(function(t){return t.date&&t.date.startsWith(dp);});
+  const hrYR=String(repYear); const hrs=(r.hrMonthly||[]).filter(function(h2){return h2.period&&h2.period.indexOf(mn)>=0&&h2.period.indexOf(hrYR)>=0;});
   const logoHtml=settings.logoDataUrl
-    ?`<div style="text-align:center;margin-bottom:12px"><img src="${settings.logoDataUrl}" style="height:72px;width:auto;object-fit:contain" alt="โลโก้"/></div>`
-    :`<div style="text-align:center;font-size:40px;margin-bottom:8px">🏫</div>`;
+    ?('<div style="text-align:center;margin-bottom:12px"><img src="'+settings.logoDataUrl+'" style="height:72px;width:auto;object-fit:contain" alt="โลโก้"/></div>')
+    :'<div style="text-align:center;font-size:40px;margin-bottom:8px">🏫</div>';
   const tchSign=r.teachers.length?r.teachers[0].name:'................................................';
 
   let h=`<div class="rep-preview" id="repContent">${logoHtml}
@@ -1764,51 +2245,72 @@ function buildReport(){
   </tbody></table>
 
   <div class="rep-section"><h3>4. บันทึกการให้บริการทางวิชาการ (${svcs.length} ครั้ง)</h3>`;
-  if(svcs.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียดการให้บริการ</th><th>ผู้ให้บริการ</th></tr></thead><tbody>`;svcs.forEach(sv=>h+=`<tr><td>${esc(sv.date)}</td><td>${esc(sv.student)}</td><td>${esc(sv.detail)}</td><td>${esc(sv.provider)}</td></tr>`);h+=`</tbody></table>`;}
+  if(svcs.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียดการให้บริการ</th><th>ผู้ให้บริการ</th></tr></thead><tbody>`;svcs.forEach(function(sv){h+='<tr><td>'+esc(sv.date)+'</td><td>'+esc(sv.student)+'</td><td>'+esc(sv.detail)+'</td><td>'+esc(sv.provider)+'</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>5. สรุปการปฏิบัติงานบุคลากร</h3>`;
-  if(hrs.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ลากิจ</th><th>ลาป่วย</th><th>ลาพักผ่อน</th><th>ลาอื่นๆ</th><th>มาสาย</th><th>ออกนอกสถานที่</th></tr></thead><tbody>`;hrs.forEach(it=>h+=`<tr><td>${esc(it.person)}</td><td style="text-align:center">${it.leaveB||0} วัน</td><td style="text-align:center">${it.leaveSick||0} วัน</td><td style="text-align:center">${it.leaveRest||0} วัน</td><td style="text-align:center">${it.leaveOther||0} วัน${it.leaveOtherNote?' ('+esc(it.leaveOtherNote)+')':''}</td><td style="text-align:center">${it.late||0} ครั้ง</td><td style="text-align:center">${it.outSite||0} ครั้ง</td></tr>`);h+=`</tbody></table>`;}
+  if(hrs.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ลากิจ</th><th>ลาป่วย</th><th>ลาพักผ่อน</th><th>ลาอื่นๆ</th><th>มาสาย</th><th>ออกนอกสถานที่</th></tr></thead><tbody>`;hrs.forEach(function(it){h+='<tr><td>'+esc(it.person)+'</td><td style="text-align:center">'+(it.leaveB||0)+' วัน</td><td style="text-align:center">'+(it.leaveSick||0)+' วัน</td><td style="text-align:center">'+(it.leaveRest||0)+' วัน</td><td style="text-align:center">'+(it.leaveOther||0)+' วัน'+(it.leaveOtherNote?' ('+esc(it.leaveOtherNote)+')':'')+'</td><td style="text-align:center">'+(it.late||0)+' ครั้ง</td><td style="text-align:center">'+(it.outSite||0)+' ครั้ง</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>6. การสัมมนา/ฝึกอบรม/ศึกษาดูงาน (${trns.length} รายการ)</h3>`;
-  if(trns.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ชื่อหลักสูตร/อบรม</th><th>หน่วยงานที่จัด</th><th>วันที่</th></tr></thead><tbody>`;trns.forEach(t=>h+=`<tr><td>${esc(t.person)}</td><td>${esc(t.course)}</td><td>${esc(t.org)}</td><td>${esc(t.date)}</td></tr>`);h+=`</tbody></table>`;}
+  if(trns.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ชื่อหลักสูตร/อบรม</th><th>หน่วยงานที่จัด</th><th>วันที่</th></tr></thead><tbody>`;trns.forEach(function(t){h+='<tr><td>'+esc(t.person)+'</td><td>'+esc(t.course)+'</td><td>'+esc(t.org)+'</td><td>'+esc(t.date)+'</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>7. งานสัมพันธ์ชุมชน/การเข้าร่วมกิจกรรมวันสำคัญ (${coms.length} กิจกรรม)</h3>`;
-  if(coms.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>รายการ/กิจกรรม</th><th>หน่วยงาน/สถานที่</th></tr></thead><tbody>`;coms.forEach(c=>h+=`<tr><td>${esc(c.date)}</td><td>${esc(c.activity)}</td><td>${esc(c.place)}</td></tr>`);h+=`</tbody></table>`;}
+  if(coms.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>รายการ/กิจกรรม</th><th>หน่วยงาน/สถานที่</th></tr></thead><tbody>`;coms.forEach(function(c){h+='<tr><td>'+esc(c.date)+'</td><td>'+esc(c.activity)+'</td><td>'+esc(c.place)+'</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>8. ภาคีเครือข่ายที่ทำงานร่วมกัน</h3>`;
-  if((r.network||[]).length){h+=`<table class="rep-table"><thead><tr><th>หน่วยงาน</th><th>ชื่อผู้ประสานงาน</th><th>ตำแหน่ง</th><th>เบอร์โทร</th></tr></thead><tbody>`;r.network.forEach(n=>h+=`<tr><td>${esc(n.org)}</td><td>${esc(n.contact)}</td><td>${esc(n.position)}</td><td>${esc(n.phone)}</td></tr>`);h+=`</tbody></table>`;}
+  if((r.network||[]).length){h+=`<table class="rep-table"><thead><tr><th>หน่วยงาน</th><th>ชื่อผู้ประสานงาน</th><th>ตำแหน่ง</th><th>เบอร์โทร</th></tr></thead><tbody>`;r.network.forEach(function(n){h+='<tr><td>'+esc(n.org)+'</td><td>'+esc(n.contact)+'</td><td>'+esc(n.position)+'</td><td>'+esc(n.phone)+'</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีข้อมูลภาคีเครือข่าย</p>`;
 
   h+=`</div>
   <div class="rep-section"><h3>9. ประมวลภาพกิจกรรมประจำเดือน</h3>`;
-  const repPhotos=(r.photos||[]).filter(p=>p.month&&p.month===mn).map(p=>({...p,imgUrl:p.imgUrl||p.dataUrl||''}));
+  const repPhotos=(r.photos||[]).filter(function(p){return p.month&&p.month===mn;}).map(function(p){var _pu=p.imgUrl||p.dataUrl||'';return Object.assign({},p,{imgUrl:_pu==='(base64-stripped)'?'':_pu});});
   if(repPhotos.length){
-    h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">`;
-    repPhotos.forEach(p=>{
-      if(p.imgUrl){h+=`<div style="text-align:center"><img src="${esc(p.imgUrl)}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.1)" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<div style=\"height:80px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px\">โหลดรูปไม่ได้</div>'" alt="ภาพกิจกรรม"/><div style="font-size:10px;color:#666;margin-top:3px">${esc(p.caption)}</div></div>`;}
-      else{h+=`<div style="text-align:center;background:#f5f5f5;border-radius:4px;padding:10px;font-size:11px;color:#999">📷 ${esc(p.caption)}</div>`;}
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
+    repPhotos.forEach(function(p){
+      var src=driveImgSrc(p.imgUrl||'');
+      if(src){
+        h+='<div style="text-align:center">'
+          +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd" onerror="this.hidden=true" alt="ภาพกิจกรรม"/>'
+          +'<div style="font-size:10px;color:#666;margin-top:3px">'+esc(p.caption||'')+'</div>'
+          +'</div>';
+      }
     });
-    h+=`</div>`;
+    h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน ${mn} (กรุณาเพิ่มภาพในหน้าประมวลภาพการสอน)</p>`;}
 
   h+=`</div><div class="rep-section"><h3>10. ภาพหลักฐานการสัมมนา/อบรม</h3>`;
-  const repTrImg=trns.filter(t=>t.imgUrl||t.dataUrl).map(t=>({...t,imgUrl:t.imgUrl||t.dataUrl||''}));
+  const repTrImg=trns.filter(function(t){return t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u});});
   if(repTrImg.length){
-    h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">`;
-    repTrImg.forEach(t=>{h+=`<div style="text-align:center"><img src="${esc(t.imgUrl)}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.1)" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<div style=\"height:80px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px\">โหลดรูปไม่ได้</div>'" alt="หลักฐาน"/><div style="font-size:10px;color:#666;margin-top:3px">${esc(t.course)}</div></div>`;});
-    h+=`</div>`;
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
+    repTrImg.forEach(function(t){
+      var src=driveImgSrc(t.imgUrl||'');
+      if(src){
+        h+='<div style="text-align:center">'
+          +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd" onerror="this.hidden=true" alt="หลักฐาน"/>'
+          +'<div style="font-size:10px;color:#666;margin-top:3px">'+esc(t.person||'')+'</div>'
+          +'</div>';
+      }
+    });
+    h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานการอบรมในเดือนนี้</p>`;}
 
-  h+=`</div><div class="rep-section"><h3>11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</h3>`;
-  const repComImg=coms.filter(c=>c.imgUrl||c.dataUrl).map(c=>({...c,imgUrl:c.imgUrl||c.dataUrl||''}));
+  h+=`</div><div class="rep-last-block"><div class="rep-section"><h3>11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</h3>`;
+  const repComImg=coms.filter(function(c){return c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2});});
   if(repComImg.length){
-    h+=`<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">`;
-    repComImg.forEach(c=>{h+=`<div style="text-align:center"><img src="${esc(c.imgUrl)}" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd;box-shadow:0 1px 4px rgba(0,0,0,.1)" crossorigin="anonymous" onerror="this.parentElement.innerHTML='<div style=\"height:80px;background:#f5f5f5;border-radius:6px;display:flex;align-items:center;justify-content:center;color:#aaa;font-size:11px\">โหลดรูปไม่ได้</div>'" alt="หลักฐาน"/><div style="font-size:10px;color:#666;margin-top:3px">${esc(c.activity)}</div></div>`;});
-    h+=`</div>`;
+    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
+    repComImg.forEach(function(c){
+      var src=driveImgSrc(c.imgUrl||'');
+      if(src){
+        h+='<div style="text-align:center">'
+          +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd" onerror="this.hidden=true" alt="หลักฐาน"/>'
+          +'<div style="font-size:10px;color:#666;margin-top:3px">'+esc(c.activity||'')+'</div>'
+          +'</div>';
+      }
+    });
+    h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
 
   h+=`</div>
@@ -1817,7 +2319,8 @@ function buildReport(){
       <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
         ลงชื่อ .....................................................<br>
         ( ${esc(tchSign)} )<br>
-        ครูผู้รับผิดชอบ${esc(ROOMS[ri])}<br>
+        ครูผู้รับผิดชอบห้องเรียนคู่ขนานบุคคลออทิสติก<br>
+        ${esc(ROOMS[ri])}<br>
         วันที่ ........../........../..........
       </div>
     </div>
@@ -1846,7 +2349,7 @@ function buildReport(){
       </div>
     </div>
   </div>
-  </div>`;
+  </div></div>`;
   const el=document.getElementById('repPreview');if(el)el.innerHTML=h;
 }
 window.buildReport=buildReport;
@@ -1854,72 +2357,70 @@ window.buildReport=buildReport;
 function printReport(){
   const c=document.getElementById('repContent');
   if(!c){alert('กรุณารอโหลดรายงานก่อน');return;}
-  // สร้าง style สำหรับพิมพ์
-  const ayLabel=getActiveYearLabel();
   const printStyle=`
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap');
       *{box-sizing:border-box;margin:0;padding:0}
-      body{font-family:'Sarabun',sans-serif;font-size:12px;color:#000;line-height:1.8;background:#fff}
-      h1{font-size:16px;font-weight:700;text-align:center;margin-bottom:4px}
-      h2{font-size:13px;font-weight:600;text-align:center;color:#333;margin-bottom:4px}
-      h3{font-size:12px;font-weight:700;border-bottom:1.5px solid #999;padding-bottom:3px;margin:14px 0 7px;color:#1a5fa8}
-      table{width:100%;border-collapse:collapse;font-size:11px;margin-bottom:8px}
-      th,td{border:1px solid #bbb;padding:5px 7px}
+      body{font-family:'Sarabun',sans-serif;font-size:12px;color:#000;line-height:1.7;background:#fff}
+      h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px}
+      h2{font-size:12px;font-weight:600;text-align:center;color:#333;margin-bottom:3px}
+      h3{font-size:11px;font-weight:700;border-bottom:1.5px solid #bbb;padding-bottom:3px;margin:12px 0 6px;color:#1a5fa8}
+      table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px}
+      th,td{border:1px solid #bbb;padding:4px 6px}
       th{background:#f0f0f0;font-weight:700;text-align:center}
-      .rep-section{margin-top:14px}
       img{max-width:100%;height:auto;border-radius:4px}
+      .rep-section{margin-bottom:10px}
+      /* ข้อ 11 + ลายเซ็น ติดกันเสมอ */
+      .rep-last-block{page-break-inside:avoid;break-inside:avoid;display:block}
       .photo-grid-print{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
       .photo-cell{text-align:center;break-inside:avoid}
-      .photo-cell img{width:100%;max-height:130px;object-fit:cover;border:1px solid #ccc;border-radius:4px}
-      .photo-cell div{font-size:10px;color:#555;margin-top:3px}
-      p{font-size:11px;color:#777;margin:4px 0}
-      @page{margin:15mm}
+      .photo-cell img{width:100%;max-height:120px;object-fit:cover;border:1px solid #ccc;border-radius:4px}
+      .photo-cell div{font-size:10px;color:#555;margin-top:2px}
+      p{font-size:10px;color:#777;margin:3px 0}
+      /* ลายเซ็น — ไม่แบ่งหน้า */
+      .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem;page-break-inside:avoid;break-inside:avoid}
+      .sig-box{text-align:center;font-size:11px}
+      .sig-box .sig-line{border-top:1px solid #999;padding-top:6px;margin-top:40px;line-height:1.8}
+      @page{margin:10mm 8mm}
       @media print{
         body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        .rep-section{page-break-inside:avoid}
         table{page-break-inside:auto}
-        tr{page-break-inside:avoid}
+        tr{page-break-inside:auto}
       }
     </style>`;
 
-  // clone innerHTML แล้วแทนที่ class photo grid
+  // แปลง content — แทน sig grid ด้วย class ที่ถูกต้อง
   let html = c.innerHTML;
-  // แทน grid style ให้เข้ากับการพิมพ์
-  html = html.replace(/display:grid;grid-template-columns:repeat\(3,1fr\)/g, 'display:grid;grid-template-columns:repeat(3,1fr)');
+  // แทน grid signature ให้ print ได้ดี
+  html = html.replace(
+    /style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px"/g,
+    'class="sig-grid"'
+  );
+  html = html.replace(
+    /style="border-top:1px solid #999;padding-top:8px;margin-top:48px"/g,
+    'class="sig-line"'
+  );
 
   const fullHtml=`<!DOCTYPE html>
 <html lang="th">
-<head>
-<meta charset="utf-8"/>
-<title>รายงานประจำเดือน</title>
-${printStyle}
-</head>
+<head><meta charset="utf-8"/><title>รายงานประจำเดือน</title>${printStyle}</head>
 <body>${html}</body>
 </html>`;
 
-  // ใช้ Blob + iframe เพื่อหลีกเลี่ยงการบล็อก popup
-  const blob = new Blob([fullHtml], {type:'text/html;charset=utf-8'});
-  const blobUrl = URL.createObjectURL(blob);
-
-  // สร้าง iframe ซ่อน แล้วสั่ง print
-  let iframe = document.getElementById('printFrame');
+  const blob=new Blob([fullHtml],{type:'text/html;charset=utf-8'});
+  const blobUrl=URL.createObjectURL(blob);
+  let iframe=document.getElementById('printFrame');
   if(!iframe){
-    iframe = document.createElement('iframe');
-    iframe.id = 'printFrame';
+    iframe=document.createElement('iframe');
+    iframe.id='printFrame';
     iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;opacity:0';
     document.body.appendChild(iframe);
   }
-  iframe.src = blobUrl;
-  iframe.onload = function(){
-    try{
-      iframe.contentWindow.focus();
-      iframe.contentWindow.print();
-    }catch(e){
-      // fallback: เปิด tab ใหม่
-      window.open(blobUrl,'_blank');
-    }
-    setTimeout(()=>URL.revokeObjectURL(blobUrl), 10000);
+  iframe.src=blobUrl;
+  iframe.onload=function(){
+    try{iframe.contentWindow.focus();iframe.contentWindow.print();}
+    catch(e){window.open(blobUrl,'_blank');}
+    setTimeout(()=>URL.revokeObjectURL(blobUrl),10000);
   };
 }
 window.printReport=printReport;
@@ -1992,12 +2493,16 @@ function pageAcademicYear(){
 window.pageAcademicYear=pageAcademicYear;
 
 function acYearForm(y){
-  return`<div class="form-group"><label>ชื่อปีการศึกษา *</label><input id="ay_name" value="${esc(y?y.name:'ปีการศึกษา '+(new Date().getFullYear()+543))}" placeholder="เช่น ปีการศึกษา 2568"/></div>
-  <div class="form-row">
-    <div class="form-group"><label>วันเริ่มต้น</label><input type="date" id="ay_start" value="${y?y.startDate:''}"/></div>
-    <div class="form-group"><label>วันสิ้นสุด</label><input type="date" id="ay_end" value="${y?y.endDate:''}"/></div>
-  </div>
-  <p class="text-muted">💡 ปกติภาคเรียนที่ 1 เริ่ม พ.ค. และภาคเรียนที่ 2 สิ้นสุด มี.ค. ของปีถัดไป</p>`;}
+  var nowYear=new Date().getFullYear()+543;
+  return '<div class="form-group"><label>ชื่อปีการศึกษา *</label>'
+    +'<input id="ay_name" value="'+(y?esc(y.name):'ปีการศึกษา '+nowYear)+'"/></div>'
+    +'<div class="form-row">'
+    +'<div class="form-group"><label>วันเริ่มต้น</label>'
+    +'<input type="date" id="ay_start" value="'+(y?y.startDate:'')+'"/></div>'
+    +'<div class="form-group"><label>วันสิ้นสุด</label>'
+    +'<input type="date" id="ay_end" value="'+(y?y.endDate:'')+'"/></div>'
+    +'</div>';
+}
 
 function addAcYear(){
   openModal(`<h3>➕ เพิ่มปีการศึกษาใหม่</h3>${acYearForm(null)}
@@ -2143,17 +2648,26 @@ function pageAdmin(){
 // ──────────── GOOGLE SHEETS ────────────
 // ── REAL-TIME SYNC TO GOOGLE SHEETS ──────────────────
 async function syncSheet(action, roomIndex, data){
-  if(!settings.scriptUrl) return; // ยังไม่ตั้งค่า URL ข้ามได้
+  if(!settings.scriptUrl) return;
+  // strip base64 ออกก่อนส่ง — เก็บเฉพาะ URL
+  var cleanData;
   try{
-    await fetch(settings.scriptUrl,{
+    cleanData=JSON.parse(JSON.stringify(data,function(k,v){
+      if(typeof v==='string' && v.length>200 && v.startsWith('data:'))
+        return '(ไฟล์ในเครื่อง)';
+      return v;
+    }));
+  }catch(e){cleanData=data;}
+  try{
+    fetch(settings.scriptUrl,{
       method:'POST',
-      mode:'no-cors', // ป้องกัน CORS error (Apps Script ตอบเสมอ)
-      body:JSON.stringify({action, roomIndex, data})
-    });
-  }catch(e){
-    console.warn('Sheets sync warn:',e.message);
-  }
+      mode:'no-cors',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:action,roomIndex:roomIndex,data:cleanData})
+    }).catch(function(){});
+  }catch(e){}
 }
+window.syncSheet=syncSheet;
 
 async function pushAllToSheets(){
   if(!settings.scriptUrl){toast('กรุณาตั้งค่า API URL ก่อน','err');return;}
