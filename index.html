@@ -1200,6 +1200,24 @@ document.addEventListener('click',function(e){
   if(inp){inp.value=val;inp.focus();}
 });
 
+function updateStuStatusBox(status){
+  var isActive = status==='กำลังรับบริการ';
+  var box = document.getElementById('stu_status_box');
+  var endInput = document.getElementById('stu_end');
+  if(box){
+    box.style.border = '2px solid '+(isActive?'#2d7d3a':'#e65100');
+    box.style.background = isActive?'#f0fff4':'#fff8f0';
+    var title=box.querySelector('[style*="font-weight:700"]');
+    if(title)title.style.color=isActive?'#2d7d3a':'#e65100';
+  }
+  if(endInput){
+    endInput.disabled=isActive;
+    endInput.style.opacity=isActive?'0.4':'1';
+    if(isActive)endInput.value='';
+  }
+}
+window.updateStuStatusBox=updateStuStatusBox;
+
 function loadLocal(){
   // โหลด settings ก่อน
   try{
@@ -1803,26 +1821,52 @@ window.pageStudents=pageStudents;
 
 function stuForm(s){
   var opts=DIS.map(function(d){return '<option'+(s&&s.type===d?' selected':'')+'>'+d+'</option>';}).join('');
-  return '<div class="form-group"><label>ชื่อ-สกุล *</label>'
-    +'<input id="s_name" value="'+esc(s?s.name:'')+'"/></div>'
-    +'<div class="form-row">'
+  var curSt=s&&s.stuStatus?s.stuStatus:'กำลังรับบริการ';
+  var isAct=curSt==='กำลังรับบริการ';
+  var stColor=isAct?'#2d7d3a':curSt==='ส่งต่อ'?'#1a5fa8':'#b71c1c';
+  var stBg=isAct?'#f0fff4':curSt==='ส่งต่อ'?'#e3f2fd':'#fff0f0';
+  var h='';
+  h+='<div class="form-group"><label>ชื่อ-สกุล *</label>'
+    +'<input id="s_name" value="'+esc(s?s.name:'')+'"/></div>';
+  h+='<div class="form-row">'
     +'<div class="form-group"><label>วันเดือนปีเกิด</label>'
     +'<input type="date" id="s_dob" value="'+(s?s.dob:'')+'" '
     +'oninput="document.getElementById(&quot;s_age&quot;).textContent=calcAge(this.value)"/></div>'
     +'<div class="form-group"><label>อายุ (คำนวณอัตโนมัติ)</label>'
     +'<div style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px" id="s_age">'
     +(s?calcAge(s.dob):'-')+'</div></div>'
-    +'</div>'
-    +'<div class="form-group"><label>ที่อยู่</label>'
-    +'<input id="s_addr" value="'+esc(s?s.address:'')+'"/></div>'
-    +'<div class="form-group"><label>ประเภทความพิการ</label>'
-    +'<select id="s_type">'+opts+'</select></div>'
-    +'<div class="form-row">'
+    +'</div>';
+  h+='<div class="form-group"><label>ที่อยู่</label>'
+    +'<input id="s_addr" value="'+esc(s?s.address:'')+'"/></div>';
+  h+='<div class="form-group"><label>ประเภทความพิการ</label>'
+    +'<select id="s_type">'+opts+'</select></div>';
+  h+='<div class="form-row">'
     +'<div class="form-group"><label>ชื่อ-สกุลผู้ปกครอง</label>'
     +'<input id="s_guard" value="'+esc(s?s.guardian:'')+'"/></div>'
     +'<div class="form-group"><label>เบอร์โทรติดต่อผู้ปกครอง</label>'
     +'<input id="s_gph" value="'+esc(s?s.gphone:'')+'"/></div>'
     +'</div>';
+  h+='<div style="border:2px solid '+stColor+';border-radius:10px;padding:14px;margin:12px 0;background:'+stBg+'" id="stu_status_box">';
+  h+='<div style="font-size:13px;font-weight:700;color:'+stColor+';margin-bottom:10px">สถานะการรับบริการ</div>';
+  h+='<div class="form-row">'
+    +'<div class="form-group" style="margin:0"><label>สถานะ</label>'
+    +'<select id="stu_status" onchange="updateStuStatusBox(this.value)">'
+    +'<option'+(isAct?' selected':'')+'>กำลังรับบริการ</option>'
+    +'<option'+(curSt==='ส่งต่อ'?' selected':'')+'>ส่งต่อ</option>'
+    +'<option'+(curSt==='ลาออก'?' selected':'')+'>ลาออก</option>'
+    +'<option'+(curSt==='จบการศึกษา'?' selected':'')+'>จบการศึกษา</option>'
+    +'<option'+(curSt==='อื่นๆ'?' selected':'')+'>อื่นๆ</option>'
+    +'</select></div>'
+    +'<div class="form-group" style="margin:0"><label>วันที่สิ้นสุด</label>'
+    +'<input type="date" id="stu_end" value="'+(s&&s.stuEndDate?s.stuEndDate:'')+'"'
+    +(isAct?' disabled style="opacity:0.4"':'')+'/>'
+    +'</div></div>';
+  h+='<div class="form-group" style="margin-top:10px;margin-bottom:0">'
+    +'<label>รายละเอียด</label>'
+    +'<input id="stu_remark" value="'+esc(s&&s.stuRemark?s.stuRemark:'')+'" '
+    +'placeholder="เช่น ส่งต่อโรงพยาบาลหาดใหญ่"/>'
+    +'</div></div>';
+  return h;
 }
 
 function addStudent(ri){openModal(`<h3>➕ เพิ่มนักเรียน</h3>${stuForm(null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveStu(${ri},-1)">💾 บันทึก</button></div>`);}
@@ -1830,7 +1874,11 @@ window.addStudent=addStudent;
 function editStudent(ri,idx){openModal(`<h3>✏️ แก้ไขข้อมูลนักเรียน</h3>${stuForm(db.rooms[ri].students[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveStu(${ri},${idx})">💾 บันทึก</button></div>`);}
 window.editStudent=editStudent;
 function saveStu(ri,idx){
-  const s={name:document.getElementById('s_name').value.trim(),dob:document.getElementById('s_dob').value,address:document.getElementById('s_addr').value,type:document.getElementById('s_type').value,guardian:document.getElementById('s_guard').value,gphone:document.getElementById('s_gph').value,iep:idx>=0?(db.rooms[ri].students[idx].iep||[]):[],iip:idx>=0?(db.rooms[ri].students[idx].iip||[]):[]};
+  const s={name:document.getElementById('s_name').value.trim(),dob:document.getElementById('s_dob').value,address:document.getElementById('s_addr').value,type:document.getElementById('s_type').value,guardian:document.getElementById('s_guard').value,gphone:document.getElementById('s_gph').value,iep:idx>=0?(db.rooms[ri].students[idx].iep||[]):[],iip:idx>=0?(db.rooms[ri].students[idx].iip||[]):[],
+    stuStatus:document.getElementById('stu_status')?document.getElementById('stu_status').value:'กำลังรับบริการ',
+    stuEndDate:document.getElementById('stu_end')?document.getElementById('stu_end').value:'',
+    stuRemark:document.getElementById('stu_remark')?document.getElementById('stu_remark').value:''
+  };
   if(!s.name){alert('กรุณากรอกชื่อ-สกุล');return;}
   if(idx===-1)db.rooms[ri].students.push(s);else db.rooms[ri].students[idx]=s;
   saveLocal();syncSheet('saveStudents',ri,db.rooms[ri].students);closeModal();toast('บันทึกสำเร็จ ✓');pageStudents(ri);}
