@@ -3467,7 +3467,9 @@ window.selRepRoom=function(ri){
 function buildReport(){
   const ri=repRoom;const r=db.rooms[ri];const mn=MONTHS[repMonth-1];const yr=repYear;
   const key=String(yr-543)+'-'+repMonth;const att=r.attendance[key]||{};
-  let pres=0,abs=0,lv=0,wday=0;r.students.forEach(function(s){var dd2=att[s.name]||{};Object.values(dd2).forEach(function(v){if(v==='P')pres++;else if(v==='A')abs++;else if(v==='L')lv++;else if(v==='W')wday++;});});
+  const _repYrCE=+String(yr-543);const _repMnNum=repMonth;
+  const _repActiveStus=r.students.filter(function(s){return isStudentActiveIn(s,_repYrCE,_repMnNum);});
+  let pres=0,abs=0,lv=0,wday=0;_repActiveStus.forEach(function(s){var dd2=att[s.name]||{};Object.values(dd2).forEach(function(v){if(v==='P')pres++;else if(v==='A')abs++;else if(v==='L')lv++;else if(v==='W')wday++;});});
   const tot=pres+abs+lv;const pct=tot>0?Math.round(pres/tot*100):0;
   const dp=String(yr-543)+'-'+String(repMonth).padStart(2,'0');
   const svcs=(r.services||[]).filter(function(s){return s.date&&s.date.startsWith(dp);});
@@ -3498,16 +3500,7 @@ function buildReport(){
   h+=`</tbody></table></div>
 
   <div class="rep-section"><h3>3. สถิติการเข้าเรียน ${mn} ${yr}</h3>
-  <table class="rep-table" style="margin-bottom:10px"><thead><tr>
-    <th>จำนวนนักเรียน</th><th>มาเรียน (รวม)</th><th>ขาดเรียน (รวม)</th><th>ลา (รวม)</th><th>วันหยุด (รวม)</th><th>อัตราการมาเรียน</th>
-  </tr></thead><tbody><tr>
-    <td style="text-align:center">${r.students.length} คน</td>
-    <td style="text-align:center;color:#2d7d3a;font-weight:700">${pres} ครั้ง</td>
-    <td style="text-align:center;color:#b71c1c;font-weight:700">${abs} ครั้ง</td>
-    <td style="text-align:center;color:#e65100;font-weight:700">${lv} ครั้ง</td>
-    <td style="text-align:center;color:#555;font-weight:700">${wday} ครั้ง</td>
-    <td style="text-align:center;font-weight:700">${pct}%</td>
-  </tr></tbody></table>
+
   <p style="font-size:12px;font-weight:600;color:#1a5fa8;margin-bottom:6px">รายละเอียดการเข้าเรียนรายบุคคล</p>
   <table class="rep-table"><thead><tr>
     <th>ลำดับ</th><th>ชื่อ-สกุล</th><th>ประเภทความพิการ</th>
@@ -3517,7 +3510,11 @@ function buildReport(){
   </tr></thead><tbody>
   ${(function(){
     var rows='';
-    r.students.forEach(function(s,si){
+    var _repYrCE2=yr-543,_repMn2=repMonth;
+    var _activeStus=r.students.filter(function(s){
+      return isStudentActiveIn(s,_repYrCE2,_repMn2);
+    });
+    _activeStus.forEach(function(s,si){
       var sd=att[s.name]||{};
       var sp=0,sa=0,sl=0,sw=0;
       Object.values(sd).forEach(function(v){
