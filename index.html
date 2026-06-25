@@ -2121,27 +2121,56 @@ function pageAttendance(ri){
   });
   h+='<th>มา</th><th>ขาด</th><th>ลา</th><th>ย/ห</th></tr></thead><tbody>';
 
+  // คำนวณ endDay จาก stuEndDate ในเดือนนั้น (ถ้าสิ้นสุดในเดือนเดียวกัน)
   r.students.forEach(function(s){
-    var isActive=isStudentActiveIn(s,yr,mn);
+    var st=s.stuStatus||'กำลังรับบริการ';
+    var isInactive = st!=='กำลังรับบริการ';
+
+    // ถ้าหมดบริการ — ตรวจว่าสิ้นสุดในเดือนนี้หรือก่อนหน้า
+    var endDay=null; // null = ยังรับบริการตลอดเดือน
+    if(isInactive&&s.stuEndDate){
+      var ep=s.stuEndDate.split('-');
+      var endY=+ep[0],endM=+ep[1],endD=+ep[2];
+      if(endY===yr&&endM===mn){
+        endDay=endD; // สิ้นสุดในเดือนนี้ → แสดงแถวแต่ lock วันหลัง endDay
+      } else if(endY<yr||(endY===yr&&endM<mn)){
+        return; // สิ้นสุดก่อนเดือนนี้ → ไม่แสดงแถวเลย
+      }
+      // endY>yr หรือ endM>mn → ยังรับบริการอยู่ (ไม่น่าเกิดแต่รองรับไว้)
+    } else if(isInactive&&!s.stuEndDate){
+      return; // ไม่มีวันสิ้นสุด + ไม่ active → ไม่แสดง
+    }
+
     var days=att[s.name]||{},pm=0,ab=0,lv=0,wh=0;
     sDays.forEach(function(d){var v=days[d];if(v==='P')pm++;else if(v==='A')ab++;else if(v==='L')lv++;else if(v==='W')wh++;});
-    var rowStyle=isActive?'':'background:#fff5f5;opacity:0.65;pointer-events:none;';
-    var nameTxt=esc(s.name)+(isActive?'':stuStatusBadge(s));
-    h+='<tr style="'+rowStyle+'"><td style="font-size:12px;font-weight:500">'+nameTxt+'</td>';
+
+    var nameTxt=esc(s.name);
+    if(isInactive){
+      var badge=stuStatusBadge(s);
+      if(endDay) nameTxt+=' <span style="font-size:10px;color:#888">(ถึง '+toBEDate(s.stuEndDate)+')</span>';
+      else nameTxt+=badge;
+    }
+    h+='<tr><td style="font-size:12px;font-weight:500">'+nameTxt+'</td>';
     sDays.forEach(function(d){
+      var afterEnd = endDay!==null && d>endDay;
       var v=days[d]||'';
       var isHolDay=!!hols[d];
       var col=ATT_COLORS[v]||{bg:isHolDay?'#fff3e0':'',fc:'var(--muted)'};
       var lbl=ATT_LABELS[v]||(isHolDay?'ย':'·');
-      // ถ้าวันนั้นเป็นวันหยุดที่ระบุไว้ และยังไม่มี value → auto ย
-      var cellVal=v||(isHolDay?'W':'');
       if(!v&&isHolDay){col={bg:'#e8e8e8',fc:'#555'};lbl='ย';}
       var tooltip=isHolDay&&hols[d]?' title="'+esc(hols[d])+'"':'';
-      h+='<td style="text-align:center;padding:2px">'
-        +'<span class="att-cell" style="background:'+col.bg+';color:'+col.fc+';border-radius:5px"'
-        +' data-ri="'+ri+'" data-key="'+key+'" data-name="'+esc(s.name)+'" data-day="'+d+'"'
-        +' data-ishol="'+(isHolDay?'1':'0')+'"'+tooltip
-        +' onclick="togAtt3(this)">'+lbl+'</span></td>';
+      if(afterEnd){
+        // วันหลังสิ้นสุดการรับบริการ — แสดงเป็นเส้นขีด ล็อก
+        h+='<td style="text-align:center;padding:2px">'
+          +'<span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:5px;background:#f0f0f0;color:#ccc;font-size:11px;cursor:not-allowed" title="หลังสิ้นสุดการรับบริการ">—</span>'
+          +'</td>';
+      } else {
+        h+='<td style="text-align:center;padding:2px">'
+          +'<span class="att-cell" style="background:'+col.bg+';color:'+col.fc+';border-radius:5px"'
+          +' data-ri="'+ri+'" data-key="'+key+'" data-name="'+esc(s.name)+'" data-day="'+d+'"'
+          +' data-ishol="'+(isHolDay?'1':'0')+'"'+tooltip
+          +' onclick="togAtt3(this)">'+lbl+'</span></td>';
+      }
     });
     h+='<td style="text-align:center;color:#2d7d3a;font-weight:700">'+pm+'</td>'
       +'<td style="text-align:center;color:#b71c1c;font-weight:700">'+ab+'</td>'
@@ -2237,7 +2266,17 @@ window.clearAllHolidays=clearAllHolidays;
 function togAtt3(el){
   var ri=+el.dataset.ri,key=el.dataset.key,sn=el.dataset.name,day=+el.dataset.day;
   var _s=(db.rooms[ri].students||[]).find(function(x){return x.name===sn;});
-  if(_s&&!isStudentActiveIn(_s,viewYear,viewMonth)){toast('นักเรียนนี้ไม่ได้รับบริการในเดือนนี้แล้ว','err');return;}
+  if(_s&&_s.stuEndDate){
+    var _ep=_s.stuEndDate.split('-');
+    var _endY=+_ep[0],_endM=+_ep[1],_endD=+_ep[2];
+    // ถ้าวันที่คลิกอยู่หลังวันสิ้นสุด
+    if(viewYear>_endY||(viewYear===_endY&&viewMonth>_endM)||
+       (viewYear===_endY&&viewMonth===_endM&&day>_endD)){
+      toast('วันนี้หลังสิ้นสุดการรับบริการของ '+sn+' แล้ว','err');return;
+    }
+  } else if(_s&&!isStudentActiveIn(_s,viewYear,viewMonth)){
+    toast('นักเรียนนี้ไม่ได้รับบริการในเดือนนี้แล้ว','err');return;
+  }
   if(!db.rooms[ri].attendance[key])db.rooms[ri].attendance[key]={};
   if(!db.rooms[ri].attendance[key][sn])db.rooms[ri].attendance[key][sn]={};
   var cur=db.rooms[ri].attendance[key][sn][day]||'';
