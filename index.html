@@ -1170,6 +1170,20 @@ function stuStatusBadge(s){
 window.isStudentActiveIn=isStudentActiveIn;
 window.stuStatusBadge=stuStatusBadge;
 
+
+// คืน academicYear object ที่ date (ISO string) อยู่ใน range (null ถ้าไม่เจอ)
+function getAcYearOf(isoDate){
+  if(!isoDate) return null;
+  var d=new Date(isoDate);
+  var years=(settings&&settings.academicYears)||[];
+  for(var i=0;i<years.length;i++){
+    var y=years[i];
+    if(!y.startDate||!y.endDate) continue;
+    if(d>=new Date(y.startDate)&&d<=new Date(y.endDate)) return y;
+  }
+  return null;
+}
+window.getAcYearOf=getAcYearOf;
 window.compressImg=compressImg;
 
 function saveUserPass(key){
@@ -2946,15 +2960,34 @@ window.delSchedule=delSchedule;
 
 
 // ──────────── การส่งต่อนักเรียน ────────────
-function pageReferral(ri){
-  ri=safeRoom(ri); ar=ri; _curPageFn=function(){pageReferral(ar);};
+// track selected acYear for referral page
+var referralAcYearId = null;
 
-  // รวบรวมนักเรียนที่มีสถานะส่งต่อ/ออก/จบ จากทุกห้องที่มีสิทธิ์
+function pageReferral(ri, acYId){
+  ri=safeRoom(ri); ar=ri; _curPageFn=function(){pageReferral(ar,referralAcYearId);};
+  if(acYId!==undefined) referralAcYearId=acYId;
+
+  // ปีการศึกษาทั้งหมด
+  var acYears=(settings&&settings.academicYears)||[];
+  // หา active year เป็น default
+  if(referralAcYearId===null){
+    var actY=acYears.find(function(y){return y.active;})||acYears[acYears.length-1];
+    referralAcYearId=actY?actY.id:null;
+  }
+  var selAcY=acYears.find(function(y){return y.id===referralAcYearId;})||null;
+
+  // filter: นักเรียนที่หยุดรับบริการ และ stuEndDate อยู่ในปีการศึกษาที่เลือก
   var allReferred=[];
   getRooms().forEach(function(rIdx){
     var r=db.rooms[rIdx]||mkRoom();
     (r.students||[]).forEach(function(s,si){
       if(s.stuStatus&&s.stuStatus!=='กำลังรับบริการ'){
+        // ตรวจ stuEndDate ว่าอยู่ในปีการศึกษาที่เลือกหรือไม่
+        if(selAcY&&s.stuEndDate){
+          var d=new Date(s.stuEndDate);
+          var inRange=d>=new Date(selAcY.startDate)&&d<=new Date(selAcY.endDate);
+          if(!inRange) return; // ข้าม
+        }
         allReferred.push({s:s, si:si, ri:rIdx});
       }
     });
@@ -2977,8 +3010,17 @@ function pageReferral(ri){
   var countGrad =allReferred.filter(function(x){return x.s.stuStatus==='จบการศึกษา';}).length;
   var countOther=allReferred.filter(function(x){return x.s.stuStatus==='อื่นๆ';}).length;
 
+  // dropdown เลือกปีการศึกษา
+  var ayOpts=acYears.map(function(y){
+    return '<option value="'+y.id+'"'+(y.id===referralAcYearId?' selected':'')+'>'+esc(y.name)+'</option>';
+  }).join('');
   var h='<div class="page-header"><h2>🔄 การส่งต่อนักเรียน</h2><p>แสดงนักเรียนที่มีการเปลี่ยนแปลงสถานะการรับบริการ</p></div>';
   h+=roomTabs(ri,'pageReferral');
+  h+='<div style="display:flex;align-items:center;gap:12px;margin-bottom:1rem;flex-wrap:wrap">';
+  h+='<label style="font-weight:600;font-size:13px">📅 ปีการศึกษา:</label>';
+  h+='<select style="padding:7px 14px;border:1.5px solid var(--primary);border-radius:20px;font-size:13px;color:var(--primary);font-weight:600;cursor:pointer" onchange="pageReferral(ar,+this.value)">'+ayOpts+'</select>';
+  if(selAcY) h+='<span style="font-size:12px;color:var(--muted)">'+esc(selAcY.startDate)+' ถึง '+esc(selAcY.endDate)+'</span>';
+  h+='</div>';
 
   // สถิติรวม
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem">';
@@ -2993,12 +3035,27 @@ function pageReferral(ri){
   h+='<div class="card"><h3>📋 รายชื่อนักเรียนที่มีการเปลี่ยนสถานะ — '+RS[ri]+'</h3>';
 
   if(roomReferred.length){
-    h+='<div class="table-wrap"><table><thead><tr>'      +'<th>ลำดับ</th><th>ชื่อ-สกุล</th><th>ประเภทความพิการ</th>'      +'<th>สถานะ</th><th>วันที่สิ้นสุด</th>'      +'<th>สถานที่ส่งต่อ/รายละเอียด</th><th>สาเหตุการส่งต่อ</th>'      +'<th>จัดการ</th>'      +'</tr></thead><tbody>';
+    h+='<div class="table-wrap"><table><thead><tr>'      +'<th>ลำดับ</th><th>ชื่อ-สกุล</th><th>ประเภทความพิการ</th>'      +'<th>สถานะ</th><th>วันที่สิ้นสุด</th><th>ปีการศึกษา</th>'      +'<th>สถานที่ส่งต่อ/รายละเอียด</th><th>สาเหตุการส่งต่อ</th>'      +'<th>จัดการ</th>'      +'</tr></thead><tbody>';
     roomReferred.forEach(function(item,idx){
       var s=item.s, si=item.si, rIdx=item.ri;
       var stColor=s.stuStatus==='ส่งต่อ'?'#1a5fa8':s.stuStatus==='ลาออก'?'#b71c1c':s.stuStatus==='จบการศึกษา'?'#e65100':'#555';
       var stBg   =s.stuStatus==='ส่งต่อ'?'#e3f2fd':s.stuStatus==='ลาออก'?'#ffebee':s.stuStatus==='จบการศึกษา'?'#fff3e0':'#f5f5f5';
-      h+='<tr>'        +'<td style="text-align:center">'+(idx+1)+'</td>'        +'<td><b>'+esc(s.name)+'</b><br><span style="font-size:11px;color:#888">อายุ '+calcAge(s.dob)+'</span></td>'        +'<td><span class="badge badge-blue" style="font-size:10px">'+esc(s.type)+'</span></td>'        +'<td><span style="background:'+stBg+';color:'+stColor+';padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600">'+esc(s.stuStatus)+'</span></td>'        +'<td style="font-size:12px">'+toBEDate(s.stuEndDate||'')+'</td>'        +'<td style="font-size:12px;max-width:160px">'+esc(s.stuRemark||'-')+'</td>'        +'<td style="font-size:12px;max-width:180px;color:'+( s.stuStatus==='ส่งต่อ'?'#1a5fa8':'#888')+'">'        +(s.stuStatus==='ส่งต่อ'&&s.stuReferReason          ?'<span style="background:#e3f2fd;padding:2px 6px;border-radius:6px">'+esc(s.stuReferReason)+'</span>'          :(s.stuStatus==='ส่งต่อ'?'<span style="color:#aaa">ไม่ระบุ</span>':'-'))        +'</td>'        +'<td><button class="btn btn-outline btn-sm" data-ri="'+rIdx+'" data-si="'+si+'" onclick="editStudent(+this.dataset.ri,+this.dataset.si)">✏️ แก้ไข</button></td>'        +'</tr>';
+      var _acY=getAcYearOf(s.stuEndDate);
+      h+='<tr>'
+        +'<td style="text-align:center">'+(idx+1)+'</td>'
+        +'<td><b>'+esc(s.name)+'</b><br><span style="font-size:11px;color:#888">อายุ '+calcAge(s.dob)+'</span></td>'
+        +'<td><span class="badge badge-blue" style="font-size:10px">'+esc(s.type)+'</span></td>'
+        +'<td><span style="background:'+stBg+';color:'+stColor+';padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600">'+esc(s.stuStatus)+'</span></td>'
+        +'<td style="font-size:12px">'+toBEDate(s.stuEndDate||'')+'</td>'
+        +'<td style="font-size:11px;color:var(--primary);font-weight:600">'+(_acY?esc(_acY.name):'<span style="color:#aaa">ไม่ระบุ</span>')+'</td>'
+        +'<td style="font-size:12px;max-width:160px">'+esc(s.stuRemark||'-')+'</td>'
+        +'<td style="font-size:12px;max-width:180px;color:'+(s.stuStatus==='ส่งต่อ'?'#1a5fa8':'#888')+'">'
+        +(s.stuStatus==='ส่งต่อ'&&s.stuReferReason
+          ?'<span style="background:#e3f2fd;padding:2px 6px;border-radius:6px">'+esc(s.stuReferReason)+'</span>'
+          :(s.stuStatus==='ส่งต่อ'?'<span style="color:#aaa">ไม่ระบุ</span>':'-'))
+        +'</td>'
+        +'<td><button class="btn btn-outline btn-sm" data-ri="'+rIdx+'" data-si="'+si+'" onclick="editStudent(+this.dataset.ri,+this.dataset.si)">✏️ แก้ไข</button></td>'
+        +'</tr>';
     });
     h+='</tbody></table></div>';
   } else {
@@ -3574,6 +3631,41 @@ function buildReport(){
         วันที่ ........../........../..........
       </div>
     </div>
+    ${(function(){
+      // นักเรียนที่สิ้นสุดการรับบริการในเดือนนี้
+      var _repYrCE=yr-543;
+      var _repMn=repMonth;
+      var _endedStus=(r.students||[]).filter(function(s){
+        if(!s.stuStatus||s.stuStatus==='กำลังรับบริการ') return false;
+        if(!s.stuEndDate) return false;
+        var _ep=s.stuEndDate.split('-');
+        return +_ep[0]===_repYrCE && +_ep[1]===_repMn;
+      });
+      if(!_endedStus.length) return '';
+      var _rows=_endedStus.map(function(s,i){
+        var _acY=getAcYearOf(s.stuEndDate);
+        return '<tr>'
+          +'<td style="text-align:center;padding:4px 8px">'+(i+1)+'</td>'
+          +'<td style="padding:4px 8px;font-weight:600">'+esc(s.name)+'</td>'
+          +'<td style="padding:4px 8px">'+esc(s.type)+'</td>'
+          +'<td style="padding:4px 8px"><span style="background:#e3f2fd;color:#1a5fa8;padding:2px 8px;border-radius:10px;font-size:11px">'+esc(s.stuStatus)+'</span></td>'
+          +'<td style="padding:4px 8px">'+toBEDate(s.stuEndDate)+'</td>'
+          +'<td style="padding:4px 8px;font-size:11px">'+(_acY?esc(_acY.name):'-')+'</td>'
+          +'<td style="padding:4px 8px;font-size:11px">'+esc(s.stuRemark||'-')+'</td>'
+          +'</tr>';
+      }).join('');
+      return '<div class="rep-section" style="margin-top:1.5rem">'
+        +'<div class="rep-section-title">📋 นักเรียนที่สิ้นสุดการรับบริการในเดือน '+mn+' '+yr+'</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f0f4ff">'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ลำดับ</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ชื่อ-สกุล</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ประเภทความพิการ</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">สถานะ</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">วันที่สิ้นสุด</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ปีการศึกษา</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">สถานที่ส่งต่อ/รายละเอียด</th>'
+        +'</tr></thead><tbody>'+_rows+'</tbody></table></div>';
+    }())}
     <div style="text-align:center">
       <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
         ลงชื่อ .....................................................<br>
