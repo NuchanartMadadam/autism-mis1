@@ -2019,7 +2019,7 @@ function stuForm(s){
     +'<div style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px" id="s_age">'
     +(s?calcAge(s.dob):'-')+'</div></div>'
     +'</div>';
-    +'<input id="s_addr" value="'+esc(s?s.address:'')+'"/></div>';
+  h+='<div class="form-group"><label>ที่อยู่</label><input id="s_addr" value="'+esc(s?s.address:'')+'"/></div>';
   h+='<div class="form-group"><label>ประเภทความพิการ</label>'
     +'<select id="s_type">'+opts+'</select></div>';
   h+='<div class="form-row">'
@@ -2042,7 +2042,7 @@ function stuForm(s){
     +'<option'+(curSt==='อื่นๆ'?' selected':'')+'>อื่นๆ</option>'
     +'</select></div>'
     +beDatePickerHtml('stu_end',s&&s.stuEndDate?s.stuEndDate:'','วันที่สิ้นสุด',false,true)
-    +(isAct?' disabled style="opacity:0.4"':'')+'/>'
+    +'</div>'
     +'</div></div>';
   h+='<div class="form-group" style="margin-top:10px;margin-bottom:0">'
     +'<label>รายละเอียด / สถานที่ส่งต่อ <span style="color:#aaa;font-size:11px">(เช่น ส่งต่อโรงพยาบาลหาดใหญ่)</span></label>'
