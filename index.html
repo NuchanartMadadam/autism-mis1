@@ -3106,6 +3106,7 @@ function pageIEP(ri, acYear){
 
   // ปุ่มเพิ่มแผนสำหรับนักเรียนที่ยังไม่มี (dropdown เลือกชื่อ)
   var stuWithoutPlan=r.students.filter(function(s){
+    if(!isStudentActiveIn(s,new Date().getFullYear(),new Date().getMonth()+1)) return false;
     var iepHas=(s.iep||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
     var iipHas=(s.iip||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
     return !iepHas&&!iipHas;
