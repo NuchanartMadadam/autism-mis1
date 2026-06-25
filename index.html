@@ -3495,8 +3495,9 @@ function buildReport(){
 
   <div class="rep-section"><h3>2. ข้อมูลผู้เรียน</h3>
   <table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ประเภทความพิการ</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>`;
-  r.students.forEach((s,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(s.name)}</td><td>${toBEDate(s.dob)}</td><td>${calcAge(s.dob)}</td><td>${esc(s.type)}</td><td>${esc(s.guardian)}</td><td>${esc(s.gphone)}</td></tr>`);
-  if(!r.students.length)h+=`<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>`;
+  var _repStuList=r.students.filter(function(s){return isStudentActiveIn(s,_repYrCE,_repMnNum);});
+  _repStuList.forEach((s,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(s.name)}</td><td>${toBEDate(s.dob)}</td><td>${calcAge(s.dob)}</td><td>${esc(s.type)}</td><td>${esc(s.guardian)}</td><td>${esc(s.gphone)}</td></tr>`);
+  if(!_repStuList.length)h+=`<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>`;
   h+=`</tbody></table></div>
 
   <div class="rep-section"><h3>3. สถิติการเข้าเรียน ${mn} ${yr}</h3>
