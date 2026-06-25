@@ -729,34 +729,65 @@ window.academicYearPickerHtml=academicYearPickerHtml;
 function viewIEPFile(btn){
   var url=btn.dataset.url||'';
   var ri=+btn.dataset.ri,si=+btn.dataset.si,idx=+btn.dataset.idx;
-  // ถ้ามี URL (Google Drive) → เปิด tab ใหม่
-  if(url&&url.startsWith('http')){
-    // แปลง /view → /preview เพื่อเปิดใน tab ใหม่ได้ดีกว่า
-    var openUrl=url.replace('/view','/preview');
-    window.open(openUrl,'_blank');
-    return;
-  }
-  // ถ้าเป็น dataUrl (เก็บในเครื่อง) → สร้าง blob แล้วเปิด tab ใหม่
   var s=db.rooms[ri].students[si];
   var f=(s.iep||[])[idx]||(s.iip||[])[idx];
-  if(f&&f.dataUrl){
-    try {
+  var title=f?esc(f.name):'ไฟล์แผนการสอน';
+
+  // ถ้าเป็น dataUrl → แปลงเป็น blob URL แล้วเปิด popup
+  if(f&&f.dataUrl&&f.dataUrl.startsWith('data:')){
+    try{
       var byteStr=atob(f.dataUrl.split(',')[1]);
       var ab=new ArrayBuffer(byteStr.length);
       var ia=new Uint8Array(ab);
-      for(var i=0;i<byteStr.length;i++)ia[i]=byteStr.charCodeAt(i);
+      for(var i=0;i<byteStr.length;i++) ia[i]=byteStr.charCodeAt(i);
       var blob=new Blob([ab],{type:'application/pdf'});
       var blobUrl=URL.createObjectURL(blob);
-      window.open(blobUrl,'_blank');
-    } catch(e) {
-      // fallback เปิดด้วย dataUrl ตรงๆ
-      var w=window.open('','_blank');
-      if(w){w.document.write('<iframe src="'+f.dataUrl+'" style="width:100%;height:100vh;border:none"></iframe>');w.document.close();}
-    }
-  } else {
-    toast('ไม่พบไฟล์','err');
+      _openPdfPopup(blobUrl, title);
+      return;
+    }catch(e){ toast('เปิดไฟล์ไม่ได้: '+e.message,'err'); return; }
   }
+
+  // ถ้ามี URL Drive → แปลงเป็น /preview แล้วเปิด popup
+  if(url&&url.startsWith('http')){
+    // Google Drive: /file/d/ID/view → /file/d/ID/preview
+    var previewUrl=url.replace('/view','/preview').replace('/edit','/preview');
+    _openPdfPopup(previewUrl, title);
+    return;
+  }
+
+  toast('ไม่พบไฟล์','err');
 }
+
+function _openPdfPopup(src, title){
+  var overlay=document.createElement('div');
+  overlay.id='pdf_popup_overlay';
+  overlay.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center';
+
+  var box=document.createElement('div');
+  box.style.cssText='background:#fff;border-radius:12px;overflow:hidden;width:92vw;height:90vh;display:flex;flex-direction:column;box-shadow:0 8px 40px rgba(0,0,0,.4)';
+
+  var header=document.createElement('div');
+  header.style.cssText='display:flex;align-items:center;justify-content:space-between;padding:10px 16px;background:var(--primary,#1a5fa8);color:#fff;flex-shrink:0';
+  header.innerHTML='<span style="font-weight:600;font-size:14px">📄 '+title+'</span>'
+    +'<div style="display:flex;gap:8px">'
+    +'<a href="'+src+'" target="_blank" style="color:#fff;font-size:12px;text-decoration:none;padding:4px 10px;border:1px solid rgba(255,255,255,.5);border-radius:6px">🔗 เปิดแท็บใหม่</a>'
+    +'<button onclick="document.getElementById(&quot;pdf_popup_overlay&quot;).remove()" style="background:rgba(255,255,255,.2);border:none;color:#fff;cursor:pointer;border-radius:6px;padding:4px 10px;font-size:13px">✕ ปิด</button>'
+    +'</div>';
+
+  var frame=document.createElement('iframe');
+  frame.src=src;
+  frame.style.cssText='flex:1;width:100%;border:none';
+
+  box.appendChild(header);
+  box.appendChild(frame);
+  overlay.appendChild(box);
+
+  // คลิก overlay ด้านนอกเพื่อปิด
+  overlay.addEventListener('click',function(e){if(e.target===overlay)overlay.remove();});
+  document.body.appendChild(overlay);
+}
+window.viewIEPFile=viewIEPFile;
+window._openPdfPopup=_openPdfPopup;
 window.viewIEPFile=viewIEPFile;
 
 // Debug: แสดงข้อมูล hrMonthly จริงๆ
@@ -3178,7 +3209,7 @@ function pageIEP(ri, acYear){
           +'<div style="font-weight:600;font-size:12px">'+esc(f.name)+'</div>'
           +'<div class="text-muted">ปีการศึกษา '+(f.acYear||'ไม่ระบุ')+' | '+toBEDate(f.date)+'</div>'
           +'</div>'
-          +(url?'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-type="iep" data-idx="'+realIdx+'" onclick="viewIEPFile(this)">👁️ ดู</button> ':'')
+          +(url?'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-type="iep" data-idx="'+realIdx+'" data-url="'+(url.startsWith('http')?url:'')+'" onclick="viewIEPFile(this)">👁️ ดู</button> ':'')
           +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-si="'+si+'" data-type="iep" data-idx="'+realIdx+'" onclick="delIEP(+this.dataset.ri,+this.dataset.si,this.dataset.type,+this.dataset.idx)">🗑️</button>'
           +'</div>';
       });
