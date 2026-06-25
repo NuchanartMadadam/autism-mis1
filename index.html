@@ -1135,6 +1135,41 @@ window.syncBEDate=syncBEDate;
 window.isoToBEParts=isoToBEParts;
 window.bePartsToISO=bePartsToISO;
 
+
+// ──────────── STUDENT ACTIVE CHECKER ────────────
+// คืนค่า true ถ้านักเรียนยังรับบริการในเดือน/ปีที่ระบุ (year=ค.ศ.)
+function isStudentActiveIn(s, year, month){
+  if(!s) return false;
+  var st = s.stuStatus||'กำลังรับบริการ';
+  if(st==='กำลังรับบริการ') return true;
+  // มีสถานะอื่น — ตรวจวันสิ้นสุด
+  if(!s.stuEndDate) return false; // ไม่ระบุวัน = ถือว่าหยุดรับบริการแล้ว
+  // เปรียบเทียบเดือน/ปี ของ viewDate กับ stuEndDate
+  var endParts = s.stuEndDate.split('-');
+  if(endParts.length < 3) return false;
+  var endY = +endParts[0], endM = +endParts[1];
+  // ถ้าเดือนที่ดูอยู่ <= เดือนที่สิ้นสุด -> ยังรับบริการ (นับเดือนสิ้นสุดด้วย)
+  if(year < endY) return true;
+  if(year === endY && month <= endM) return true;
+  return false;
+}
+// badge แสดงสถานะนักเรียนพร้อมสี
+function stuStatusBadge(s){
+  var st=s.stuStatus||'กำลังรับบริการ';
+  if(st==='กำลังรับบริการ') return '';
+  var colors={
+    'ส่งต่อ':    {bg:'#e3f2fd',c:'#1a5fa8'},
+    'ลาออก':    {bg:'#ffebee',c:'#b71c1c'},
+    'จบการศึกษา':{bg:'#fff3e0',c:'#e65100'},
+    'อื่นๆ':    {bg:'#f5f5f5',c:'#555'}
+  };
+  var col=colors[st]||{bg:'#f5f5f5',c:'#555'};
+  var endTxt=s.stuEndDate?' (ถึง '+toBEDate(s.stuEndDate)+')':'';
+  return ' <span style="background:'+col.bg+';color:'+col.c+';padding:2px 8px;border-radius:10px;font-size:10px;font-weight:600">'+esc(st)+endTxt+'</span>';
+}
+window.isStudentActiveIn=isStudentActiveIn;
+window.stuStatusBadge=stuStatusBadge;
+
 window.compressImg=compressImg;
 
 function saveUserPass(key){
@@ -1870,7 +1905,6 @@ function teacherForm(t){
   h+='<div class="form-row">'
     +'<div class="form-group"><label>เบอร์โทรติดต่อ</label>'
     +'<input id="t_phone" value="'+esc(t?t.phone:'')+'"/></div>'
-    +'<div class="form-group"><label>วันที่เริ่มปฏิบัติงาน</label>'
     +beDatePickerHtml('t_start',t&&t.startDate?t.startDate:'','วันที่เริ่มปฏิบัติงาน')
     +'<span id="t_start_be" style="font-size:11px;color:var(--primary);margin-left:6px">'
     +(t&&t.startDate?toBEDate(t.startDate):'')+'</span></div>'
@@ -1887,7 +1921,6 @@ function teacherForm(t){
   });
   h+='</select></div>';
   h+='<div class="form-group" style="margin:0" id="t_end_group">'
-    +'<label>วันที่สิ้นสุดการปฏิบัติงาน'+(isActive?' <span style="color:#aaa;font-size:11px">(ไม่ต้องกรอกถ้ายังปฏิบัติงาน)</span>':'')+'</label>'
     +beDatePickerHtml('t_end',t&&t.endDate?t.endDate:'','วันที่สิ้นสุดการปฏิบัติงาน',false,true)
     +(t&&t.endDate&&!isActive?'<span style="font-size:11px;color:#b71c1c;margin-left:6px">'+toBEDate(t.endDate)+'</span>':'')
     +'</div>';
@@ -1941,10 +1974,12 @@ function pageStudents(ri){
   h+='<div class="card"><h3>รายชื่อนักเรียน — '+RS[ri]+'</h3>'
     +'<div class="table-wrap"><table><thead><tr>'
     +'<th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ที่อยู่</th>'
-    +'<th>ประเภทความพิการ</th><th>ปัญหา/พฤติกรรม</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th><th>จัดการ</th>'
+    +'<th>ประเภทความพิการ</th><th>ปัญหา/พฤติกรรม</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th><th>สถานะ</th><th>จัดการ</th>'
     +'</tr></thead><tbody>';
   r.students.forEach(function(s,idx){
-    h+='<tr>'
+    var _sActive=!s.stuStatus||s.stuStatus==='กำลังรับบริการ';
+    var _rowSt=_sActive?'':'background:#fff5f5;';
+    h+='<tr style="'+_rowSt+'">'
       +'<td style="text-align:center">'+(idx+1)+'</td>'
       +'<td><b>'+esc(s.name)+'</b></td>'
       +'<td>'+toBEDate(s.dob)+'</td>'
@@ -1954,6 +1989,7 @@ function pageStudents(ri){
       +'<td style="font-size:12px;max-width:160px;word-break:break-word">'+esc(s.problem||'-')+'</td>'
       +'<td>'+esc(s.guardian)+'</td>'
       +'<td>'+esc(s.gphone)+'</td>'
+      +'<td>'+stuStatusBadge(s)+(s.stuStatus&&s.stuStatus!=='กำลังรับบริการ'?'<span style="background:#ffebee;color:#b71c1c;padding:2px 8px;border-radius:10px;font-size:11px;font-weight:600">'+esc(s.stuStatus)+'</span>':'<span class="badge badge-green">กำลังรับบริการ</span>')+'</td>'
       +'<td style="white-space:nowrap">'
       +'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="editStudent(+this.dataset.ri,+this.dataset.idx)">✏️ แก้ไข</button> '
       +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+idx+'" onclick="delStudent(+this.dataset.ri,+this.dataset.idx)">🗑️</button>'
@@ -1978,14 +2014,11 @@ function stuForm(s){
   h+='<div class="form-group"><label>ชื่อ-สกุล *</label>'
     +'<input id="s_name" value="'+esc(s?s.name:'')+'"/></div>';
   h+='<div class="form-row">'
-    +'<div class="form-group"><label>วันเดือนปีเกิด</label>'
     +beDatePickerHtml('s_dob',s?s.dob:'','วันเดือนปีเกิด')
-    +'oninput="document.getElementById(&quot;s_age&quot;).textContent=calcAge(this.value)"/></div>'
     +'<div class="form-group"><label>อายุ (คำนวณอัตโนมัติ)</label>'
     +'<div style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px" id="s_age">'
     +(s?calcAge(s.dob):'-')+'</div></div>'
     +'</div>';
-  h+='<div class="form-group"><label>ที่อยู่</label>'
     +'<input id="s_addr" value="'+esc(s?s.address:'')+'"/></div>';
   h+='<div class="form-group"><label>ประเภทความพิการ</label>'
     +'<select id="s_type">'+opts+'</select></div>';
@@ -2008,7 +2041,6 @@ function stuForm(s){
     +'<option'+(curSt==='จบการศึกษา'?' selected':'')+'>จบการศึกษา</option>'
     +'<option'+(curSt==='อื่นๆ'?' selected':'')+'>อื่นๆ</option>'
     +'</select></div>'
-    +'<div class="form-group" style="margin:0"><label>วันที่สิ้นสุด</label>'
     +beDatePickerHtml('stu_end',s&&s.stuEndDate?s.stuEndDate:'','วันที่สิ้นสุด',false,true)
     +(isAct?' disabled style="opacity:0.4"':'')+'/>'
     +'</div></div>';
@@ -2048,8 +2080,11 @@ window.delStudent=delStudent;
 function pageAttendance(ri){
   ri=safeRoom(ri);ar=ri;_curPageFn=function(){pageAttendance(ar);};
   var yr=viewYear,mn=viewMonth,r=db.rooms[ri],key=yr+'-'+mn,att=r.attendance[key]||{};
+  var inactiveAtStus=(r.students||[]).filter(function(s){return !isStudentActiveIn(s,yr,mn);});
   var h='<div class="page-header"><h2>การเข้าเรียนประจำเดือน</h2></div>';
   h+=monthYearPickerHtml()+roomTabs(ri,'pageAttendance');
+  if(inactiveAtStus.length){
+    h+='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px">'      +'<b>⚠️ นักเรียนที่ไม่ได้รับบริการในเดือนนี้ (แถวสีแดง — บันทึกไม่ได้)</b><br>'      +inactiveAtStus.map(function(s){        return '<span style="margin-right:8px">• '+esc(s.name)+' '          +'<span style="color:#b71c1c;font-weight:600">['+esc(s.stuStatus||'')+']</span>'          +(s.stuEndDate?' ตั้งแต่ '+toBEDate(s.stuEndDate):'')+'</span>';      }).join('')      +'</div>';  }
   h+='<div class="card"><h3>การเข้าเรียน '+MONTHS[mn-1]+' '+(yr+543)+' — '+RS[ri]+'</h3>';
   var dim=new Date(yr,mn,0).getDate(),sDays=[];
   for(var d=1;d<=dim;d++){if(new Date(yr,mn-1,d).getDay()>0&&new Date(yr,mn-1,d).getDay()<6)sDays.push(d);}
@@ -2058,9 +2093,12 @@ function pageAttendance(ri){
   if(sDays.length>23)h+='<th>+'+(sDays.length-23)+'</th>';
   h+='<th>มา</th><th>ขาด</th><th>ลา</th><th>หยุด</th></tr></thead><tbody>';
   r.students.forEach(function(s){
+    var isActive=isStudentActiveIn(s,yr,mn);
     var days=att[s.name]||{},pm=0,ab=0,lv=0,wh=0;
     sDays.forEach(function(d){var v=days[d];if(v==='P')pm++;else if(v==='A')ab++;else if(v==='L')lv++;else if(v==='W')wh++;});
-    h+='<tr><td style="font-size:12px">'+esc(s.name)+'</td>';
+    var rowStyle=isActive?'':'background:#fff5f5;opacity:0.65;pointer-events:none;';
+    var nameTxt=esc(s.name)+(isActive?'':stuStatusBadge(s));
+    h+='<tr style="'+rowStyle+'"><td style="font-size:12px">'+nameTxt+'</td>';
     sDays.slice(0,23).forEach(function(d){
       var v=days[d]||'',bg='',fc='var(--muted)';
       if(v==='P'){bg='#c8e6c9';fc='#1b5e20';}else if(v==='A'){bg='#ffcdd2';fc='#b71c1c';}
@@ -2077,6 +2115,9 @@ function pageAttendance(ri){
 window.pageAttendance=pageAttendance;
 function togAtt3(el){
   var ri=+el.dataset.ri,key=el.dataset.key,sn=el.dataset.name,day=+el.dataset.day;
+  // ตรวจสอบว่านักเรียนยังรับบริการในเดือนนี้หรือไม่
+  var _s=(db.rooms[ri].students||[]).find(function(x){return x.name===sn;});
+  if(_s&&!isStudentActiveIn(_s,viewYear,viewMonth)){toast('นักเรียนนี้ไม่ได้รับบริการในเดือนนี้แล้ว','err');return;}
   if(!db.rooms[ri].attendance[key])db.rooms[ri].attendance[key]={};
   if(!db.rooms[ri].attendance[key][sn])db.rooms[ri].attendance[key][sn]={};
   var cur=db.rooms[ri].attendance[key][sn][day]||'',nxt={'':'P','P':'A','A':'L','L':'W','W':''}[cur];
@@ -2122,8 +2163,12 @@ function pageServices(ri){
     var _dp2=yr2ce+'-'+String(viewMonth);
     return sv.date.startsWith(_dp1)||sv.date.startsWith(_dp2);
   });
+  // หานักเรียนที่ส่งต่อ/หยุดแล้วในเดือนนี้
+  var inactiveStus=(r.students||[]).filter(function(s){return !isStudentActiveIn(s,viewYear,viewMonth);});
   var h='<div class="page-header"><h2>บันทึกการให้บริการทางวิชาการ</h2></div>';
   h+=monthYearPickerHtml()+roomTabs(ri,'pageServices');
+  if(inactiveStus.length){
+    h+='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px">'      +'<b>⚠️ นักเรียนที่ไม่ได้รับบริการในเดือนนี้</b><br>'      +inactiveStus.map(function(s){        return '<span style="margin-right:8px">• '+esc(s.name)+' '          +'<span style="color:#b71c1c;font-weight:600">['+esc(s.stuStatus||'')+']</span>'          +(s.stuEndDate?' ตั้งแต่ '+toBEDate(s.stuEndDate):'')+'</span>';      }).join('')      +'</div>';  }
   h+='<div class="card"><h3>รายการบริการ '+MONTHS[viewMonth-1]+' '+(viewYear+543)+' — '+RS[ri]+'</h3>'
     +'<div class="table-wrap"><table><thead><tr><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียด</th><th>ผู้ให้บริการ</th><th>จัดการ</th></tr></thead><tbody>';
   fl.forEach(function(sv){var i2=all.indexOf(sv);
@@ -2132,12 +2177,14 @@ function pageServices(ri){
       +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delService(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
   });
   if(!fl.length)h+='<tr><td colspan="5" style="text-align:center;color:var(--muted)">ไม่มีรายการ</td></tr>';
-  h+='</tbody></table></div><div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addService('+ri+')">➕ เพิ่มรายการ</button></div></div>';
+  h+='</tbody></table></div>';  var _ac=(r.students||[]).filter(function(s){return isStudentActiveIn(s,viewYear,viewMonth);}).length;  h+=_ac    ?'<div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addService('+ri+')">➕ เพิ่มรายการ</button></div></div>'    :'<div class="mt-1"><p style="color:#b71c1c;font-size:12px;font-weight:600">⛔ ไม่มีนักเรียนที่รับบริการในเดือนนี้ — ไม่สามารถเพิ่มรายการได้</p></div></div>';
   render(h);
 }
 window.pageServices=pageServices;
 function serviceForm(ri,sv){
-  var stuOpts=db.rooms[ri].students.map(function(s){
+  var stuOpts=db.rooms[ri].students.filter(function(s){
+    return isStudentActiveIn(s,viewYear,viewMonth);
+  }).map(function(s){
     return '<option'+(sv&&sv.student===s.name?' selected':'')+'>'+esc(s.name)+'</option>';
   }).join('');
   var selProviders=sv&&sv.provider?sv.provider.split(', '):[];
@@ -2160,10 +2207,19 @@ window.editService=editService;
 function saveSvc(ri,idx){
   const _svMn=document.getElementById('sv_month')?document.getElementById('sv_month').value:MONTHS[viewMonth-1];
   const _svYr=document.getElementById('sv_year')?document.getElementById('sv_year').value:String(viewYear+543);
+  const _svStuName=document.getElementById('sv_stu')?document.getElementById('sv_stu').value:'';
+  // ตรวจสอบว่านักเรียนที่เลือกยังรับบริการในเดือน/ปีนั้นหรือไม่
+  const _svYrCE=+_svYr-543;
+  const _svMnIdx=MONTHS.indexOf(_svMn)+1;
+  const _svStu=(db.rooms[ri].students||[]).find(function(s){return s.name===_svStuName;});
+  if(_svStu&&!isStudentActiveIn(_svStu,_svYrCE,_svMnIdx)){
+    toast('ไม่สามารถบันทึกได้ — '+_svStuName+' ไม่ได้รับบริการใน'+_svMn+' '+_svYr+' แล้ว','err');
+    return;
+  }
   const sv={
     period:_svMn+' '+_svYr,
     date:'',
-    student:document.getElementById('sv_stu').value,
+    student:_svStuName,
     detail:document.getElementById('sv_det').value,
     provider:(getCheckedTeachers('sv_pro_list')||'(ไม่ระบุ)')
   };
@@ -2276,9 +2332,7 @@ function trainingForm(ri,t){
     +'<div class="form-group"><label>หน่วยงานที่จัดอบรม</label>'
     +'<input id="tr_o" value="'+esc(t?t.org:'')+'"/>'
     +buildChips(getPrevValues(ri,'training','org'),'tr_o')+'</div>';
-  h+='<div class="form-group"><label>วันที่เริ่ม</label>'
     +beDatePickerHtml('tr_d',t?t.date||'':todayStr(),'วันที่เริ่ม')+'</div>';
-  h+='<div class="form-group"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label>'
     +beDatePickerHtml('tr_d2',t?t.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)+'</div>';
   h+='</div>';
   // multi-photo for training
@@ -2380,9 +2434,7 @@ function comForm(c,ri){
   var selNames=c&&c.participants?c.participants.split(', '):[];
   var h='';
   h+='<div class="form-row">'
-    +'<div class="form-group" style="margin:0"><label>วันที่เริ่ม</label>'
     +beDatePickerHtml('cm_d',c?c.date||'':todayStr(),'วันที่เริ่ม')+'</div>'
-    +'<div class="form-group" style="margin:0"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label>'
     +beDatePickerHtml('cm_d2',c?c.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)+'</div>'
     +'</div>';
   h+='<div class="form-group"><label>รายการ/กิจกรรม</label>'
@@ -3537,9 +3589,7 @@ function acYearForm(y){
   return '<div class="form-group"><label>ชื่อปีการศึกษา *</label>'
     +'<input id="ay_name" value="'+(y?esc(y.name):'ปีการศึกษา '+nowYear)+'"/></div>'
     +'<div class="form-row">'
-    +'<div class="form-group"><label>วันเริ่มต้น</label>'
     +beDatePickerHtml('ay_start',y?y.startDate:'','วันเริ่มต้น')+'</div>'
-    +'<div class="form-group"><label>วันสิ้นสุด</label>'
     +beDatePickerHtml('ay_end',y?y.endDate:'','วันสิ้นสุด')+'</div>'
     +'</div>';
 }
