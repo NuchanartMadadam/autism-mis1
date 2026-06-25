@@ -947,7 +947,7 @@ window.removePhotoPreview=removePhotoPreview;
 function saveMultiPhotos(ri){
   var cap=document.getElementById('ph_cap')?document.getElementById('ph_cap').value:'';
   var mn=document.getElementById('ph_m')?document.getElementById('ph_m').value:MONTHS[viewMonth-1];
-  var dt=document.getElementById('ph_d')?document.getElementById('ph_d').value:todayStr();
+  var dt=document.getElementById('ph_d')?document.getElementById('ph_d').value:todayStr();var dt2=document.getElementById('ph_d2')?document.getElementById('ph_d2').value:'';
   var files=(window._multiPhotoFiles||[]).filter(function(f){return f;});
   if(!files.length){alert('กรุณาเลือกรูปภาพอย่างน้อย 1 รูป');return;}
   if(!db.rooms[ri].photos)db.rooms[ri].photos=[];
@@ -970,13 +970,13 @@ function saveMultiPhotos(ri){
     toast('กำลังอัปโหลด '+total+' รูปไป Google Drive...');
     files.forEach(function(f){
       syncImgToDrive(f.data,f.name,subFolder,function(finalUrl){
-        db.rooms[ri].photos.push({caption:cap||f.name,month:mn,date:dt,imgUrl:finalUrl});
+        db.rooms[ri].photos.push({caption:cap||f.name,month:mn,date:dt,dateEnd:dt2,imgUrl:finalUrl});
         oneDone();
       });
     });
   } else {
     files.forEach(function(f){
-      db.rooms[ri].photos.push({caption:cap||f.name,month:mn,date:dt,imgUrl:f.data});
+      db.rooms[ri].photos.push({caption:cap||f.name,month:mn,date:dt,dateEnd:dt2,imgUrl:f.data});
     });
     oneDone();
   }
@@ -998,6 +998,77 @@ function compressImg(base64, maxWidth, quality, callback){
     img.src=base64;
   }catch(e){callback(base64);}
 }
+
+// ── MULTI-PHOTO2 (for training & community) ─────────────
+window._multiPhoto2 = {tr:[], cm:[]};
+
+function trigMultiPhotoInput(prefix){
+  var el=document.getElementById(prefix+'_photo_input');
+  if(el)el.click();
+}
+window.trigMultiPhotoInput=trigMultiPhotoInput;
+
+function handleMultiPhotoInput2(e,prefix){
+  _processMultiPhoto2(Array.from(e.target.files),prefix);
+  e.target.value='';
+}
+window.handleMultiPhotoInput2=handleMultiPhotoInput2;
+
+function handleMultiPhotoDrop2(e,prefix){
+  e.preventDefault();
+  var files=Array.from(e.dataTransfer.files).filter(function(f){return f.type.startsWith('image/');});
+  _processMultiPhoto2(files,prefix);
+}
+window.handleMultiPhotoDrop2=handleMultiPhotoDrop2;
+
+function _processMultiPhoto2(files,prefix){
+  if(!window._multiPhoto2)window._multiPhoto2={tr:[],cm:[]};
+  if(!window._multiPhoto2[prefix])window._multiPhoto2[prefix]=[];
+  var grid=document.getElementById(prefix+'_photo_grid');
+  var countEl=document.getElementById(prefix+'_photo_count');
+  files.forEach(function(f){
+    if(f.size>5*1024*1024){toast(f.name+' ใหญ่เกิน 5MB ข้าม','err');return;}
+    var reader=new FileReader();
+    reader.onload=function(ev){
+      compressImg(ev.target.result,800,0.7,function(compressed){
+        var idx=window._multiPhoto2[prefix].length;
+        window._multiPhoto2[prefix].push(compressed);
+        if(grid){
+          var cell=document.createElement('div');
+          cell.style.cssText='position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)';
+          cell.id=prefix+'_ph2_'+idx;
+          var img=document.createElement('img');
+          img.src=compressed;
+          img.style.cssText='width:100%;height:70px;object-fit:cover;display:block';
+          var btn=document.createElement('button');
+          btn.textContent='✕';
+          btn.style.cssText='position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer';
+          btn.setAttribute('data-prefix',prefix);
+          btn.setAttribute('data-idx',idx);
+          btn.onclick=function(){removeMultiPhoto2(this.getAttribute('data-prefix'),+this.getAttribute('data-idx'));};
+          cell.appendChild(img);cell.appendChild(btn);
+          grid.appendChild(cell);
+        }
+        if(countEl)countEl.textContent=window._multiPhoto2[prefix].filter(function(x){return x;}).length+' รูป';
+      });
+    };
+    reader.readAsDataURL(f);
+  });
+}
+window._processMultiPhoto2=_processMultiPhoto2;
+
+function removeMultiPhoto2(prefix,idx){
+  if(window._multiPhoto2&&window._multiPhoto2[prefix])window._multiPhoto2[prefix][idx]=null;
+  var cell=document.getElementById(prefix+'_ph2_'+idx);
+  if(cell)cell.remove();
+  var countEl=document.getElementById(prefix+'_photo_count');
+  if(countEl){
+    var remain=(window._multiPhoto2[prefix]||[]).filter(function(x){return x;}).length;
+    countEl.textContent=remain+' รูป';
+  }
+}
+window.removeMultiPhoto2=removeMultiPhoto2;
+
 window.compressImg=compressImg;
 
 function saveUserPass(key){
@@ -1793,7 +1864,7 @@ function pageStudents(ri){
   h+='<div class="card"><h3>รายชื่อนักเรียน — '+RS[ri]+'</h3>'
     +'<div class="table-wrap"><table><thead><tr>'
     +'<th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ที่อยู่</th>'
-    +'<th>ประเภทความพิการ</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th><th>จัดการ</th>'
+    +'<th>ประเภทความพิการ</th><th>ปัญหา/พฤติกรรม</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th><th>จัดการ</th>'
     +'</tr></thead><tbody>';
   r.students.forEach(function(s,idx){
     h+='<tr>'
@@ -1803,6 +1874,7 @@ function pageStudents(ri){
       +'<td>'+calcAge(s.dob)+'</td>'
       +'<td>'+esc(s.address)+'</td>'
       +'<td><span class="badge badge-blue">'+esc(s.type)+'</span></td>'
+      +'<td style="font-size:12px;max-width:160px;word-break:break-word">'+esc(s.problem||'-')+'</td>'
       +'<td>'+esc(s.guardian)+'</td>'
       +'<td>'+esc(s.gphone)+'</td>'
       +'<td style="white-space:nowrap">'
@@ -1846,6 +1918,8 @@ function stuForm(s){
     +'<div class="form-group"><label>เบอร์โทรติดต่อผู้ปกครอง</label>'
     +'<input id="s_gph" value="'+esc(s?s.gphone:'')+'"/></div>'
     +'</div>';
+  h+='<div class="form-group"><label>ปัญหา/ลักษณะพฤติกรรมของนักเรียน <span style="color:#aaa;font-size:11px">(เช่น ไม่พูด, ชอบวิ่งออกห้อง, มีพฤติกรรมซ้ำๆ)</span></label>'
+    +'<textarea id="s_prob" rows="3">'+(s?esc(s.problem||''):'')+'</textarea></div>';
   h+='<div style="border:2px solid '+stColor+';border-radius:10px;padding:14px;margin:12px 0;background:'+stBg+'" id="stu_status_box">';
   h+='<div style="font-size:13px;font-weight:700;color:'+stColor+';margin-bottom:10px">สถานะการรับบริการ</div>';
   h+='<div class="form-row">'
@@ -1877,7 +1951,8 @@ function saveStu(ri,idx){
   const s={name:document.getElementById('s_name').value.trim(),dob:document.getElementById('s_dob').value,address:document.getElementById('s_addr').value,type:document.getElementById('s_type').value,guardian:document.getElementById('s_guard').value,gphone:document.getElementById('s_gph').value,iep:idx>=0?(db.rooms[ri].students[idx].iep||[]):[],iip:idx>=0?(db.rooms[ri].students[idx].iip||[]):[],
     stuStatus:document.getElementById('stu_status')?document.getElementById('stu_status').value:'กำลังรับบริการ',
     stuEndDate:document.getElementById('stu_end')?document.getElementById('stu_end').value:'',
-    stuRemark:document.getElementById('stu_remark')?document.getElementById('stu_remark').value:''
+    stuRemark:document.getElementById('stu_remark')?document.getElementById('stu_remark').value:'',
+    problem:document.getElementById('s_prob')?document.getElementById('s_prob').value:''
   };
   if(!s.name){alert('กรุณากรอกชื่อ-สกุล');return;}
   if(idx===-1)db.rooms[ri].students.push(s);else db.rooms[ri].students[idx]=s;
@@ -1956,10 +2031,12 @@ function pageServices(ri){
   var all=r.services||[];
   // debug: แสดง dp ใน title
   var fl=all.filter(function(sv){
-    if(!sv.date)return true;
-    // รองรับ zero-padded และ non-padded
-    var _dp1=String(viewYear)+'-'+String(viewMonth).padStart(2,'0');
-    var _dp2=String(viewYear)+'-'+String(viewMonth);
+    var mn2=MONTHS[viewMonth-1], yr2=String(viewYear+543), yr2ce=String(viewYear);
+    // รองรับ period "พฤษภาคม 2569" และ date "2026-05-10" แบบเก่า
+    if(sv.period) return sv.period.indexOf(mn2)>=0&&(sv.period.indexOf(yr2)>=0||sv.period.indexOf(yr2ce)>=0);
+    if(!sv.date) return true;
+    var _dp1=yr2ce+'-'+String(viewMonth).padStart(2,'0');
+    var _dp2=yr2ce+'-'+String(viewMonth);
     return sv.date.startsWith(_dp1)||sv.date.startsWith(_dp2);
   });
   var h='<div class="page-header"><h2>บันทึกการให้บริการทางวิชาการ</h2></div>';
@@ -1981,23 +2058,32 @@ function serviceForm(ri,sv){
     return '<option'+(sv&&sv.student===s.name?' selected':'')+'>'+esc(s.name)+'</option>';
   }).join('');
   var selProviders=sv&&sv.provider?sv.provider.split(', '):[];
-  return '<div class="form-group"><label>วันที่</label>'
-    +'<input type="date" id="sv_date" value="'+(sv?sv.date:todayStr())+'" onchange="document.getElementById(&quot;sv_date_be&quot;).textContent=toBEDate(this.value)"/>'
-    +'<span id="sv_date_be" style="font-size:11px;color:var(--primary);margin-left:6px">'+(sv&&sv.date?toBEDate(sv.date):toBEDate(todayStr()))+'</span></div>'
-    +'<div class="form-group"><label>ชื่อ-สกุลนักเรียน</label>'
-    +'<select id="sv_stu">'+(stuOpts||'<option>กรุณาเพิ่มนักเรียนก่อน</option>')+'</select></div>'
-    +'<div class="form-group"><label>รายละเอียดการให้บริการ</label>'
-    +'<textarea id="sv_det" rows="3">'+(sv?esc(sv.detail):'')+'</textarea></div>'
-    +'<div class="form-group"><label>ผู้ให้บริการ (เลือกได้หลายคน)</label>'
-    +teacherCheckboxHtml(ri,'sv_pro_list',selProviders)+'</div>';
+  var now=new Date();
+  var curPeriod=sv&&sv.period?sv.period:'';
+  var curMN=curPeriod?curPeriod.split(' ')[0]:'';
+  var curYR=curPeriod?curPeriod.split(' ')[1]:String(now.getFullYear()+543);
+  var mOpts=MONTHS.map(function(mo,i){
+    var sel=(curMN?mo===curMN:i===now.getMonth())?'selected':'';
+    return '<option value="'+mo+'" '+sel+'>'+mo+'</option>';
+  }).join('');
+  return '<div class="form-row" style="align-items:flex-end">'    +'<div class="form-group" style="margin:0"><label>เดือน</label><select id="sv_month" style="min-width:120px">'+mOpts+'</select></div>'    +'<div class="form-group" style="margin:0"><label>ปี (พ.ศ.)</label><input id="sv_year" value="'+curYR+'" style="max-width:90px"/></div>'    +'<div style="padding-bottom:2px"><span style="background:var(--primary-light);color:var(--primary);padding:5px 12px;border-radius:20px;font-size:12px;font-weight:600" id="sv_period_preview">'    +(curMN&&curYR?curMN+' '+curYR:MONTHS[now.getMonth()]+' '+String(now.getFullYear()+543))+'</span></div>'    +'</div>'    +'<script>setTimeout(function(){'    +'var sm=document.getElementById("sv_month"),sy=document.getElementById("sv_year"),sp=document.getElementById("sv_period_preview");'    +'function upd(){if(sp)sp.textContent=(sm?sm.value:"")+" "+(sy?sy.value:"")}'    +'if(sm)sm.addEventListener("change",upd);if(sy)sy.addEventListener("input",upd);},50);<\/script>'    +'<div class="form-group"><label>ชื่อ-สกุลนักเรียน</label>'    +'<select id="sv_stu">'+(stuOpts||'<option>กรุณาเพิ่มนักเรียนก่อน</option>')+'</select></div>'    +'<div class="form-group"><label>รายละเอียดการให้บริการ</label>'    +'<textarea id="sv_det" rows="3">'+(sv?esc(sv.detail):'')+'</textarea></div>'    +'<div class="form-group"><label>ผู้ให้บริการ (เลือกได้หลายคน)</label>'    +teacherCheckboxHtml(ri,'sv_pro_list',selProviders)+'</div>';
 }
+
 
 function addService(ri){openModal(`<h3>➕ เพิ่มบันทึกการให้บริการ</h3>${serviceForm(ri,null)}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveSvc(${ri},-1)">💾 บันทึก</button></div>`);}
 window.addService=addService;
 function editService(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ</h3>${serviceForm(ri,db.rooms[ri].services[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveSvc(${ri},${idx})">💾 บันทึก</button></div>`);}
 window.editService=editService;
 function saveSvc(ri,idx){
-  const sv={date:document.getElementById('sv_date').value,student:document.getElementById('sv_stu').value,detail:document.getElementById('sv_det').value,provider:(getCheckedTeachers('sv_pro_list')||'(ไม่ระบุ)')};
+  const _svMn=document.getElementById('sv_month')?document.getElementById('sv_month').value:MONTHS[viewMonth-1];
+  const _svYr=document.getElementById('sv_year')?document.getElementById('sv_year').value:String(viewYear+543);
+  const sv={
+    period:_svMn+' '+_svYr,
+    date:'',
+    student:document.getElementById('sv_stu').value,
+    detail:document.getElementById('sv_det').value,
+    provider:(getCheckedTeachers('sv_pro_list')||'(ไม่ระบุ)')
+  };
   if(!db.rooms[ri].services)db.rooms[ri].services=[];
   if(idx===-1)db.rooms[ri].services.push(sv);else db.rooms[ri].services[idx]=sv;
   saveLocal();syncSheet('saveServices',ri,db.rooms[ri].services);closeModal();toast('บันทึกสำเร็จ ✓');pageServices(ri);}
@@ -2061,7 +2147,7 @@ function editHR(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ<
 window.editHR=editHR;
 function saveHR(ri,idx){
   const m=document.getElementById('hr_m').value;const y=document.getElementById('hr_y').value;
-  const it={period:`${MONTHS[m-1]} ${y}`,person:(getCheckedTeachers('hr_p_list')||'(ไม่ระบุ)'),leaveB:+document.getElementById('hr_lb').value,leaveSick:+document.getElementById('hr_ls').value,leaveRest:+document.getElementById('hr_lr').value,leaveOther:+document.getElementById('hr_lo').value,leaveOtherNote:document.getElementById('hr_lon').value,late:+document.getElementById('hr_late').value,outSite:+document.getElementById('hr_out').value};
+  const it={period:m+' '+y,person:(getCheckedTeachers('hr_p_list')||'(ไม่ระบุ)'),leaveB:+document.getElementById('hr_lb').value,leaveSick:+document.getElementById('hr_ls').value,leaveRest:+document.getElementById('hr_lr').value,leaveOther:+document.getElementById('hr_lo').value,leaveOtherNote:document.getElementById('hr_lon').value,late:+document.getElementById('hr_late').value,outSite:+document.getElementById('hr_out').value};
   if(!db.rooms[ri].hrMonthly)db.rooms[ri].hrMonthly=[];
   if(idx===-1)db.rooms[ri].hrMonthly.push(it);else db.rooms[ri].hrMonthly[idx]=it;
   saveLocal();syncSheet('saveHRMonthly',ri,db.rooms[ri].hrMonthly);closeModal();toast('บันทึกสำเร็จ ✓');pageHRMonthly(ri);}
@@ -2080,8 +2166,13 @@ function pageTraining(ri){
     +'<div class="table-wrap"><table><thead><tr><th>ผู้เข้าร่วม</th><th>หลักสูตร/อบรม</th><th>หน่วยงาน</th><th>วันที่</th><th>หลักฐาน</th><th>จัดการ</th></tr></thead><tbody>';
   fl.forEach(function(t){var i2=all.indexOf(t),tImg=driveImgSrc(t.imgUrl||''),trKey='tr_'+ri+'_'+i2;
     if(tImg&&typeof _cache==='function')_cache(trKey,tImg);
-    var tThumb=tImg?'<img src="'+tImg+'" style="width:60px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer" data-k="'+trKey+'" onclick="showImg(this.dataset.k)" onerror="this.hidden=true"/>':'-';
-    h+='<tr><td>'+esc(t.person)+'</td><td>'+esc(t.course)+'</td><td>'+esc(t.org)+'</td><td>'+toBEDate(t.date)+'</td><td style="text-align:center">'+tThumb+'</td>'
+    var tPhotos=(t.photos&&t.photos.length)?t.photos:(tImg?[tImg]:[]);
+    var tThumb=tPhotos.length?tPhotos.map(function(ph,_pi){
+      var _k='tr_'+ri+'_'+i2+'_'+_pi; if(typeof _cache==='function')_cache(_k,ph);
+      return '<img src="'+driveImgSrc(ph)+'" style="width:48px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;margin:1px" data-k="'+_k+'" onclick="showImg(this.dataset.k)" onerror="this.hidden=true"/>';
+    }).join(''):'-';
+    var trDateRange=toBEDate(t.date)+(t.dateEnd&&t.dateEnd!==t.date?' ถึง '+toBEDate(t.dateEnd):'');
+    h+='<tr><td>'+esc(t.person)+'</td><td>'+esc(t.course)+'</td><td>'+esc(t.org)+'</td><td>'+trDateRange+'</td><td style="text-align:center">'+tThumb+'</td>'
       +'<td><button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="editTraining(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
       +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delTraining(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
   });
@@ -2092,20 +2183,39 @@ function pageTraining(ri){
 window.pageTraining=pageTraining;
 function trainingForm(ri,t){
   var selNames=t&&t.person?t.person.split(', '):[];
-  return '<div class="form-group"><label>ชื่อ-สกุลครูผู้สอน (เลือกได้หลายคน)</label>'
-    +teacherCheckboxHtml(ri,'tr_p_list',selNames)+'</div>'
-    +'<div class="form-group"><label>ชื่อหลักสูตร/อบรม/สัมมนา/ศึกษาดูงาน</label>'
-    +'<input id="tr_c" value="'+esc(t?t.course:'')+'"/></div>'
-    +'<div class="form-row">'
+  var h='';
+  h+='<div class="form-group"><label>ชื่อ-สกุลครูผู้สอน (เลือกได้หลายคน)</label>'
+    +teacherCheckboxHtml(ri,'tr_p_list',selNames)+'</div>';
+  h+='<div class="form-group"><label>ชื่อหลักสูตร/อบรม/สัมมนา/ศึกษาดูงาน</label>'
+    +'<input id="tr_c" value="'+esc(t?t.course:'')+'"/>'
+    +buildChips(getPrevValues(ri,'training','course'),'tr_c')+'</div>';
+  h+='<div class="form-row">'
     +'<div class="form-group"><label>หน่วยงานที่จัดอบรม</label>'
-    +'<input id="tr_o" value="'+esc(t?t.org:'')+'"/></div>'
-    +'<div class="form-group"><label>วันที่</label>'
-    +'<input type="date" id="tr_d" value="'+(t?t.date:todayStr())+'"/></div>'
-    +'</div>'
-    +imgZoneHtml('tr_img',t?t.imgUrl||'':'','แนบภาพหลักฐาน');
+    +'<input id="tr_o" value="'+esc(t?t.org:'')+'"/>'
+    +buildChips(getPrevValues(ri,'training','org'),'tr_o')+'</div>';
+  h+='<div class="form-group"><label>วันที่เริ่ม</label>'
+    +'<input type="date" id="tr_d" value="'+(t?t.date||'':todayStr())+'"/></div>';
+  h+='<div class="form-group"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label>'
+    +'<input type="date" id="tr_d2" value="'+(t?t.dateEnd||'':'')+'"/></div>';
+  h+='</div>';
+  // multi-photo for training
+  var trPhotos=t&&t.photos?t.photos:[];
+  h+='<div class="form-group"><label>แนบภาพหลักฐาน <span style="color:var(--primary);font-weight:600">(เพิ่มได้หลายรูป)</span></label>';
+  h+='<div class="img-upload-zone" id="tr_photo_drop" onclick="trigMultiPhotoInput(\'tr\')" ondragover="event.preventDefault()" ondrop="handleMultiPhotoDrop2(event,\'tr\')">'    +'<div style="font-size:24px">📷</div>'    +'<div style="font-weight:600">คลิกหรือลากหลายรูปมาวาง</div>'    +'<div style="font-size:11px;color:var(--muted)">JPG, PNG — แต่ละไฟล์ไม่เกิน 5MB</div></div>';
+  h+='<input type="file" id="tr_photo_input" accept="image/*" multiple style="display:none" onchange="handleMultiPhotoInput2(event,\'tr\')"/>';
+  h+='<div id="tr_photo_grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
+  trPhotos.forEach(function(p,pi){
+    h+='<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'      +'<button onclick="removeMultiPhoto2(\'tr\','+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'      +'</div>';
+  });
+  h+='</div>';
+  h+='<div id="tr_photo_count" style="font-size:11px;color:var(--primary);margin-top:4px">'+( trPhotos.length?trPhotos.length+' รูป':'')+'</div>';
+  h+='</div>';
+  return h;
 }
 
 function addTraining(ri){
+  if(!window._multiPhoto2)window._multiPhoto2={tr:[],cm:[]};
+  window._multiPhoto2.tr=[];
   openModal('<h3>➕ เพิ่มการสัมมนา/อบรม</h3>'
     +trainingForm(ri,null)
     +'<div class="modal-footer">'
@@ -2114,7 +2224,10 @@ function addTraining(ri){
     +'</div>');
 }
 window.addTraining=addTraining;
-function editTraining(ri,idx){openModal(`<h3>✏️ แก้ไขรายการ</h3>${trainingForm(ri,db.rooms[ri].training[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr(${ri},${idx})">💾 บันทึก</button></div>`);}
+function editTraining(ri,idx){
+  if(!window._multiPhoto2)window._multiPhoto2={tr:[],cm:[]};
+  window._multiPhoto2.tr=(db.rooms[ri].training[idx]&&db.rooms[ri].training[idx].photos)?db.rooms[ri].training[idx].photos.slice():[];
+  openModal('<h3>✏️ แก้ไขรายการ</h3>'+trainingForm(ri,db.rooms[ri].training[idx])+'<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr('+ri+','+idx+')">💾 บันทึก</button></div>');}
 window.editTraining=editTraining;
 function saveTr(ri,idx){
   ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
@@ -2132,12 +2245,17 @@ function saveTr(ri,idx){
 }
 window.saveTr=saveTr;
 function _saveTrData(ri, idx, imgUrl){
+  var newPhotos=(window._multiPhoto2&&window._multiPhoto2.tr)?window._multiPhoto2.tr.filter(function(x){return x;}):[];
+  var existPhotos=(idx>=0&&db.rooms[ri].training[idx]&&db.rooms[ri].training[idx].photos)?db.rooms[ri].training[idx].photos:[];
+  var allPhotos=existPhotos.concat(newPhotos.filter(function(p){return existPhotos.indexOf(p)<0;}));
   var t = {
     person: (getCheckedTeachers('tr_p_list')||'(ไม่ระบุ)'),
     course: document.getElementById('tr_c').value,
     org:    document.getElementById('tr_o').value,
     date:   document.getElementById('tr_d').value,
-    imgUrl: imgUrl
+    dateEnd:document.getElementById('tr_d2')?document.getElementById('tr_d2').value:'',
+    imgUrl: allPhotos.length?allPhotos[0]:imgUrl,
+    photos: allPhotos
   };
   if(!db.rooms[ri].training) db.rooms[ri].training=[];
   if(idx===-1) db.rooms[ri].training.push(t); else db.rooms[ri].training[idx]=t;
@@ -2159,8 +2277,13 @@ function pageCommunity(ri){
     +'<div class="table-wrap"><table><thead><tr><th>วันที่</th><th>กิจกรรม</th><th>หน่วยงาน/สถานที่</th><th>หลักฐาน</th><th>จัดการ</th></tr></thead><tbody>';
   fl.forEach(function(c){var i2=all.indexOf(c),cImg=driveImgSrc(c.imgUrl||''),cmKey='cm_'+ri+'_'+i2;
     if(cImg&&typeof _cache==='function')_cache(cmKey,cImg);
-    var cThumb=cImg?'<img src="'+cImg+'" style="width:60px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer" data-k="'+cmKey+'" onclick="showImg(this.dataset.k)" onerror="this.hidden=true"/>':'-';
-    h+='<tr><td>'+toBEDate(c.date)+'</td><td>'+esc(c.activity)+'</td><td>'+esc(c.place)+'</td><td style="text-align:center">'+cThumb+'</td>'
+    var cPhotos=(c.photos&&c.photos.length)?c.photos:(cImg?[cImg]:[]);
+    var cThumb=cPhotos.length?cPhotos.map(function(ph,_pi){
+      var _k='cm_'+ri+'_'+i2+'_'+_pi; if(typeof _cache==='function')_cache(_k,ph);
+      return '<img src="'+driveImgSrc(ph)+'" style="width:48px;height:40px;object-fit:cover;border-radius:4px;cursor:pointer;margin:1px" data-k="'+_k+'" onclick="showImg(this.dataset.k)" onerror="this.hidden=true"/>';
+    }).join(''):'-';
+    var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' ถึง '+toBEDate(c.dateEnd):'');
+    h+='<tr><td>'+cmDateRange+'</td><td>'+esc(c.activity)+'</td><td>'+esc(c.place)+'</td><td style="text-align:center">'+cThumb+'</td>'
       +'<td><button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="editCom(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
       +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delCom(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
   });
@@ -2172,18 +2295,39 @@ window.pageCommunity=pageCommunity;
 function comForm(c,ri){
   ri=ri||ar;
   var selNames=c&&c.participants?c.participants.split(', '):[];
-  return '<div class="form-group"><label>วันที่</label>'
-    +'<input type="date" id="cm_d" value="'+(c?c.date:todayStr())+'"/></div>'
-    +'<div class="form-group"><label>รายการ/กิจกรรม</label>'
-    +'<input id="cm_a" value="'+esc(c?c.activity:'')+'"/></div>'
-    +'<div class="form-group"><label>หน่วยงาน/สถานที่</label>'
-    +'<input id="cm_p" value="'+esc(c?c.place:'')+'"/></div>'
-    +'<div class="form-group"><label>ครูผู้สอนที่เข้าร่วม (เลือกได้หลายคน)</label>'
-    +teacherCheckboxHtml(ri,'cm_t_list',selNames)+'</div>'
-    +imgZoneHtml('cm_img',c?c.imgUrl||'':'','หลักฐานอ้างอิง (แนบรูปภาพ)');
+  var h='';
+  h+='<div class="form-row">'
+    +'<div class="form-group" style="margin:0"><label>วันที่เริ่ม</label>'
+    +'<input type="date" id="cm_d" value="'+(c?c.date||'':todayStr())+'"/></div>'
+    +'<div class="form-group" style="margin:0"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label>'
+    +'<input type="date" id="cm_d2" value="'+(c?c.dateEnd||'':'')+'"/></div>'
+    +'</div>';
+  h+='<div class="form-group"><label>รายการ/กิจกรรม</label>'
+    +'<input id="cm_a" value="'+esc(c?c.activity:'')+'"/>'
+    +buildChips(getPrevValues(ri,'community','activity'),'cm_a')+'</div>';
+  h+='<div class="form-group"><label>หน่วยงาน/สถานที่</label>'
+    +'<input id="cm_p" value="'+esc(c?c.place:'')+'"/>'
+    +buildChips(getPrevValues(ri,'community','place'),'cm_p')+'</div>';
+  h+='<div class="form-group"><label>ครูผู้สอนที่เข้าร่วม (เลือกได้หลายคน)</label>'
+    +teacherCheckboxHtml(ri,'cm_t_list',selNames)+'</div>';
+  // multi-photo for community
+  var cmPhotos=c&&c.photos?c.photos:[];
+  h+='<div class="form-group"><label>แนบภาพหลักฐาน <span style="color:var(--primary);font-weight:600">(เพิ่มได้หลายรูป)</span></label>';
+  h+='<div class="img-upload-zone" id="cm_photo_drop" onclick="trigMultiPhotoInput(\'cm\')" ondragover="event.preventDefault()" ondrop="handleMultiPhotoDrop2(event,\'cm\')">'    +'<div style="font-size:24px">📷</div>'    +'<div style="font-weight:600">คลิกหรือลากหลายรูปมาวาง</div>'    +'<div style="font-size:11px;color:var(--muted)">JPG, PNG — แต่ละไฟล์ไม่เกิน 5MB</div></div>';
+  h+='<input type="file" id="cm_photo_input" accept="image/*" multiple style="display:none" onchange="handleMultiPhotoInput2(event,\'cm\')"/>';
+  h+='<div id="cm_photo_grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
+  cmPhotos.forEach(function(p,pi){
+    h+='<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'      +'<button onclick="removeMultiPhoto2(\'cm\','+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'      +'</div>';
+  });
+  h+='</div>';
+  h+='<div id="cm_photo_count" style="font-size:11px;color:var(--primary);margin-top:4px">'+( cmPhotos.length?cmPhotos.length+' รูป':'')+'</div>';
+  h+='</div>';
+  return h;
 }
 
 function addCom(ri){
+  if(!window._multiPhoto2)window._multiPhoto2={tr:[],cm:[]};
+  window._multiPhoto2.cm=[];
   openModal('<h3>➕ เพิ่มกิจกรรมสัมพันธ์ชุมชน</h3>'
     +comForm(null,ri)
     +'<div class="modal-footer">'
@@ -2192,7 +2336,10 @@ function addCom(ri){
     +'</div>');
 }
 window.addCom=addCom;
-function editCom(ri,idx){openModal(`<h3>✏️ แก้ไขกิจกรรม</h3>${comForm(db.rooms[ri].community[idx])}<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom(${ri},${idx})">💾 บันทึก</button></div>`);}
+function editCom(ri,idx){
+  if(!window._multiPhoto2)window._multiPhoto2={tr:[],cm:[]};
+  window._multiPhoto2.cm=(db.rooms[ri].community[idx]&&db.rooms[ri].community[idx].photos)?db.rooms[ri].community[idx].photos.slice():[];
+  openModal('<h3>✏️ แก้ไขกิจกรรม</h3>'+comForm(db.rooms[ri].community[idx],ri)+'<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom('+ri+','+idx+')">💾 บันทึก</button></div>');}
 window.editCom=editCom;
 function saveCom(ri,idx){
   ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
@@ -2210,12 +2357,17 @@ function saveCom(ri,idx){
 }
 window.saveCom=saveCom;
 function _saveComData(ri, idx, imgUrl){
+  var newPhotos=(window._multiPhoto2&&window._multiPhoto2.cm)?window._multiPhoto2.cm.filter(function(x){return x;}):[];
+  var existPhotos=(idx>=0&&db.rooms[ri].community[idx]&&db.rooms[ri].community[idx].photos)?db.rooms[ri].community[idx].photos:[];
+  var allPhotos=existPhotos.concat(newPhotos.filter(function(p){return existPhotos.indexOf(p)<0;}));
   var c = {
     date:         document.getElementById('cm_d').value,
+    dateEnd:      document.getElementById('cm_d2')?document.getElementById('cm_d2').value:'',
     activity:     document.getElementById('cm_a').value,
     place:        document.getElementById('cm_p').value,
     participants: getCheckedTeachers('cm_t_list'),
-    imgUrl:       imgUrl
+    imgUrl:       allPhotos.length?allPhotos[0]:imgUrl,
+    photos:       allPhotos
   };
   if(!db.rooms[ri].community) db.rooms[ri].community=[];
   if(idx===-1) db.rooms[ri].community.push(c); else db.rooms[ri].community[idx]=c;
@@ -2284,7 +2436,7 @@ function pagePhotos(ri){
     }
     h+='<div style="padding:8px">'
       +'<div style="font-size:12px;font-weight:600;color:#333;margin-bottom:2px">'+esc(p.caption||'(ไม่มีคำบรรยาย)')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted)">'+esc(p.month)+' | '+toBEDate(p.date)+'</div>'
+      +'<div style="font-size:11px;color:var(--muted)">'+esc(p.month)+' | '+toBEDate(p.date)+(p.dateEnd&&p.dateEnd!==p.date?' ถึง '+toBEDate(p.dateEnd):'')+'</div>'
       +'</div>'
       +'<div style="padding:0 8px 8px;display:flex;gap:4px">'
       +'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+realIdx+'" onclick="editPhoto(+this.dataset.ri,+this.dataset.idx)">✏️</button>'
@@ -2305,7 +2457,8 @@ function photoForm(p){
   return '<div class="form-group"><label>รายละเอียดรูปภาพ/คำบรรยาย</label><input id="ph_cap" value="'+esc(p?p.caption:'')+'"/></div>'
     +'<div class="form-row">'
     +'<div class="form-group"><label>ประจำเดือน</label><select id="ph_m">'+mOpts+'</select></div>'
-    +'<div class="form-group"><label>วันที่</label><input type="date" id="ph_d" value="'+(p?p.date:todayStr())+'"/></div>'
+    +'<div class="form-group"><label>วันที่เริ่ม</label><input type="date" id="ph_d" value="'+(p?p.date:todayStr())+'"/></div>'
+    +'<div class="form-group"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label><input type="date" id="ph_d2" value="'+(p?p.dateEnd||'':'')+'"/></div>'
     +'</div>'
     +imgZoneHtml('ph_url',p?p.imgUrl||'':'','แนบรูปภาพ (คลิกหรือลากไฟล์มาวาง)');
 }
@@ -2331,6 +2484,7 @@ function _savePhotoData(ri, idx, imgUrl){
     caption: document.getElementById('ph_cap') ? document.getElementById('ph_cap').value : '',
     month:   mn,
     date:    document.getElementById('ph_d') ? document.getElementById('ph_d').value : todayStr(),
+    dateEnd: document.getElementById('ph_d2') ? document.getElementById('ph_d2').value : '',
     imgUrl:  imgUrl
   };
   if(!db.rooms[ri].photos) db.rooms[ri].photos=[];
@@ -2346,7 +2500,8 @@ function addPhoto(ri){
   var html='<h3>➕ เพิ่มภาพกิจกรรม</h3>';
   html+='<div class="form-row">';
   html+='<div class="form-group" style="margin:0"><label>ประจำเดือน</label><select id="ph_m">'+mOpts+'</select></div>';
-  html+='<div class="form-group" style="margin:0"><label>วันที่</label><input type="date" id="ph_d" value="'+todayStr()+'"/></div>';
+  html+='<div class="form-group" style="margin:0"><label>วันที่เริ่ม</label><input type="date" id="ph_d" value="'+todayStr()+'"/></div>';
+  html+='<div class="form-group" style="margin:0"><label>ถึงวันที่</label><input type="date" id="ph_d2" value=""/></div>';
   html+='</div>';
   html+='<div class="form-group"><label>คำบรรยาย (ใช้กับทุกรูปที่เพิ่ม)</label>';
   html+='<input id="ph_cap" placeholder="เช่น กิจกรรมการเรียนการสอน"/></div>';
@@ -2890,9 +3045,9 @@ function buildReport(){
 
   let h=`<div class="rep-preview" id="repContent">${logoHtml}
   <h1>รายงานสรุปผลการดำเนินงานประจำเดือน ${mn} ${yr}</h1>
-  <h2>${ROOMS[ri]}</h2>
-  <p style="text-align:center;font-size:12px;font-weight:600;color:#1a5fa8;margin-bottom:2px">${getActiveYearLabel()}</p>
-  <p style="text-align:center;font-size:12px;color:#666">ฝ่ายบริหารวิชาการ ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา</p>
+  <h2>ห้องเรียนคู่ขนานสำหรับบุคคลออทิสติก ${ROOMS[ri]}</h2>
+  <p style="text-align:center;font-size:12px;font-weight:600;color:#1a5fa8;margin-bottom:2px">ปีการศึกษา ${yr}</p>
+  <p style="text-align:center;font-size:12px;color:#444;font-weight:500">ฝ่ายบริหารวิชาการ ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา</p>
 
   <div class="rep-section"><h3>1. ข้อมูลบุคลากรประจำห้องเรียน</h3>
   <table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วุฒิการศึกษา</th><th>วิชาเอก</th><th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th></tr></thead><tbody>`;
@@ -2989,36 +3144,42 @@ function buildReport(){
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน ${mn} (กรุณาเพิ่มภาพในหน้าประมวลภาพการสอน)</p>`;}
 
   h+=`</div><div class="rep-section"><h3>10. ภาพหลักฐานการสัมมนา/อบรม</h3>`;
-  const repTrImg=trns.filter(function(t){return t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u});});
+  const repTrImg=trns.filter(function(t){return (t.photos&&t.photos.length)||t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u});});
   if(repTrImg.length){
     h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
     repTrImg.forEach(function(t){
-      var src=driveImgSrc(t.imgUrl||'');
-      if(src){
-        h+='<div style="border-radius:6px;overflow:hidden;border:1px solid #ddd">'
-          +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;display:block" onerror="this.hidden=true" alt="หลักฐาน"/>'
-          +'<div style="padding:4px 6px;background:#f8f9fa;border-top:1px solid #eee">'
-          +(t.course?'<div style="font-size:10px;font-weight:700;color:#1a5fa8;line-height:1.4">'+esc(t.course)+'</div>':'')
-          +(t.org?'<div style="font-size:9px;color:#888;line-height:1.3">'+esc(t.org)+'</div>':'')
-          +'<div style="font-size:9px;color:#555;line-height:1.3">'+esc(t.person||'')+'</div>'
-          +'</div></div>';
-      }
+      var allPics=(t.photos&&t.photos.length)?t.photos:(t.imgUrl?[t.imgUrl]:[]);
+      allPics.forEach(function(pic){
+        var src=driveImgSrc(pic||'');
+        if(src){
+          h+='<div style="border-radius:6px;overflow:hidden;border:1px solid #ddd">'
+            +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;display:block" onerror="this.hidden=true" alt="หลักฐาน"/>'
+            +'<div style="padding:4px 6px;background:#f8f9fa;border-top:1px solid #eee">'
+            +(t.course?'<div style="font-size:10px;font-weight:700;color:#1a5fa8;line-height:1.4">'+esc(t.course)+'</div>':'')
+            +(t.org?'<div style="font-size:9px;color:#888;line-height:1.3">'+esc(t.org)+'</div>':'')
+            +'<div style="font-size:9px;color:#555;line-height:1.3">'+esc(t.person||'')+'</div>'
+            +'</div></div>';
+        }
+      });
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานการอบรมในเดือนนี้</p>`;}
 
   h+=`</div><div class="rep-last-block"><div class="rep-section"><h3>11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</h3>`;
-  const repComImg=coms.filter(function(c){return c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2});});
+  const repComImg=coms.filter(function(c){return (c.photos&&c.photos.length)||c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2});});
   if(repComImg.length){
     h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
     repComImg.forEach(function(c){
-      var src=driveImgSrc(c.imgUrl||'');
-      if(src){
-        h+='<div style="text-align:center">'
-          +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd" onerror="this.hidden=true" alt="หลักฐาน"/>'
-          +'<div style="font-size:10px;color:#666;margin-top:3px">'+esc(c.activity||'')+'</div>'
-          +'</div>';
-      }
+      var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
+      allPics.forEach(function(pic){
+        var src=driveImgSrc(pic||'');
+        if(src){
+          h+='<div style="text-align:center">'
+            +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd" onerror="this.hidden=true" alt="หลักฐาน"/>'
+            +'<div style="font-size:10px;color:#666;margin-top:3px">'+esc(c.activity||'')+'</div>'
+            +'</div>';
+        }
+      });
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
