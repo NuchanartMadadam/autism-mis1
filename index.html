@@ -659,6 +659,7 @@ function saveIIPMulti(ri,si){
   var key=ri+'_'+si;
   var q=_iipQueue[key]||[];
   if(!q.length){alert('กรุณาอัปโหลดไฟล์ PDF อย่างน้อย 1 ไฟล์');return;}
+  var _iipPlanName=document.getElementById('iip_plan_name')?document.getElementById('iip_plan_name').value.trim():'';
   var subFolder='IIP_'+(RS[ri]||('ห้อง'+ri));
   var dt=new Date().toLocaleDateString('th-TH');
   if(!db.rooms[ri].students[si].iip)db.rooms[ri].students[si].iip=[];
@@ -667,12 +668,12 @@ function saveIIPMulti(ri,si){
   q.forEach(function(f){
     if(f.dataUrl&&f.dataUrl.startsWith('data:')&&settings.scriptUrl){
       syncPdfToDrive(f.dataUrl,f.fileName,'IIP_'+(RS[ri]||ri),function(finalUrl){
-        db.rooms[ri].students[si].iip.push({name:f.fileName,fileName:f.fileName,dataUrl:finalUrl,url:'',date:dt});
+        db.rooms[ri].students[si].iip.push({name:(_iipPlanName?_iipPlanName+' ('+f.fileName+')':f.fileName),fileName:f.fileName,dataUrl:finalUrl,url:'',date:dt});
         done++;
         if(done===total){_iipQueue[key]=[];saveLocal();closeModal();toast('บันทึก '+total+' ไฟล์ IIP สำเร็จ ✓');pageIEP(ri);}
       });
     } else {
-      db.rooms[ri].students[si].iip.push({name:f.fileName,fileName:f.fileName,dataUrl:f.dataUrl,url:'',date:dt});
+      db.rooms[ri].students[si].iip.push({name:(_iipPlanName?_iipPlanName+' ('+f.fileName+')':f.fileName),fileName:f.fileName,dataUrl:f.dataUrl,url:'',date:dt});
       done++;
       if(done===total){_iipQueue[key]=[];saveLocal();closeModal();toast('บันทึก '+total+' ไฟล์ IIP สำเร็จ ✓');pageIEP(ri);}
     }
@@ -2508,9 +2509,9 @@ function trainingForm(ri,t){
   h+='<div class="form-row">'
     +'<div class="form-group"><label>หน่วยงานที่จัดอบรม</label>'
     +'<input id="tr_o" value="'+esc(t?t.org:'')+'"/>'
-    +buildChips(getPrevValues(ri,'training','org'),'tr_o')+'</div>';
-    +beDatePickerHtml('tr_d',t?t.date||'':todayStr(),'วันที่เริ่ม')+'</div>';
-    +beDatePickerHtml('tr_d2',t?t.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)+'</div>';
+    +buildChips(getPrevValues(ri,'training','org'),'tr_o')+'</div>'
+    +beDatePickerHtml('tr_d',t?t.date||'':todayStr(),'วันที่เริ่ม')
+    +beDatePickerHtml('tr_d2',t?t.dateEnd||'':'','ถึงวันที่',false,true);
   h+='</div>';
   // multi-photo for training
   var trPhotos=t&&t.photos?t.photos:[];
@@ -2611,9 +2612,9 @@ function comForm(c,ri){
   var selNames=c&&c.participants?c.participants.split(', '):[];
   var h='';
   h+='<div class="form-row">'
-    +beDatePickerHtml('cm_d',c?c.date||'':todayStr(),'วันที่เริ่ม')+'</div>'
-    +beDatePickerHtml('cm_d2',c?c.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)+'</div>'
-    +'</div>';
+    +beDatePickerHtml('cm_d',c?c.date||'':todayStr(),'วันที่เริ่ม')
+    +beDatePickerHtml('cm_d2',c?c.dateEnd||'':'','ถึงวันที่',false,true);
+  h+='</div>';
   h+='<div class="form-group"><label>รายการ/กิจกรรม</label>'
     +'<input id="cm_a" value="'+esc(c?c.activity:'')+'"/>'
     +buildChips(getPrevValues(ri,'community','activity'),'cm_a')+'</div>';
@@ -3096,20 +3097,45 @@ function pageIEP(ri, acYear){
     h+='<div class="card"><p class="text-muted">ยังไม่มีข้อมูลนักเรียน กรุณาเพิ่มในหน้าข้อมูลนักเรียนก่อน</p></div>';
   }
 
-  r.students.forEach(function(s,si){
+  // แสดงเฉพาะนักเรียนที่มี IEP หรือ IIP ในปีการศึกษาที่เลือก
+  var stuWithPlan=r.students.filter(function(s){
+    var iepHas=(s.iep||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
+    var iipHas=(s.iip||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
+    return iepHas||iipHas;
+  });
+
+  // ปุ่มเพิ่มแผนสำหรับนักเรียนที่ยังไม่มี (dropdown เลือกชื่อ)
+  var stuWithoutPlan=r.students.filter(function(s){
+    var iepHas=(s.iep||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
+    var iipHas=(s.iip||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
+    return !iepHas&&!iipHas;
+  });
+
+  if(stuWithoutPlan.length){
+    var stuOpts=stuWithoutPlan.map(function(s){
+      var si=r.students.indexOf(s);
+      return '<option value="'+si+'">'+esc(s.name)+'</option>';
+    }).join('');
+    h+='<div class="card" style="border:2px dashed var(--primary-light);background:var(--bg)">';
+    h+='<div class="flex" style="gap:10px;align-items:center;flex-wrap:wrap">';
+    h+='<span style="font-size:13px;color:var(--muted)">➕ เพิ่มแผนให้นักเรียน:</span>';
+    h+='<select id="iep_add_stu" style="padding:6px 12px;border:1.5px solid var(--primary);border-radius:20px;font-size:13px;min-width:180px">'+stuOpts+'</select>';
+    h+='<button class="btn btn-primary btn-sm" data-ri="'+ri+'" onclick="addIEPForStu(+this.dataset.ri)">📋 เพิ่มแผน IEP/IIP</button>';
+    h+='</div></div>';
+  }
+
+  if(!stuWithPlan.length&&!r.students.length){
+    h+='<div class="card"><p class="text-muted">ยังไม่มีข้อมูลนักเรียน กรุณาเพิ่มในหน้าข้อมูลนักเรียนก่อน</p></div>';
+  } else if(!stuWithPlan.length){
+    h+='<div class="card"><p class="text-muted">ยังไม่มีแผนการสอนในปีการศึกษา '+ayStr+' กรุณาใช้ปุ่มด้านบนเพื่อเพิ่มแผน</p></div>';
+  }
+
+  stuWithPlan.forEach(function(s){
+    var si=r.students.indexOf(s);
     var iepAll=s.iep||[];
     var iipAll=s.iip||[];
-
-    // filter เฉพาะปีการศึกษาที่เลือก
-    // ถ้าไม่มีการระบุ acYear ใน record ให้แสดงทั้งหมด
-    var iepFl=iepAll.filter(function(f){
-      if(!f.acYear) return true; // เก่าที่ไม่มี acYear แสดงทุกปี
-      return f.acYear.indexOf(ayStr)>=0;
-    });
-    var iipFl=iipAll.filter(function(f){
-      if(!f.acYear) return true;
-      return f.acYear.indexOf(ayStr)>=0;
-    });
+    var iepFl=iepAll.filter(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
+    var iipFl=iipAll.filter(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
 
     h+='<div class="card">'
       +'<h3>🧒 '+esc(s.name)
@@ -3168,11 +3194,31 @@ function pageIEP(ri, acYear){
   render(h);
 }
 window.pageIEP=pageIEP;
+
+function addIEPForStu(ri){
+  var sel=document.getElementById('iep_add_stu');
+  if(!sel){toast('กรุณาเลือกนักเรียน','err');return;}
+  var si=+sel.value;
+  var s=db.rooms[ri].students[si];
+  if(!s){toast('ไม่พบข้อมูลนักเรียน','err');return;}
+  // เปิด modal ให้เลือก IEP หรือ IIP
+  var h='<h3>📋 เพิ่มแผนการสอนให้ '+esc(s.name)+'</h3>';
+  h+='<div class="flex" style="gap:12px;margin-top:1rem;flex-wrap:wrap">';
+  h+='<button class="btn btn-primary" style="flex:1" data-ri="'+ri+'" data-si="'+si+'" onclick="closeModal();addIEP(+this.dataset.ri,+this.dataset.si)">📋 เพิ่มแผน IEP</button>';
+  h+='<button class="btn btn-warning" style="flex:1;background:#e65100;border-color:#e65100;color:#fff" data-ri="'+ri+'" data-si="'+si+'" onclick="closeModal();addIIP(+this.dataset.ri,+this.dataset.si)">📘 เพิ่มแผน IIP</button>';
+  h+='</div>';
+  h+='<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button></div>';
+  openModal(h);
+}
+window.addIEPForStu=addIEPForStu;
+
 function addIEP(ri,si,type){
   if(type==='iip'){
     _iipQueue[ri+'_'+si]=[];
     openModal('<h3>➕ อัปโหลดแผน IIP (หลายไฟล์)</h3>'
-      +'<p class="text-muted" style="margin-bottom:10px">อัปโหลดได้หลายไฟล์พร้อมกัน</p>'
+      +'<div class="form-group"><label>ชื่อแผน *</label>'
+      +'<input id="iip_plan_name" placeholder="เช่น แผนการสอนเฉพาะบุคคล IIP ประจำเดือนพฤษภาคม-มิถุนายน '+String(viewAcYear)+'"/>'
+      +'<div style="font-size:11px;color:var(--muted);margin-top:4px">ระบุชื่อแผน IIP สำหรับระบุช่วงเวลาหรือภาคเรียน</div></div>'
       +iipMultiZoneHtml(ri,si)
       +'<div class="modal-footer">'
       +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
@@ -3181,8 +3227,8 @@ function addIEP(ri,si,type){
   }else{
     var fid='ieppdf_'+ri+'_'+si;
     openModal('<h3>➕ อัปโหลดแผน IEP</h3>'
-      +'<div class="form-group"><label>ชื่อแผน/ปีการศึกษา *</label>'
-      +'<input id="iep_n" placeholder="เช่น IEP ปีการศึกษา 2567"/></div>'
+      +'<div class="form-group"><label>ชื่อแผน</label>'
+      +'<input id="iep_n" value="แผนการจัดการศึกษาเฉพาะบุคคล IEP ปีการศึกษา '+String(viewAcYear)+'"/></div>'
       +pdfZoneHtml(fid,'')
       +'<div class="modal-footer">'
       +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
