@@ -1069,6 +1069,72 @@ function removeMultiPhoto2(prefix,idx){
 }
 window.removeMultiPhoto2=removeMultiPhoto2;
 
+
+// ──────────── BE DATE PICKER HELPERS ────────────
+// แปลง ISO string (2026-05-15) เป็น {d,m,y} พ.ศ.
+function isoToBEParts(isoStr){
+  if(!isoStr) return {d:0,m:0,y:0};
+  var p=isoStr.split('-');
+  if(p.length<3) return {d:0,m:0,y:0};
+  return {d:+p[2], m:+p[1], y:+p[0]+543};
+}
+// แปลง {d,m,y พ.ศ.} กลับเป็น ISO (ค.ศ.)
+function bePartsToISO(d,m,y){
+  if(!d||!m||!y) return '';
+  var yy=+y-543;
+  return yy+'-'+String(m).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+}
+// สร้าง HTML สำหรับ 3-dropdown BE date picker
+// id prefix เช่น 'tr_d' จะสร้าง tr_d_day, tr_d_mon, tr_d_yr, tr_d_iso (hidden)
+function beDatePickerHtml(prefix, isoVal, label, required, allowEmpty){
+  var p = isoToBEParts(isoVal||'');
+  var dOpts='', mOpts='', yOpts='';
+  // วัน 1-31
+  if(allowEmpty) dOpts+='<option value="0">วัน</option>';
+  for(var d=1;d<=31;d++){
+    dOpts+='<option value="'+d+'"'+(p.d===d?' selected':'')+'>'+d+'</option>';
+  }
+  // เดือน
+  if(allowEmpty) mOpts+='<option value="0">เดือน</option>';
+  MONTHS.forEach(function(mo,i){
+    mOpts+='<option value="'+(i+1)+'"'+(p.m===i+1?' selected':'')+'>'+mo+'</option>';
+  });
+  // ปี พ.ศ. ย้อนหลัง 30 ปี และข้างหน้า 5 ปี
+  var nowY=new Date().getFullYear()+543;
+  if(allowEmpty) yOpts+='<option value="0">ปี พ.ศ.</option>';
+  for(var y=nowY+5;y>=nowY-30;y--){
+    yOpts+='<option value="'+y+'"'+(p.y===y?' selected':'')+'>'+y+'</option>';
+  }
+  var onchange='syncBEDate(\''+prefix+'\')';
+  return '<div class="form-group">'    +(label?'<label>'+label+(required?' <span style="color:var(--danger)">*</span>':'')+'</label>':'')    +'<div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">'    +'<select id="'+prefix+'_day" style="flex:1;min-width:70px" onchange="'+onchange+'">'+dOpts+'</select>'    +'<select id="'+prefix+'_mon" style="flex:2;min-width:100px" onchange="'+onchange+'">'+mOpts+'</select>'    +'<select id="'+prefix+'_yr"  style="flex:2;min-width:90px"  onchange="'+onchange+'">'+yOpts+'</select>'    +'<input type="hidden" id="'+prefix+'" value="'+(isoVal||'')+'"/>'    +'</div>'    +(isoVal?'<div id="'+prefix+'_lbl" style="font-size:11px;color:var(--primary);margin-top:3px">= '+toBEDateFull(isoVal)+'</div>'            :'<div id="'+prefix+'_lbl" style="font-size:11px;color:var(--primary);margin-top:3px"></div>')    +'</div>';
+}
+function syncBEDate(prefix){
+  var d=document.getElementById(prefix+'_day');
+  var m=document.getElementById(prefix+'_mon');
+  var y=document.getElementById(prefix+'_yr');
+  var hid=document.getElementById(prefix);
+  var lbl=document.getElementById(prefix+'_lbl');
+  if(!d||!m||!y||!hid) return;
+  var dv=+d.value, mv=+m.value, yv=+y.value;
+  if(dv>0&&mv>0&&yv>0){
+    var iso=bePartsToISO(dv,mv,yv);
+    hid.value=iso;
+    if(lbl) lbl.textContent='= '+toBEDateFull(iso);
+    // อัปเดตอายุถ้าเป็น dob
+    if(prefix==='s_dob'){
+      var ageEl=document.getElementById('s_age');
+      if(ageEl) ageEl.textContent=calcAge(iso);
+    }
+  } else {
+    hid.value='';
+    if(lbl) lbl.textContent='';
+  }
+}
+window.beDatePickerHtml=beDatePickerHtml;
+window.syncBEDate=syncBEDate;
+window.isoToBEParts=isoToBEParts;
+window.bePartsToISO=bePartsToISO;
+
 window.compressImg=compressImg;
 
 function saveUserPass(key){
@@ -1209,16 +1275,21 @@ window.refreshFromSheets=refreshFromSheets;
 function updateStatusBox(status){
   var isActive = status==='กำลังปฏิบัติหน้าที่';
   var box = document.getElementById('t_status_box');
-  var endInput = document.getElementById('t_end');
   if(box){
     box.style.border = '2px solid '+(isActive?'#2d7d3a':'#b71c1c');
     box.style.background = isActive?'#f0fff4':'#fff0f0';
-    box.querySelector('[style*="font-weight:700"]').style.color = isActive?'#2d7d3a':'#b71c1c';
+    var title=box.querySelector('[style*="font-weight:700"]');
+    if(title)title.style.color = isActive?'#2d7d3a':'#b71c1c';
   }
-  if(endInput){
-    endInput.disabled = isActive;
-    endInput.style.opacity = isActive?'0.4':'1';
-    if(isActive) endInput.value='';
+  ['t_end_day','t_end_mon','t_end_yr'].forEach(function(fid){
+    var el=document.getElementById(fid);
+    if(el){el.disabled=isActive;el.style.opacity=isActive?'0.4':'1';}
+  });
+  if(isActive){
+    var hid=document.getElementById('t_end');
+    if(hid)hid.value='';
+    var lbl=document.getElementById('t_end_lbl');
+    if(lbl)lbl.textContent='';
   }
 }
 window.updateStatusBox=updateStatusBox;
@@ -1800,7 +1871,7 @@ function teacherForm(t){
     +'<div class="form-group"><label>เบอร์โทรติดต่อ</label>'
     +'<input id="t_phone" value="'+esc(t?t.phone:'')+'"/></div>'
     +'<div class="form-group"><label>วันที่เริ่มปฏิบัติงาน</label>'
-    +'<input type="date" id="t_start" value="'+(t&&t.startDate?t.startDate:'')+'"/>'
+    +beDatePickerHtml('t_start',t&&t.startDate?t.startDate:'','วันที่เริ่มปฏิบัติงาน')
     +'<span id="t_start_be" style="font-size:11px;color:var(--primary);margin-left:6px">'
     +(t&&t.startDate?toBEDate(t.startDate):'')+'</span></div>'
     +'</div>';
@@ -1817,7 +1888,7 @@ function teacherForm(t){
   h+='</select></div>';
   h+='<div class="form-group" style="margin:0" id="t_end_group">'
     +'<label>วันที่สิ้นสุดการปฏิบัติงาน'+(isActive?' <span style="color:#aaa;font-size:11px">(ไม่ต้องกรอกถ้ายังปฏิบัติงาน)</span>':'')+'</label>'
-    +'<input type="date" id="t_end" value="'+(t&&t.endDate?t.endDate:'')+'" '+(isActive?'disabled style="opacity:0.4"':'')+'/>'
+    +beDatePickerHtml('t_end',t&&t.endDate?t.endDate:'','วันที่สิ้นสุดการปฏิบัติงาน',false,true)
     +(t&&t.endDate&&!isActive?'<span style="font-size:11px;color:#b71c1c;margin-left:6px">'+toBEDate(t.endDate)+'</span>':'')
     +'</div>';
   h+='</div>';
@@ -1908,7 +1979,7 @@ function stuForm(s){
     +'<input id="s_name" value="'+esc(s?s.name:'')+'"/></div>';
   h+='<div class="form-row">'
     +'<div class="form-group"><label>วันเดือนปีเกิด</label>'
-    +'<input type="date" id="s_dob" value="'+(s?s.dob:'')+'" '
+    +beDatePickerHtml('s_dob',s?s.dob:'','วันเดือนปีเกิด')
     +'oninput="document.getElementById(&quot;s_age&quot;).textContent=calcAge(this.value)"/></div>'
     +'<div class="form-group"><label>อายุ (คำนวณอัตโนมัติ)</label>'
     +'<div style="padding:8px 11px;border:1px solid var(--border);border-radius:8px;background:var(--bg);font-size:13px" id="s_age">'
@@ -1938,7 +2009,7 @@ function stuForm(s){
     +'<option'+(curSt==='อื่นๆ'?' selected':'')+'>อื่นๆ</option>'
     +'</select></div>'
     +'<div class="form-group" style="margin:0"><label>วันที่สิ้นสุด</label>'
-    +'<input type="date" id="stu_end" value="'+(s&&s.stuEndDate?s.stuEndDate:'')+'"'
+    +beDatePickerHtml('stu_end',s&&s.stuEndDate?s.stuEndDate:'','วันที่สิ้นสุด',false,true)
     +(isAct?' disabled style="opacity:0.4"':'')+'/>'
     +'</div></div>';
   h+='<div class="form-group" style="margin-top:10px;margin-bottom:0">'
@@ -2206,9 +2277,9 @@ function trainingForm(ri,t){
     +'<input id="tr_o" value="'+esc(t?t.org:'')+'"/>'
     +buildChips(getPrevValues(ri,'training','org'),'tr_o')+'</div>';
   h+='<div class="form-group"><label>วันที่เริ่ม</label>'
-    +'<input type="date" id="tr_d" value="'+(t?t.date||'':todayStr())+'"/></div>';
+    +beDatePickerHtml('tr_d',t?t.date||'':todayStr(),'วันที่เริ่ม')+'</div>';
   h+='<div class="form-group"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label>'
-    +'<input type="date" id="tr_d2" value="'+(t?t.dateEnd||'':'')+'"/></div>';
+    +beDatePickerHtml('tr_d2',t?t.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)+'</div>';
   h+='</div>';
   // multi-photo for training
   var trPhotos=t&&t.photos?t.photos:[];
@@ -2310,9 +2381,9 @@ function comForm(c,ri){
   var h='';
   h+='<div class="form-row">'
     +'<div class="form-group" style="margin:0"><label>วันที่เริ่ม</label>'
-    +'<input type="date" id="cm_d" value="'+(c?c.date||'':todayStr())+'"/></div>'
+    +beDatePickerHtml('cm_d',c?c.date||'':todayStr(),'วันที่เริ่ม')+'</div>'
     +'<div class="form-group" style="margin:0"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label>'
-    +'<input type="date" id="cm_d2" value="'+(c?c.dateEnd||'':'')+'"/></div>'
+    +beDatePickerHtml('cm_d2',c?c.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)+'</div>'
     +'</div>';
   h+='<div class="form-group"><label>รายการ/กิจกรรม</label>'
     +'<input id="cm_a" value="'+esc(c?c.activity:'')+'"/>'
@@ -2469,8 +2540,8 @@ function photoForm(p){
   return '<div class="form-group"><label>รายละเอียดรูปภาพ/คำบรรยาย</label><input id="ph_cap" value="'+esc(p?p.caption:'')+'"/></div>'
     +'<div class="form-row">'
     +'<div class="form-group"><label>ประจำเดือน</label><select id="ph_m">'+mOpts+'</select></div>'
-    +'<div class="form-group"><label>วันที่เริ่ม</label><input type="date" id="ph_d" value="'+(p?p.date:todayStr())+'"/></div>'
-    +'<div class="form-group"><label>ถึงวันที่ <span style="color:#aaa;font-size:11px">(ถ้าข้ามวัน)</span></label><input type="date" id="ph_d2" value="'+(p?p.dateEnd||'':'')+'"/></div>'
+    +beDatePickerHtml('ph_d',p?p.date:todayStr(),'วันที่เริ่ม')
+    +beDatePickerHtml('ph_d2',p?p.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)
     +'</div>'
     +imgZoneHtml('ph_url',p?p.imgUrl||'':'','แนบรูปภาพ (คลิกหรือลากไฟล์มาวาง)');
 }
@@ -2512,8 +2583,8 @@ function addPhoto(ri){
   var html='<h3>➕ เพิ่มภาพกิจกรรม</h3>';
   html+='<div class="form-row">';
   html+='<div class="form-group" style="margin:0"><label>ประจำเดือน</label><select id="ph_m">'+mOpts+'</select></div>';
-  html+='<div class="form-group" style="margin:0"><label>วันที่เริ่ม</label><input type="date" id="ph_d" value="'+todayStr()+'"/></div>';
-  html+='<div class="form-group" style="margin:0"><label>ถึงวันที่</label><input type="date" id="ph_d2" value=""/></div>';
+  html+=beDatePickerHtml('ph_d',todayStr(),'วันที่เริ่ม');
+  html+=beDatePickerHtml('ph_d2','','ถึงวันที่',false,true);
   html+='</div>';
   html+='<div class="form-group"><label>คำบรรยาย (ใช้กับทุกรูปที่เพิ่ม)</label>';
   html+='<input id="ph_cap" placeholder="เช่น กิจกรรมการเรียนการสอน"/></div>';
@@ -3467,9 +3538,9 @@ function acYearForm(y){
     +'<input id="ay_name" value="'+(y?esc(y.name):'ปีการศึกษา '+nowYear)+'"/></div>'
     +'<div class="form-row">'
     +'<div class="form-group"><label>วันเริ่มต้น</label>'
-    +'<input type="date" id="ay_start" value="'+(y?y.startDate:'')+'"/></div>'
+    +beDatePickerHtml('ay_start',y?y.startDate:'','วันเริ่มต้น')+'</div>'
     +'<div class="form-group"><label>วันสิ้นสุด</label>'
-    +'<input type="date" id="ay_end" value="'+(y?y.endDate:'')+'"/></div>'
+    +beDatePickerHtml('ay_end',y?y.endDate:'','วันสิ้นสุด')+'</div>'
     +'</div>';
 }
 
@@ -3489,8 +3560,8 @@ window.editAcYear=editAcYear;
 
 function saveAcYear(idx){
   const name=document.getElementById('ay_name').value.trim();
-  const start=document.getElementById('ay_start').value;
-  const end=document.getElementById('ay_end').value;
+  const start=document.getElementById('ay_start')?document.getElementById('ay_start').value:'';
+  const end=document.getElementById('ay_end')?document.getElementById('ay_end').value:'';
   if(!name){alert('กรุณากรอกชื่อปีการศึกษา');return;}
   if(start&&end&&start>end){alert('วันเริ่มต้นต้องก่อนวันสิ้นสุด');return;}
   if(idx===-1){
