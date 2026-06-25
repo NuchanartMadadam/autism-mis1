@@ -2149,7 +2149,25 @@ function pageAttendance(ri){
       +'<td style="text-align:center;color:#555;font-weight:700">'+wh+'</td></tr>';
   });
   if(!r.students.length)h+='<tr><td colspan="30" style="text-align:center;color:var(--muted)">ยังไม่มีนักเรียน</td></tr>';
-  h+='</tbody></table></div></div>';
+  h+='</tbody></table></div>';
+
+  // แสดงรายการวันหยุดท้ายตาราง
+  var holEntries=Object.keys(hols).map(function(d){return {d:+d,note:hols[d]};}).filter(function(x){return x.note;}).sort(function(a,b){return a.d-b.d;});
+  if(holEntries.length){
+    h+='<div style="margin-top:12px;padding:10px 14px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px">';
+    h+='<div style="font-size:12px;font-weight:700;color:#e65100;margin-bottom:8px">📅 หมายเหตุ</div>';
+    h+='<div style="display:flex;flex-wrap:wrap;gap:8px">';
+    holEntries.forEach(function(x){
+      var dayNames=['อา','จ','อ','พ','พฤ','ศ','ส'];
+      var dname=dayNames[new Date(yr,mn-1,x.d).getDay()];
+      h+='<div style="background:#fff;border:1px solid #ffcc02;border-radius:8px;padding:5px 12px;font-size:12px">'
+        +'<span style="font-weight:700;color:#e65100">'+x.d+' '+dname+'.</span>'
+        +' <span style="color:#555">'+esc(x.note)+'</span>'
+        +'</div>';
+    });
+    h+='</div></div>';
+  }
+  h+='</div>';
   render(h);
 }
 window.pageAttendance=pageAttendance;
