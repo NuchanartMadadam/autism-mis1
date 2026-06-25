@@ -1273,19 +1273,24 @@ document.addEventListener('click',function(e){
 
 function updateStuStatusBox(status){
   var isActive = status==='กำลังรับบริการ';
+  var isRefer  = status==='ส่งต่อ';
   var box = document.getElementById('stu_status_box');
   var endInput = document.getElementById('stu_end');
+  var referGrp = document.getElementById('refer_reason_group');
+  var color = isActive?'#2d7d3a':isRefer?'#1a5fa8':'#b71c1c';
+  var bg    = isActive?'#f0fff4':isRefer?'#e3f2fd':'#fff0f0';
   if(box){
-    box.style.border = '2px solid '+(isActive?'#2d7d3a':'#e65100');
-    box.style.background = isActive?'#f0fff4':'#fff8f0';
+    box.style.border = '2px solid '+color;
+    box.style.background = bg;
     var title=box.querySelector('[style*="font-weight:700"]');
-    if(title)title.style.color=isActive?'#2d7d3a':'#e65100';
+    if(title)title.style.color=color;
   }
   if(endInput){
     endInput.disabled=isActive;
     endInput.style.opacity=isActive?'0.4':'1';
     if(isActive)endInput.value='';
   }
+  if(referGrp) referGrp.style.display = isRefer?'block':'none';
 }
 window.updateStuStatusBox=updateStuStatusBox;
 
@@ -1627,6 +1632,7 @@ function renderSidebar(){
     {i:'📊',l:'ภาพรวมระบบ',p:'dashboard'},
     {s:'ข้อมูลบุคลากร'},{i:'👩‍🏫',l:'ข้อมูลผู้สอน',p:'teachers'},
     {s:'ข้อมูลผู้เรียน'},{i:'🧒',l:'ข้อมูลนักเรียน',p:'students'},
+    {i:'🔄',l:'การส่งต่อนักเรียน',p:'referral'},
     {i:'📅',l:'การเข้าเรียน',p:'attendance'},
     {i:'📝',l:'บันทึกการให้บริการ',p:'services'},
     {s:'ฝ่ายบุคคล'},{i:'📋',l:'สรุปปฏิบัติงานประจำเดือน',p:'hrmonthly'},
@@ -1658,7 +1664,7 @@ function showPage(p){
   _curPageFn=null;
   // ป้องกัน ar undefined
   if(ar===undefined||ar===null||ar<0||ar>2)ar=getRooms()[0]||0;
-  const map={dashboard:pageDashboard,teachers:()=>pageTeachers(ar),students:()=>pageStudents(ar),attendance:()=>pageAttendance(ar),services:()=>pageServices(ar),hrmonthly:()=>pageHRMonthly(ar),training:()=>pageTraining(ar),community:()=>pageCommunity(ar),network:()=>pageNetwork(ar),photos:()=>pagePhotos(ar),iep:()=>pageIEP(ar),schedule:()=>pageSchedule(ar),report:pageReport,stats:pageStats,settings:pageSettings,admin:pageAdmin,gsSetup:showGsSetup,academicYear:pageAcademicYear};
+  const map={dashboard:pageDashboard,teachers:()=>pageTeachers(ar),students:()=>pageStudents(ar),referral:()=>pageReferral(ar),attendance:()=>pageAttendance(ar),services:()=>pageServices(ar),hrmonthly:()=>pageHRMonthly(ar),training:()=>pageTraining(ar),community:()=>pageCommunity(ar),network:()=>pageNetwork(ar),photos:()=>pagePhotos(ar),iep:()=>pageIEP(ar),schedule:()=>pageSchedule(ar),report:pageReport,stats:pageStats,settings:pageSettings,admin:pageAdmin,gsSetup:showGsSetup,academicYear:pageAcademicYear};
   if(map[p])map[p]();
 }
 
@@ -1936,10 +1942,15 @@ function stuForm(s){
     +(isAct?' disabled style="opacity:0.4"':'')+'/>'
     +'</div></div>';
   h+='<div class="form-group" style="margin-top:10px;margin-bottom:0">'
-    +'<label>รายละเอียด</label>'
-    +'<input id="stu_remark" value="'+esc(s&&s.stuRemark?s.stuRemark:'')+'" '
+    +'<label>รายละเอียด / สถานที่ส่งต่อ <span style="color:#aaa;font-size:11px">(เช่น ส่งต่อโรงพยาบาลหาดใหญ่)</span></label>'
+    +'<input id="stu_remark" value="'+esc(s&&s.stuRemark?s.stuRemark:'')+'" '
     +'placeholder="เช่น ส่งต่อโรงพยาบาลหาดใหญ่"/>'
-    +'</div></div>';
+    +'</div>'
+    +'<div class="form-group" id="refer_reason_group" style="margin-top:8px;margin-bottom:0;display:'+(curSt.indexOf('ส่งต่อ')>=0?'block':'none')+'">' 
+    +'<label>สาเหตุการส่งต่อ</label>'
+    +'<textarea id="stu_refer_reason" rows="3" placeholder="ระบุสาเหตุหรือเหตุผลการส่งต่อ เช่น มีพฤติกรรมรุนแรง ต้องการการดูแลเฉพาะทาง...">'+(s&&s.stuReferReason?esc(s.stuReferReason):'')+'</textarea>'
+    +'</div>'
+    +'</div>';
   return h;
 }
 
@@ -1952,7 +1963,8 @@ function saveStu(ri,idx){
     stuStatus:document.getElementById('stu_status')?document.getElementById('stu_status').value:'กำลังรับบริการ',
     stuEndDate:document.getElementById('stu_end')?document.getElementById('stu_end').value:'',
     stuRemark:document.getElementById('stu_remark')?document.getElementById('stu_remark').value:'',
-    problem:document.getElementById('s_prob')?document.getElementById('s_prob').value:''
+    problem:document.getElementById('s_prob')?document.getElementById('s_prob').value:'',
+    stuReferReason:document.getElementById('stu_refer_reason')?document.getElementById('stu_refer_reason').value:''
   };
   if(!s.name){alert('กรุณากรอกชื่อ-สกุล');return;}
   if(idx===-1)db.rooms[ri].students.push(s);else db.rooms[ri].students[idx]=s;
@@ -2042,9 +2054,9 @@ function pageServices(ri){
   var h='<div class="page-header"><h2>บันทึกการให้บริการทางวิชาการ</h2></div>';
   h+=monthYearPickerHtml()+roomTabs(ri,'pageServices');
   h+='<div class="card"><h3>รายการบริการ '+MONTHS[viewMonth-1]+' '+(viewYear+543)+' — '+RS[ri]+'</h3>'
-    +'<div class="table-wrap"><table><thead><tr><th>วันที่</th><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียด</th><th>ผู้ให้บริการ</th><th>จัดการ</th></tr></thead><tbody>';
+    +'<div class="table-wrap"><table><thead><tr><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียด</th><th>ผู้ให้บริการ</th><th>จัดการ</th></tr></thead><tbody>';
   fl.forEach(function(sv){var i2=all.indexOf(sv);
-    h+='<tr><td>'+toBEDate(sv.date)+'</td><td>'+esc(sv.student)+'</td><td>'+esc(sv.detail)+'</td><td style="font-size:12px">'+esc(sv.provider)+'</td>'
+    h+='<tr><td>'+esc(sv.student)+'</td><td>'+esc(sv.detail)+'</td><td style="font-size:12px">'+esc(sv.provider)+'</td>'
       +'<td><button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="editService(+this.dataset.ri,+this.dataset.idx)">✏️</button> '
       +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+i2+'" onclick="delService(+this.dataset.ri,+this.dataset.idx)">🗑️</button></td></tr>';
   });
@@ -2646,6 +2658,87 @@ function delSchedule(ri,idx){
 }
 window.delSchedule=delSchedule;
 
+
+// ──────────── การส่งต่อนักเรียน ────────────
+function pageReferral(ri){
+  ri=safeRoom(ri); ar=ri; _curPageFn=function(){pageReferral(ar);};
+
+  // รวบรวมนักเรียนที่มีสถานะส่งต่อ/ออก/จบ จากทุกห้องที่มีสิทธิ์
+  var allReferred=[];
+  getRooms().forEach(function(rIdx){
+    var r=db.rooms[rIdx]||mkRoom();
+    (r.students||[]).forEach(function(s,si){
+      if(s.stuStatus&&s.stuStatus!=='กำลังรับบริการ'){
+        allReferred.push({s:s, si:si, ri:rIdx});
+      }
+    });
+  });
+
+  // นักเรียนที่ยัง "กำลังรับบริการ" ทั้งหมด
+  var allActive=[];
+  getRooms().forEach(function(rIdx){
+    var r=db.rooms[rIdx]||mkRoom();
+    (r.students||[]).forEach(function(s,si){
+      if(!s.stuStatus||s.stuStatus==='กำลังรับบริการ'){
+        allActive.push({s:s,si:si,ri:rIdx});
+      }
+    });
+  });
+
+  // สถิติ
+  var countRefer=allReferred.filter(function(x){return x.s.stuStatus==='ส่งต่อ';}).length;
+  var countLeave=allReferred.filter(function(x){return x.s.stuStatus==='ลาออก';}).length;
+  var countGrad =allReferred.filter(function(x){return x.s.stuStatus==='จบการศึกษา';}).length;
+  var countOther=allReferred.filter(function(x){return x.s.stuStatus==='อื่นๆ';}).length;
+
+  var h='<div class="page-header"><h2>🔄 การส่งต่อนักเรียน</h2><p>แสดงนักเรียนที่มีการเปลี่ยนแปลงสถานะการรับบริการ</p></div>';
+  h+=roomTabs(ri,'pageReferral');
+
+  // สถิติรวม
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px;margin-bottom:1.25rem">';
+  h+='<div class="stat-card"><div class="num" style="color:var(--success)">'+(allActive.filter(function(x){return x.ri===ri;}).length)+'</div><div class="lbl">กำลังรับบริการ</div></div>';
+  h+='<div class="stat-card"><div class="num" style="color:#1a5fa8">'+allReferred.filter(function(x){return x.s.stuStatus==="ส่งต่อ"&&x.ri===ri;}).length+'</div><div class="lbl">ส่งต่อ</div></div>';
+  h+='<div class="stat-card"><div class="num" style="color:var(--danger)">'+allReferred.filter(function(x){return x.s.stuStatus==="ลาออก"&&x.ri===ri;}).length+'</div><div class="lbl">ลาออก</div></div>';
+  h+='<div class="stat-card"><div class="num" style="color:var(--warn)">'+allReferred.filter(function(x){return x.s.stuStatus==="จบการศึกษา"&&x.ri===ri;}).length+'</div><div class="lbl">จบการศึกษา</div></div>';
+  h+='</div>';
+
+  // ตารางนักเรียนที่ส่งต่อ/ออก/จบ
+  var roomReferred=allReferred.filter(function(x){return x.ri===ri;});
+  h+='<div class="card"><h3>📋 รายชื่อนักเรียนที่มีการเปลี่ยนสถานะ — '+RS[ri]+'</h3>';
+
+  if(roomReferred.length){
+    h+='<div class="table-wrap"><table><thead><tr>'      +'<th>ลำดับ</th><th>ชื่อ-สกุล</th><th>ประเภทความพิการ</th>'      +'<th>สถานะ</th><th>วันที่สิ้นสุด</th>'      +'<th>สถานที่ส่งต่อ/รายละเอียด</th><th>สาเหตุการส่งต่อ</th>'      +'<th>จัดการ</th>'      +'</tr></thead><tbody>';
+    roomReferred.forEach(function(item,idx){
+      var s=item.s, si=item.si, rIdx=item.ri;
+      var stColor=s.stuStatus==='ส่งต่อ'?'#1a5fa8':s.stuStatus==='ลาออก'?'#b71c1c':s.stuStatus==='จบการศึกษา'?'#e65100':'#555';
+      var stBg   =s.stuStatus==='ส่งต่อ'?'#e3f2fd':s.stuStatus==='ลาออก'?'#ffebee':s.stuStatus==='จบการศึกษา'?'#fff3e0':'#f5f5f5';
+      h+='<tr>'        +'<td style="text-align:center">'+(idx+1)+'</td>'        +'<td><b>'+esc(s.name)+'</b><br><span style="font-size:11px;color:#888">อายุ '+calcAge(s.dob)+'</span></td>'        +'<td><span class="badge badge-blue" style="font-size:10px">'+esc(s.type)+'</span></td>'        +'<td><span style="background:'+stBg+';color:'+stColor+';padding:3px 10px;border-radius:12px;font-size:12px;font-weight:600">'+esc(s.stuStatus)+'</span></td>'        +'<td style="font-size:12px">'+toBEDate(s.stuEndDate||'')+'</td>'        +'<td style="font-size:12px;max-width:160px">'+esc(s.stuRemark||'-')+'</td>'        +'<td style="font-size:12px;max-width:180px;color:'+( s.stuStatus==='ส่งต่อ'?'#1a5fa8':'#888')+'">'        +(s.stuStatus==='ส่งต่อ'&&s.stuReferReason          ?'<span style="background:#e3f2fd;padding:2px 6px;border-radius:6px">'+esc(s.stuReferReason)+'</span>'          :(s.stuStatus==='ส่งต่อ'?'<span style="color:#aaa">ไม่ระบุ</span>':'-'))        +'</td>'        +'<td><button class="btn btn-outline btn-sm" data-ri="'+rIdx+'" data-si="'+si+'" onclick="editStudent(+this.dataset.ri,+this.dataset.si)">✏️ แก้ไข</button></td>'        +'</tr>';
+    });
+    h+='</tbody></table></div>';
+  } else {
+    h+='<div style="text-align:center;padding:2rem;color:var(--muted)">'      +'<div style="font-size:48px;margin-bottom:12px">✅</div>'      +'<div style="font-size:14px;font-weight:600">นักเรียนทุกคนยังกำลังรับบริการอยู่</div>'      +'<div style="font-size:12px;margin-top:6px">ยังไม่มีนักเรียนที่ส่งต่อ ลาออก หรือจบการศึกษา</div>'      +'</div>';
+  }
+  h+='</div>';
+
+  // ตารางนักเรียนปัจจุบัน (กำลังรับบริการ)
+  var roomActive=allActive.filter(function(x){return x.ri===ri;});
+  h+='<div class="card"><h3>✅ นักเรียนที่กำลังรับบริการ — '+RS[ri]+' ('+roomActive.length+' คน)</h3>';
+  if(roomActive.length){
+    h+='<div class="table-wrap"><table><thead><tr>'      +'<th>ลำดับ</th><th>ชื่อ-สกุล</th><th>อายุ</th><th>ประเภทความพิการ</th><th>ปัญหา/พฤติกรรม</th><th>จัดการ</th>'      +'</tr></thead><tbody>';
+    roomActive.forEach(function(item,idx){
+      var s=item.s, si=item.si, rIdx=item.ri;
+      h+='<tr>'        +'<td style="text-align:center">'+(idx+1)+'</td>'        +'<td><b>'+esc(s.name)+'</b></td>'        +'<td>'+calcAge(s.dob)+'</td>'        +'<td><span class="badge badge-blue">'+esc(s.type)+'</span></td>'        +'<td style="font-size:12px;max-width:200px">'+esc(s.problem||'-')+'</td>'        +'<td><button class="btn btn-outline btn-sm" data-ri="'+rIdx+'" data-si="'+si+'" onclick="editStudent(+this.dataset.ri,+this.dataset.si)">✏️ แก้ไข</button></td>'        +'</tr>';
+    });
+    h+='</tbody></table></div>';
+  } else {
+    h+='<p class="text-muted">ไม่มีนักเรียนที่กำลังรับบริการ</p>';
+  }
+  h+='</div>';
+
+  render(h);
+}
+window.pageReferral=pageReferral;
+
 function pageIEP(ri, acYear){
   ar=ri; _curPageFn=null;
   if(acYear!==undefined) viewAcYear=+acYear;
@@ -3107,7 +3200,7 @@ function buildReport(){
   </tbody></table>
 
   <div class="rep-section"><h3>4. บันทึกการให้บริการทางวิชาการ (${svcs.length} ครั้ง)</h3>`;
-  if(svcs.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียดการให้บริการ</th><th>ผู้ให้บริการ</th></tr></thead><tbody>`;svcs.forEach(function(sv){h+='<tr><td>'+toBEDate(sv.date)+'</td><td>'+esc(sv.student)+'</td><td>'+esc(sv.detail)+'</td><td>'+esc(sv.provider)+'</td></tr>';});h+=`</tbody></table>`;}
+  if(svcs.length){h+=`<table class="rep-table"><thead><tr><th>วันที่</th><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียดการให้บริการ</th><th>ผู้ให้บริการ</th></tr></thead><tbody>`;svcs.forEach(function(sv){h+='<tr><td>'+esc(sv.student)+'</td><td>'+esc(sv.detail)+'</td><td>'+esc(sv.provider)+'</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>5. สรุปการปฏิบัติงานบุคลากร</h3>`;
