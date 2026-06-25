@@ -2080,58 +2080,171 @@ window.delStudent=delStudent;
 function pageAttendance(ri){
   ri=safeRoom(ri);ar=ri;_curPageFn=function(){pageAttendance(ar);};
   var yr=viewYear,mn=viewMonth,r=db.rooms[ri],key=yr+'-'+mn,att=r.attendance[key]||{};
+  var holidays=r.holidays=r.holidays||{};
+  var hols=holidays[key]||{};
+
+  // สัญลักษณ์ภาษาไทย
+  var ATT_LABELS={'P':'✓','A':'ข','L':'ล','W':'ย'};
+  var ATT_COLORS={
+    'P':{bg:'#c8e6c9',fc:'#1b5e20'},
+    'A':{bg:'#ffcdd2',fc:'#b71c1c'},
+    'L':{bg:'#fff3cd',fc:'#856404'},
+    'W':{bg:'#e8e8e8',fc:'#555'}
+  };
+
   var h='<div class="page-header"><h2>การเข้าเรียนประจำเดือน</h2></div>';
   h+=monthYearPickerHtml()+roomTabs(ri,'pageAttendance');
+
+  // legend
+  h+='<div class="card" style="padding:.6rem 1rem;margin-bottom:.75rem">';
+  h+='<div class="flex" style="gap:12px;flex-wrap:wrap;align-items:center">';
+  h+='<span style="font-size:12px;font-weight:600;color:var(--muted)">สัญลักษณ์:</span>';
+  [['✓','#c8e6c9','#1b5e20','มาเรียน'],['ข','#ffcdd2','#b71c1c','ขาดเรียน'],
+   ['ล','#fff3cd','#856404','ลา'],['ย','#e8e8e8','#555','วันหยุด/ไม่มีการสอน']].forEach(function(x){
+    h+='<span style="display:inline-flex;align-items:center;gap:5px;font-size:12px">'
+      +'<span style="background:'+x[1]+';color:'+x[2]+';width:22px;height:22px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:13px">'+x[0]+'</span>'
+      +x[3]+'</span>';
+  });
+  h+='<button class="btn btn-outline btn-sm" style="margin-left:auto" data-ri="'+ri+'" data-key="'+key+'" onclick="openHolidayMgr(+this.dataset.ri,this.dataset.key)">📅 จัดการวันหยุด</button>';
+
   h+='<div class="card"><h3>การเข้าเรียน '+MONTHS[mn-1]+' '+(yr+543)+' — '+RS[ri]+'</h3>';
   var dim=new Date(yr,mn,0).getDate(),sDays=[];
   for(var d=1;d<=dim;d++){if(new Date(yr,mn-1,d).getDay()>0&&new Date(yr,mn-1,d).getDay()<6)sDays.push(d);}
-  h+='<div class="table-wrap"><table><thead><tr><th style="min-width:120px">ชื่อนักเรียน</th>';
-  sDays.slice(0,23).forEach(function(d){h+='<th style="width:26px;text-align:center;font-size:11px">'+d+'</th>';});
-  if(sDays.length>23)h+='<th>+'+(sDays.length-23)+'</th>';
-  h+='<th>มา</th><th>ขาด</th><th>ลา</th><th>หยุด</th></tr></thead><tbody>';
+
+  h+='<div class="table-wrap"><table><thead><tr><th style="min-width:130px">ชื่อนักเรียน</th>';
+  sDays.forEach(function(d){
+    var holNote=hols[d]?hols[d]:'';
+    var isHol=!!holNote;
+    var th_style='width:28px;text-align:center;font-size:11px'+(isHol?';background:#fff3e0;color:#e65100':'');
+    var title=isHol?' title="'+esc(holNote)+'"':'';
+    h+='<th style="'+th_style+'"'+title+'>'+d+(isHol?'<div style="font-size:8px;color:#e65100;line-height:1">🔴</div>':'')+'</th>';
+  });
+  h+='<th>มา</th><th>ขาด</th><th>ลา</th><th>ย/ห</th></tr></thead><tbody>';
+
   r.students.forEach(function(s){
     var isActive=isStudentActiveIn(s,yr,mn);
     var days=att[s.name]||{},pm=0,ab=0,lv=0,wh=0;
     sDays.forEach(function(d){var v=days[d];if(v==='P')pm++;else if(v==='A')ab++;else if(v==='L')lv++;else if(v==='W')wh++;});
     var rowStyle=isActive?'':'background:#fff5f5;opacity:0.65;pointer-events:none;';
     var nameTxt=esc(s.name)+(isActive?'':stuStatusBadge(s));
-    h+='<tr style="'+rowStyle+'"><td style="font-size:12px">'+nameTxt+'</td>';
-    sDays.slice(0,23).forEach(function(d){
-      var v=days[d]||'',bg='',fc='var(--muted)';
-      if(v==='P'){bg='#c8e6c9';fc='#1b5e20';}else if(v==='A'){bg='#ffcdd2';fc='#b71c1c';}
-      else if(v==='L'){bg='#fff3cd';fc='#856404';}else if(v==='W'){bg='#e8e8e8';fc='#555';}
-      h+='<td style="text-align:center;padding:2px"><span class="att-cell" style="background:'+bg+';color:'+fc+'" data-ri="'+ri+'" data-key="'+key+'" data-name="'+esc(s.name)+'" data-day="'+d+'" onclick="togAtt3(this)">'+( v||'·')+'</span></td>';
+    h+='<tr style="'+rowStyle+'"><td style="font-size:12px;font-weight:500">'+nameTxt+'</td>';
+    sDays.forEach(function(d){
+      var v=days[d]||'';
+      var isHolDay=!!hols[d];
+      var col=ATT_COLORS[v]||{bg:isHolDay?'#fff3e0':'',fc:'var(--muted)'};
+      var lbl=ATT_LABELS[v]||(isHolDay?'ย':'·');
+      // ถ้าวันนั้นเป็นวันหยุดที่ระบุไว้ และยังไม่มี value → auto ย
+      var cellVal=v||(isHolDay?'W':'');
+      if(!v&&isHolDay){col={bg:'#e8e8e8',fc:'#555'};lbl='ย';}
+      var tooltip=isHolDay&&hols[d]?' title="'+esc(hols[d])+'"':'';
+      h+='<td style="text-align:center;padding:2px">'
+        +'<span class="att-cell" style="background:'+col.bg+';color:'+col.fc+';border-radius:5px"'
+        +' data-ri="'+ri+'" data-key="'+key+'" data-name="'+esc(s.name)+'" data-day="'+d+'"'
+        +' data-ishol="'+(isHolDay?'1':'0')+'"'+tooltip
+        +' onclick="togAtt3(this)">'+lbl+'</span></td>';
     });
-    if(sDays.length>23)h+='<td></td>';
-    h+='<td style="text-align:center;color:#2d7d3a;font-weight:700">'+pm+'</td><td style="text-align:center;color:#b71c1c;font-weight:700">'+ab+'</td><td style="text-align:center;color:#e65100;font-weight:700">'+lv+'</td><td style="text-align:center;color:#555;font-weight:700">'+wh+'</td></tr>';
+    h+='<td style="text-align:center;color:#2d7d3a;font-weight:700">'+pm+'</td>'
+      +'<td style="text-align:center;color:#b71c1c;font-weight:700">'+ab+'</td>'
+      +'<td style="text-align:center;color:#e65100;font-weight:700">'+lv+'</td>'
+      +'<td style="text-align:center;color:#555;font-weight:700">'+wh+'</td></tr>';
   });
-  if(!r.students.length)h+='<tr><td colspan="28" style="text-align:center;color:var(--muted)">ยังไม่มีนักเรียน</td></tr>';
+  if(!r.students.length)h+='<tr><td colspan="30" style="text-align:center;color:var(--muted)">ยังไม่มีนักเรียน</td></tr>';
   h+='</tbody></table></div></div>';
   render(h);
 }
 window.pageAttendance=pageAttendance;
+
+// เปิด modal จัดการวันหยุดประจำเดือน
+function openHolidayMgr(ri,key){
+  var r=db.rooms[ri];
+  if(!r.holidays)r.holidays={};
+  if(!r.holidays[key])r.holidays[key]={};
+  var hols=r.holidays[key];
+  // หาวันทำการในเดือนนั้น
+  var parts=key.split('-'),yr=+parts[0],mn=+parts[1];
+  var dim=new Date(yr,mn,0).getDate(),sDays=[];
+  for(var d=1;d<=dim;d++){if(new Date(yr,mn-1,d).getDay()>0&&new Date(yr,mn-1,d).getDay()<6)sDays.push(d);}
+
+  var h='<h3>📅 จัดการวันหยุด — '+MONTHS[mn-1]+' '+(yr+543)+'</h3>';
+  h+='<p class="text-muted" style="margin-bottom:12px">ระบุชื่อเหตุการณ์/วันหยุดสำหรับวันที่ต้องการ ระบบจะแสดง 🔴 ที่หัวคอลัมน์และตั้งค่า "ย" ให้อัตโนมัติ</p>';
+  h+='<div style="max-height:400px;overflow-y:auto">';
+  sDays.forEach(function(d){
+    var dayNames=['อา','จ','อ','พ','พฤ','ศ','ส'];
+    var dayName=dayNames[new Date(yr,mn-1,d).getDay()];
+    var cur=hols[d]||'';
+    h+='<div class="flex" style="gap:8px;align-items:center;margin-bottom:8px">'
+      +'<div style="width:50px;text-align:center;font-size:13px;font-weight:600;color:var(--primary)">'+d+' '+dayName+'</div>'
+      +'<input id="hol_'+d+'" value="'+esc(cur)+'" placeholder="เช่น วันวิสาขบูชา, วันหยุดโรงเรียน..." style="flex:1;padding:6px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;font-family:inherit"/>'
+      +(cur?'<span style="color:#e65100;font-size:11px">🔴</span>':'')+'</div>';
+  });
+  h+='</div>';
+  h+='<div class="modal-footer">'
+    +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
+    +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-key="'+key+'" onclick="clearAllHolidays(+this.dataset.ri,this.dataset.key)">🗑️ ล้างทั้งหมด</button>'
+    +'<button class="btn btn-primary" data-ri="'+ri+'" data-key="'+key+'" onclick="saveHolidays(this.dataset.ri,this.dataset.key)">💾 บันทึก</button>'
+    +'</div>';
+  openModal(h);
+}
+window.openHolidayMgr=openHolidayMgr;
+
+function saveHolidays(ri,key){
+  ri=+ri;
+  var r=db.rooms[ri];
+  if(!r.holidays)r.holidays={};
+  r.holidays[key]={};
+  // อ่านค่าจาก inputs
+  document.querySelectorAll('[id^="hol_"]').forEach(function(inp){
+    var d=+inp.id.replace('hol_','');
+    var val=inp.value.trim();
+    if(val)r.holidays[key][d]=val;
+  });
+  saveLocal();
+  closeModal();
+  toast('บันทึกวันหยุดสำเร็จ ✓');
+  pageAttendance(ri);
+}
+window.saveHolidays=saveHolidays;
+
+function clearAllHolidays(ri,key){
+  ri=+ri;
+  if(!confirm('ล้างวันหยุดทั้งหมดของเดือนนี้?'))return;
+  if(db.rooms[ri].holidays)db.rooms[ri].holidays[key]={};
+  saveLocal();
+  closeModal();
+  toast('ล้างวันหยุดแล้ว');
+  pageAttendance(ri);
+}
+window.clearAllHolidays=clearAllHolidays;
+
 function togAtt3(el){
   var ri=+el.dataset.ri,key=el.dataset.key,sn=el.dataset.name,day=+el.dataset.day;
-  // ตรวจสอบว่านักเรียนยังรับบริการในเดือนนี้หรือไม่
   var _s=(db.rooms[ri].students||[]).find(function(x){return x.name===sn;});
   if(_s&&!isStudentActiveIn(_s,viewYear,viewMonth)){toast('นักเรียนนี้ไม่ได้รับบริการในเดือนนี้แล้ว','err');return;}
   if(!db.rooms[ri].attendance[key])db.rooms[ri].attendance[key]={};
   if(!db.rooms[ri].attendance[key][sn])db.rooms[ri].attendance[key][sn]={};
-  var cur=db.rooms[ri].attendance[key][sn][day]||'',nxt={'':'P','P':'A','A':'L','L':'W','W':''}[cur];
+  var cur=db.rooms[ri].attendance[key][sn][day]||'';
+  var nxt={'':'P','P':'A','A':'L','L':'W','W':''}[cur];
   if(nxt)db.rooms[ri].attendance[key][sn][day]=nxt;else delete db.rooms[ri].attendance[key][sn][day];
-  var bg='',fc='var(--muted)';
-  if(nxt==='P'){bg='#c8e6c9';fc='#1b5e20';}else if(nxt==='A'){bg='#ffcdd2';fc='#b71c1c';}
-  else if(nxt==='L'){bg='#fff3cd';fc='#856404';}else if(nxt==='W'){bg='#e8e8e8';fc='#555';}
-  el.style.background=bg;el.style.color=fc;el.textContent=nxt||'·';
+  var ATT_LABELS={'P':'✓','A':'ข','L':'ล','W':'ย'};
+  var ATT_COLORS={
+    'P':{bg:'#c8e6c9',fc:'#1b5e20'},'A':{bg:'#ffcdd2',fc:'#b71c1c'},
+    'L':{bg:'#fff3cd',fc:'#856404'},'W':{bg:'#e8e8e8',fc:'#555'}
+  };
+  var col=ATT_COLORS[nxt]||{bg:'',fc:'var(--muted)'};
+  el.style.background=col.bg;el.style.color=col.fc;
+  el.textContent=nxt?ATT_LABELS[nxt]:'·';
   saveLocal();
   var row=el.closest('tr');
-  if(row){var d2=db.rooms[ri].attendance[key][sn]||{},pm=0,ab=0,lv=0,wh=0;
+  if(row){
+    var d2=db.rooms[ri].attendance[key][sn]||{},pm=0,ab=0,lv=0,wh=0;
     Object.values(d2).forEach(function(v){if(v==='P')pm++;else if(v==='A')ab++;else if(v==='L')lv++;else if(v==='W')wh++;});
     var tds=row.querySelectorAll('td'),last=tds.length;
     if(tds[last-4])tds[last-4].textContent=pm;if(tds[last-3])tds[last-3].textContent=ab;
-    if(tds[last-2])tds[last-2].textContent=lv;if(tds[last-1])tds[last-1].textContent=wh;}
+    if(tds[last-2])tds[last-2].textContent=lv;if(tds[last-1])tds[last-1].textContent=wh;
+  }
 }
 window.togAtt3=togAtt3;
+
 function togAtt(ri,key,sn,day){
   if(!db.rooms[ri].attendance[key])db.rooms[ri].attendance[key]={};
   if(!db.rooms[ri].attendance[key][sn])db.rooms[ri].attendance[key][sn]={};
