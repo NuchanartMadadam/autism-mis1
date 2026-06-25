@@ -729,14 +729,30 @@ window.academicYearPickerHtml=academicYearPickerHtml;
 function viewIEPFile(btn){
   var url=btn.dataset.url||'';
   var ri=+btn.dataset.ri,si=+btn.dataset.si,idx=+btn.dataset.idx;
-  if(url&&url.startsWith('http')){window.open(url,'_blank');return;}
+  // ถ้ามี URL (Google Drive) → เปิด tab ใหม่
+  if(url&&url.startsWith('http')){
+    // แปลง /view → /preview เพื่อเปิดใน tab ใหม่ได้ดีกว่า
+    var openUrl=url.replace('/view','/preview');
+    window.open(openUrl,'_blank');
+    return;
+  }
+  // ถ้าเป็น dataUrl (เก็บในเครื่อง) → สร้าง blob แล้วเปิด tab ใหม่
   var s=db.rooms[ri].students[si];
   var f=(s.iep||[])[idx]||(s.iip||[])[idx];
   if(f&&f.dataUrl){
-    openModal(['<h3>📄 '+esc(f.name)+'</h3>',
-      '<div style="height:520px;border-radius:8px;overflow:hidden;border:1px solid var(--border)">',
-      '<iframe src="'+f.dataUrl+'" style="width:100%;height:100%;border:none"></iframe>',
-      '</div><div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ปิด</button></div>'].join(''));
+    try {
+      var byteStr=atob(f.dataUrl.split(',')[1]);
+      var ab=new ArrayBuffer(byteStr.length);
+      var ia=new Uint8Array(ab);
+      for(var i=0;i<byteStr.length;i++)ia[i]=byteStr.charCodeAt(i);
+      var blob=new Blob([ab],{type:'application/pdf'});
+      var blobUrl=URL.createObjectURL(blob);
+      window.open(blobUrl,'_blank');
+    } catch(e) {
+      // fallback เปิดด้วย dataUrl ตรงๆ
+      var w=window.open('','_blank');
+      if(w){w.document.write('<iframe src="'+f.dataUrl+'" style="width:100%;height:100vh;border:none"></iframe>');w.document.close();}
+    }
   } else {
     toast('ไม่พบไฟล์','err');
   }
