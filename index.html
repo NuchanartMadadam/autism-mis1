@@ -1440,6 +1440,11 @@ function loadLocal(){
       settings=Object.assign(settings,cfg);
     }
   }catch(e){}
+  // restore scriptUrl จาก key แยก (กันหาย)
+  try{
+    var su=localStorage.getItem('autismMIS_scriptUrl');
+    if(su&&su.length>10) settings.scriptUrl=su;
+  }catch(e){}
   // ensure settings integrity
   if(!settings.academicYears)settings.academicYears=[{id:1,name:'ปีการศึกษา 2567',startDate:'2024-05-16',endDate:'2025-03-31',active:true}];
   if(!settings.activeYearId)settings.activeYearId=1;
@@ -3987,7 +3992,15 @@ function handleLogo(e){const f=e.target.files[0];if(!f)return;if(f.size>500000){
 window.handleLogo=handleLogo;
 function removeLogo(){settings.logoDataUrl='';saveSettings();applyLogo();toast('ลบโลโก้แล้ว');pageSettings();}
 window.removeLogo=removeLogo;
-function saveUrl(){settings.scriptUrl=document.getElementById('scriptIn').value.trim();saveSettings();toast('บันทึก URL สำเร็จ ✓');pageSettings();}
+function saveUrl(){
+  var url=document.getElementById('scriptIn').value.trim();
+  settings.scriptUrl=url;
+  // บันทึกแยกต่างหากเพื่อความแน่ใจ
+  try{localStorage.setItem('autismMIS_scriptUrl', url);}catch(e){}
+  saveSettings();
+  toast('บันทึก URL สำเร็จ ✓');
+  pageSettings();
+}
 window.saveUrl=saveUrl;
 
 function showGsSetup(){
