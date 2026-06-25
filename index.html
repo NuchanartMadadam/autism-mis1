@@ -2080,11 +2080,8 @@ window.delStudent=delStudent;
 function pageAttendance(ri){
   ri=safeRoom(ri);ar=ri;_curPageFn=function(){pageAttendance(ar);};
   var yr=viewYear,mn=viewMonth,r=db.rooms[ri],key=yr+'-'+mn,att=r.attendance[key]||{};
-  var inactiveAtStus=(r.students||[]).filter(function(s){return !isStudentActiveIn(s,yr,mn);});
   var h='<div class="page-header"><h2>การเข้าเรียนประจำเดือน</h2></div>';
   h+=monthYearPickerHtml()+roomTabs(ri,'pageAttendance');
-  if(inactiveAtStus.length){
-    h+='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px">'      +'<b>⚠️ นักเรียนที่ไม่ได้รับบริการในเดือนนี้ (แถวสีแดง — บันทึกไม่ได้)</b><br>'      +inactiveAtStus.map(function(s){        return '<span style="margin-right:8px">• '+esc(s.name)+' '          +'<span style="color:#b71c1c;font-weight:600">['+esc(s.stuStatus||'')+']</span>'          +(s.stuEndDate?' ตั้งแต่ '+toBEDate(s.stuEndDate):'')+'</span>';      }).join('')      +'</div>';  }
   h+='<div class="card"><h3>การเข้าเรียน '+MONTHS[mn-1]+' '+(yr+543)+' — '+RS[ri]+'</h3>';
   var dim=new Date(yr,mn,0).getDate(),sDays=[];
   for(var d=1;d<=dim;d++){if(new Date(yr,mn-1,d).getDay()>0&&new Date(yr,mn-1,d).getDay()<6)sDays.push(d);}
@@ -2163,12 +2160,8 @@ function pageServices(ri){
     var _dp2=yr2ce+'-'+String(viewMonth);
     return sv.date.startsWith(_dp1)||sv.date.startsWith(_dp2);
   });
-  // หานักเรียนที่ส่งต่อ/หยุดแล้วในเดือนนี้
-  var inactiveStus=(r.students||[]).filter(function(s){return !isStudentActiveIn(s,viewYear,viewMonth);});
   var h='<div class="page-header"><h2>บันทึกการให้บริการทางวิชาการ</h2></div>';
   h+=monthYearPickerHtml()+roomTabs(ri,'pageServices');
-  if(inactiveStus.length){
-    h+='<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:10px 14px;margin-bottom:1rem;font-size:13px">'      +'<b>⚠️ นักเรียนที่ไม่ได้รับบริการในเดือนนี้</b><br>'      +inactiveStus.map(function(s){        return '<span style="margin-right:8px">• '+esc(s.name)+' '          +'<span style="color:#b71c1c;font-weight:600">['+esc(s.stuStatus||'')+']</span>'          +(s.stuEndDate?' ตั้งแต่ '+toBEDate(s.stuEndDate):'')+'</span>';      }).join('')      +'</div>';  }
   h+='<div class="card"><h3>รายการบริการ '+MONTHS[viewMonth-1]+' '+(viewYear+543)+' — '+RS[ri]+'</h3>'
     +'<div class="table-wrap"><table><thead><tr><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียด</th><th>ผู้ให้บริการ</th><th>จัดการ</th></tr></thead><tbody>';
   fl.forEach(function(sv){var i2=all.indexOf(sv);
