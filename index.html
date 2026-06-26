@@ -974,7 +974,7 @@ function _processPhotoFiles(files){
           cell.id='ph_cell_'+idx;
           var img=document.createElement('img');
           img.src=compressed;
-          img.style.cssText='width:100%;height:90px;object-fit:cover;display:block';
+          img.style.cssText='width:100%;height:150px;object-fit:cover;display:block';
           var btn=document.createElement('button');
           btn.textContent='✕';
           btn.style.cssText='position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;padding:0;line-height:1';
@@ -3848,10 +3848,10 @@ function buildReport(){
       h+='<table style="width:100%;border-collapse:collapse;margin-bottom:14px;border:1px solid #ddd;border-radius:6px">';
       h+='<thead><tr><th style="background:#e8f0fe;padding:8px 10px;border-bottom:2px solid #c5d8f6;text-align:left;font-weight:700">'+headerHtml+'</th></tr></thead>';
       h+='<tbody><tr><td style="padding:8px 10px">';
-      h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
+      h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
       pics.forEach(function(p){
         var src=driveImgSrc(p.imgUrl||'');
-        if(src) h+='<img src="'+src+'" style="width:100%;height:90px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+        if(src) h+='<img src="'+src+'" style="width:100%;height:150px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
       });
       h+='</div></td></tr></tbody></table>';
     });
@@ -3874,10 +3874,10 @@ function buildReport(){
       h+='<thead><tr><th style="background:#e8f0fe;padding:8px 10px;border-bottom:2px solid #c5d8f6;text-align:left;font-weight:normal">'+trHeader+'</th></tr></thead>';
       h+='<tbody><tr><td style="padding:8px 10px">';
       if(hasPics){
-        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
+        h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
         allPics.forEach(function(pic){
           var src=driveImgSrc(pic||'');
-          if(src) h+='<img src="'+src+'" style="width:100%;height:80px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+          if(src) h+='<img src="'+src+'" style="width:100%;height:150px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
         });
         h+='</div>';
       }
@@ -3903,10 +3903,10 @@ function buildReport(){
       h+='<thead><tr><th style="background:#e8f4ed;padding:8px 10px;border-bottom:2px solid #a5d6b5;text-align:left;font-weight:normal">'+cmHeader+'</th></tr></thead>';
       h+='<tbody><tr><td style="padding:8px 10px">';
       if(hasPics){
-        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
+        h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
         allPics.forEach(function(pic){
           var src=driveImgSrc(pic||'');
-          if(src) h+='<img src="'+src+'" style="width:100%;height:80px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+          if(src) h+='<img src="'+src+'" style="width:100%;height:150px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
         });
         h+='</div>';
       } else { h+='<span style="color:#aaa;font-size:11px">ไม่มีภาพ</span>'; }
