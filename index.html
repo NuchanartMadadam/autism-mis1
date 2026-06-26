@@ -3571,9 +3571,20 @@ function buildReport(){
   let pres=0,abs=0,lv=0,wday=0;_repActiveStus.forEach(function(s){var dd2=att[s.name]||{};Object.values(dd2).forEach(function(v){if(v==='P')pres++;else if(v==='A')abs++;else if(v==='L')lv++;else if(v==='W')wday++;});});
   const tot=pres+abs+lv;const pct=tot>0?Math.round(pres/tot*100):0;
   const dp=String(yr-543)+'-'+String(repMonth).padStart(2,'0');
-  const svcs=(r.services||[]).filter(function(s){return s.date&&s.date.startsWith(dp);});
-  const coms=(r.community||[]).filter(function(c){return c.date&&c.date.startsWith(dp);});
-  const trns=(r.training||[]).filter(function(t){return t.date&&t.date.startsWith(dp);});
+    // dp = '2026-05' (ค.ศ.), mn = 'พฤษภาคม', yr = 2569 (พ.ศ.)
+  const svcs=(r.services||[]).filter(function(s){
+    // รองรับ period "พฤษภาคม 2569" และ date "2026-05-xx"
+    if(s.period) return s.period.indexOf(mn)>=0&&(s.period.indexOf(String(yr))>=0||s.period.indexOf(String(yr-543))>=0);
+    return s.date&&s.date.startsWith(dp);
+  });
+  const coms=(r.community||[]).filter(function(c){
+    if(c.date) return c.date.startsWith(dp);
+    return false;
+  });
+  const trns=(r.training||[]).filter(function(t){
+    if(t.date) return t.date.startsWith(dp);
+    return false;
+  });
   const hrYR=String(repYear); const hrs=(r.hrMonthly||[]).filter(function(h2){return h2.period&&h2.period.indexOf(mn)>=0&&h2.period.indexOf(hrYR)>=0;});
   const logoHtml=settings.logoDataUrl
     ?('<div style="text-align:center;margin-bottom:12px"><img src="'+settings.logoDataUrl+'" style="height:72px;width:auto;object-fit:contain" alt="โลโก้"/></div>')
@@ -3663,15 +3674,30 @@ function buildReport(){
   <div class="rep-section"><h3>9. ประมวลภาพกิจกรรมประจำเดือน</h3>`;
   const repPhotos=(r.photos||[]).filter(function(p){return p.month&&p.month===mn;}).map(function(p){var _pu=p.imgUrl||p.dataUrl||'';return Object.assign({},p,{imgUrl:_pu==='(base64-stripped)'?'':_pu});});
   if(repPhotos.length){
-    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
+    // จัดกลุ่มตาม caption
+    var photoGroups={};
     repPhotos.forEach(function(p){
-      var src=driveImgSrc(p.imgUrl||'');
-      if(src){
-        h+='<div style="text-align:center">'
-          +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd" onerror="this.hidden=true" alt="ภาพกิจกรรม"/>'
-          +'<div style="font-size:10px;color:#666;margin-top:3px">'+esc(p.caption||'')+'</div>'
-          +'</div>';
-      }
+      var key=p.caption||'(ไม่ระบุ)';
+      if(!photoGroups[key])photoGroups[key]=[];
+      photoGroups[key].push(p);
+    });
+    h+='<div style="margin-top:8px">';
+    Object.keys(photoGroups).forEach(function(cap){
+      var pics=photoGroups[cap];
+      h+='<div style="margin-bottom:14px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border-left:3px solid #1a5fa8">';
+      // รายละเอียด
+      h+='<div style="font-size:12px;font-weight:700;color:#1a5fa8;margin-bottom:6px">'+esc(cap)+'</div>';
+      // วันที่ (ถ้ามี)
+      var firstP=pics[0];
+      var dateRange=firstP.date?toBEDate(firstP.date)+(firstP.dateEnd&&firstP.dateEnd!==firstP.date?' – '+toBEDate(firstP.dateEnd):''):'';
+      if(dateRange) h+='<div style="font-size:11px;color:#888;margin-bottom:6px">📅 '+dateRange+'</div>';
+      // รูปเรียงใต้
+      h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
+      pics.forEach(function(p){
+        var src=driveImgSrc(p.imgUrl||'');
+        if(src) h+='<img src="'+src+'" style="width:100%;height:90px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+      });
+      h+='</div></div>';
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน ${mn} (กรุณาเพิ่มภาพในหน้าประมวลภาพการสอน)</p>`;}
