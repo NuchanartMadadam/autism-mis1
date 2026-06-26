@@ -1938,7 +1938,8 @@ function pageDashboard(){
   var totS=0,totT=0;
   getRooms().forEach(function(ri2){
     var _r=db.rooms[ri2]||mkRoom();
-    totS+=(_r.students||[]).length;
+    var _nowD=new Date();
+    totS+=(_r.students||[]).filter(function(s){return isStudentActiveIn(s,_nowD.getFullYear(),_nowD.getMonth()+1);}).length;
     totT+=(_r.teachers||[]).length;
   });
 
@@ -1954,7 +1955,9 @@ function pageDashboard(){
   getRooms().forEach(function(ri2){
     var r=db.rooms[ri2]||mkRoom();
     var svc=(r.services||[]).filter(function(s){return s&&s.date&&s.date.startsWith(dp);}).length;
-    h+='<tr><td>'+RS[ri2]+'</td><td style="text-align:center">'+(r.teachers||[]).length+' คน</td><td style="text-align:center">'+(r.students||[]).length+' คน</td><td style="text-align:center">'+svc+' ครั้ง</td></tr>';
+    var _now2=new Date();
+    var _activeStu=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_now2.getFullYear(),_now2.getMonth()+1);}).length;
+    h+='<tr><td>'+RS[ri2]+'</td><td style="text-align:center">'+(r.teachers||[]).length+' คน</td><td style="text-align:center">'+_activeStu+' คน</td><td style="text-align:center">'+svc+' ครั้ง</td></tr>';
   });
   h+='</tbody></table></div></div>';
 
@@ -1972,10 +1975,12 @@ function pageDashboard(){
       });
       h+='</tbody></table></div>';
     }
-    if((r.students||[]).length){
-      h+='<div style="margin:12px 0 8px"><b>นักเรียน ('+r.students.length+' คน)</b></div>';
+    var _nd=new Date();
+    var _dStus=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_nd.getFullYear(),_nd.getMonth()+1);});
+    if(_dStus.length){
+      h+='<div style="margin:12px 0 8px"><b>นักเรียนที่กำลังรับบริการ ('+_dStus.length+' คน)</b></div>';
       h+='<div class="table-wrap"><table><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ที่อยู่</th><th>ประเภท</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>';
-      r.students.forEach(function(s,si){
+      _dStus.forEach(function(s,si){
         if(!s)return;
         h+='<tr><td style="text-align:center">'+(si+1)+'</td><td><b>'+esc(s.name||'')+'</b></td><td>'+toBEDate(s.dob||'')+'</td><td>'+calcAge(s.dob||'')+'</td><td>'+esc(s.address||'')+'</td><td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:12px;font-size:11px">'+esc(s.type||'')+'</span></td><td>'+esc(s.guardian||'')+'</td><td>'+esc(s.gphone||'')+'</td></tr>';
       });
