@@ -3679,21 +3679,27 @@ function buildReport(){
   h+=`</div><div class="rep-section"><h3>10. ภาพหลักฐานการสัมมนา/อบรม</h3>`;
   const repTrImg=trns.filter(function(t){return (t.photos&&t.photos.length)||t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u});});
   if(repTrImg.length){
-    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
+    h+='<div style="margin-top:8px">';
     repTrImg.forEach(function(t){
       var allPics=(t.photos&&t.photos.length)?t.photos:(t.imgUrl?[t.imgUrl]:[]);
-      allPics.forEach(function(pic){
-        var src=driveImgSrc(pic||'');
-        if(src){
-          h+='<div style="border-radius:6px;overflow:hidden;border:1px solid #ddd">'
-            +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;display:block" onerror="this.hidden=true" alt="หลักฐาน"/>'
-            +'<div style="padding:4px 6px;background:#f8f9fa;border-top:1px solid #eee">'
-            +(t.course?'<div style="font-size:10px;font-weight:700;color:#1a5fa8;line-height:1.4">'+esc(t.course)+'</div>':'')
-            +(t.org?'<div style="font-size:9px;color:#888;line-height:1.3">'+esc(t.org)+'</div>':'')
-            +'<div style="font-size:9px;color:#555;line-height:1.3">'+esc(t.person||'')+'</div>'
-            +'</div></div>';
-        }
-      });
+      var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
+      // บรรทัดรายละเอียด
+      h+='<div style="margin-bottom:10px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border-left:3px solid #1a5fa8">';
+      h+='<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>';
+      if(t.org) h+='<div style="font-size:11px;color:#555;margin-top:2px">🏢 '+esc(t.org)+'</div>';
+      if(t.person) h+='<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(t.person)+'</div>';
+      var dateRange=toBEDate(t.date)+(t.dateEnd&&t.dateEnd!==t.date?' – '+toBEDate(t.dateEnd):'');
+      if(dateRange) h+='<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>';
+      // เรียงรูปใต้รายละเอียด
+      if(hasPics){
+        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
+        allPics.forEach(function(pic){
+          var src=driveImgSrc(pic||'');
+          if(src) h+='<img src="'+src+'" style="width:100%;height:80px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+        });
+        h+='</div>';
+      }
+      h+='</div>';
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานการอบรมในเดือนนี้</p>`;}
@@ -3701,18 +3707,27 @@ function buildReport(){
   h+=`</div><div class="rep-last-block"><div class="rep-section"><h3>11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</h3>`;
   const repComImg=coms.filter(function(c){return (c.photos&&c.photos.length)||c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2});});
   if(repComImg.length){
-    h+='<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;padding:8px;background:#fafafa;border-radius:6px;border:1px solid #eee">';
+    h+='<div style="margin-top:8px">';
     repComImg.forEach(function(c){
       var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
-      allPics.forEach(function(pic){
-        var src=driveImgSrc(pic||'');
-        if(src){
-          h+='<div style="text-align:center">'
-            +'<img src="'+src+'" style="width:100%;height:130px;object-fit:cover;border-radius:6px;border:1px solid #ddd" onerror="this.hidden=true" alt="หลักฐาน"/>'
-            +'<div style="font-size:10px;color:#666;margin-top:3px">'+esc(c.activity||'')+'</div>'
-            +'</div>';
-        }
-      });
+      var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
+      // บรรทัดรายละเอียด
+      h+='<div style="margin-bottom:10px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border-left:3px solid #2d7d3a">';
+      h+='<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>';
+      if(c.place) h+='<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>';
+      if(c.participants) h+='<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(c.participants)+'</div>';
+      var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' – '+toBEDate(c.dateEnd):'');
+      if(cmDateRange) h+='<div style="font-size:11px;color:#888;margin-top:2px">📅 '+cmDateRange+'</div>';
+      // เรียงรูปใต้รายละเอียด
+      if(hasPics){
+        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
+        allPics.forEach(function(pic){
+          var src=driveImgSrc(pic||'');
+          if(src) h+='<img src="'+src+'" style="width:100%;height:80px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+        });
+        h+='</div>';
+      }
+      h+='</div>';
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
