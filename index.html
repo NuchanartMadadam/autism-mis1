@@ -1232,6 +1232,92 @@ function getAcYearOf(isoDate){
   return null;
 }
 window.getAcYearOf=getAcYearOf;
+
+// ──────────── LOAD FROM GOOGLE SHEETS ────────────
+function confirmLoadFromSheets(){
+  if(!settings.scriptUrl){toast('กรุณาตั้งค่า Script URL ก่อน','err');return;}
+  openModal(
+    '<h3>📥 โหลดข้อมูลจาก Google Sheet</h3>'    +'<div style="background:#fff3cd;border:1px solid #ffc107;border-radius:8px;padding:12px;margin:12px 0;font-size:13px">'    +'<b>⚠️ คำเตือน</b><br>การโหลดข้อมูลจาก Sheet จะ<b>แทนที่ข้อมูลปัจจุบัน</b>ในระบบ<br>'    +'แนะนำให้ <b>ส่งออก JSON สำรองไว้ก่อน</b> หากต้องการ</div>'    +'<p style="font-size:13px">เลือกห้องเรียนที่ต้องการโหลด:</p>'    +'<div style="display:flex;flex-direction:column;gap:8px">'    +ROOMS.map(function(r,i){      return '<button class="btn btn-outline" data-ri="'+i+'" onclick="doLoadFromSheet(+this.dataset.ri)">📥 โหลด '+r+'</button>';    }).join('')    +'<button class="btn btn-primary" onclick="doLoadAllFromSheets()">📥 โหลดทุกห้องพร้อมกัน</button>'    +'</div>'    +'<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button></div>'  );
+}
+window.confirmLoadFromSheets=confirmLoadFromSheets;
+
+function doLoadFromSheet(ri){
+  closeModal();
+  var url=settings.scriptUrl;
+  if(!url){toast('ไม่พบ Script URL','err');return;}
+  toast('⏳ กำลังโหลดข้อมูล '+ROOMS[ri]+' จาก Sheet...');
+  fetch(url,{
+    method:'POST',
+    body:JSON.stringify({action:'loadAll', roomIndex:ri})
+  }).then(function(r){return r.json();})
+  .then(function(res){
+    if(res.status!=='ok'){toast('โหลดไม่สำเร็จ: '+(res.message||''),'err');return;}
+    var d=res.data;
+    // merge กลับเข้า db โดยเก็บ IEP/IIP และข้อมูลที่ Sheet ไม่มีไว้
+    var cur=db.rooms[ri];
+    d.teachers=d.teachers||cur.teachers||[];
+    d.students=(d.students||[]).map(function(s){
+      // หา student เดิมเพื่อ restore iep/iip
+      var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
+      s.iep=old.iep||[];
+      s.iip=old.iip||[];
+      return s;
+    });
+    d.services=d.services||cur.services||[];
+    d.hrMonthly=d.hrMonthly||cur.hrMonthly||[];
+    d.training=d.training||cur.training||[];
+    d.community=d.community||cur.community||[];
+    d.network=d.network||cur.network||[];
+    d.photos=d.photos||cur.photos||[];
+    d.attendance=d.attendance||cur.attendance||{};
+    // เก็บ field ที่ Sheet ไม่มี
+    d.schedules=cur.schedules||[];
+    d.holidays=cur.holidays||{};
+    db.rooms[ri]=Object.assign(cur,d);
+    saveLocal();
+    toast('✅ โหลดข้อมูล '+ROOMS[ri]+' สำเร็จ!');
+    if(_curPageFn) _curPageFn();
+  })
+  .catch(function(err){toast('เกิดข้อผิดพลาด: '+err.message,'err');});
+}
+window.doLoadFromSheet=doLoadFromSheet;
+
+function doLoadAllFromSheets(){
+  closeModal();
+  var url=settings.scriptUrl;
+  if(!url){toast('ไม่พบ Script URL','err');return;}
+  var rooms=getRooms();
+  var done=0;
+  toast('⏳ กำลังโหลดข้อมูลทุกห้อง...');
+  rooms.forEach(function(ri){
+    fetch(url,{
+      method:'POST',
+      body:JSON.stringify({action:'loadAll', roomIndex:ri})
+    }).then(function(r){return r.json();})
+    .then(function(res){
+      if(res.status==='ok'){
+        var d=res.data, cur=db.rooms[ri];
+        d.students=(d.students||[]).map(function(s){
+          var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
+          s.iep=old.iep||[]; s.iip=old.iip||[];
+          return s;
+        });
+        d.schedules=cur.schedules||[];
+        d.holidays=cur.holidays||{};
+        db.rooms[ri]=Object.assign(cur,d);
+      }
+      done++;
+      if(done===rooms.length){
+        saveLocal();
+        toast('✅ โหลดข้อมูลทุกห้องสำเร็จ!');
+        if(_curPageFn) _curPageFn();
+      }
+    })
+    .catch(function(){done++;});
+  });
+}
+window.doLoadAllFromSheets=doLoadAllFromSheets;
+
 window.compressImg=compressImg;
 
 function saveUserPass(key){
@@ -4052,6 +4138,7 @@ function pageSettings(){
   <div class="flex">
     <button class="btn btn-success" onclick="saveUrl()">💾 บันทึก URL</button>
     <button class="btn btn-primary" onclick="pushAllToSheets()">🔄 ซิงค์ข้อมูลทั้งหมด</button>
+    <button class="btn btn-warning" onclick="confirmLoadFromSheets()" style="background:#e65100;border-color:#e65100">📥 โหลดข้อมูลจาก Sheet</button>
     <button class="btn btn-outline" onclick="showPage('gsSetup')">📖 วิธีตั้งค่า Google Sheets</button>
   </div></div>
   <div class="card"><h3>💾 สำรองข้อมูล</h3>
