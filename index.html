@@ -3734,7 +3734,20 @@ function buildReport(){
   const tchList=(r.teachers||[]).filter(function(t){return t&&(!t.status||t.status==='กำลังปฏิบัติหน้าที่');});
   const tchSign=tchList.length?tchList[0].name:'................................................';
 
-  let h=`<div class="rep-preview" id="repContent">${logoHtml}
+  let h=`<div class="rep-preview" id="repContent">
+  <style>
+    @media print {
+      .rep-preview table { page-break-inside:auto; width:100%; }
+      .rep-preview thead { display:table-header-group; }
+      .rep-preview tr { page-break-inside:avoid; }
+      .rep-preview h3 { page-break-after:avoid; }
+      .rep-preview .rep-section { page-break-inside:auto; }
+      .rep-preview .rep-last-block { page-break-before:always; }
+      .rep-preview .sig-table { width:100%; border-collapse:collapse; }
+      .rep-preview .sig-table td { display:table-cell; }
+    }
+  </style>
+  ${logoHtml}
   <h1>รายงานสรุปผลการดำเนินงานประจำเดือน ${mn} ${yr}</h1>
   <h2>ห้องเรียนคู่ขนานสำหรับบุคคลออทิสติก ${ROOMS[ri]}</h2>
   <p style="text-align:center;font-size:12px;font-weight:600;color:#1a5fa8;margin-bottom:2px">ปีการศึกษา ${yr}</p>
@@ -3907,7 +3920,7 @@ function buildReport(){
       if(!tchList.length){
         return '<table class="sig-table" style="width:100%;margin-top:12px"><tr>'
           +'<td style="text-align:center;width:50%;padding:0 12px">'
-          +'<div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">'
+          +'<div class="sig-line">'
           +'ลงชื่อ .....................................................<br>'
           +'( .................................................. )<br>'
           +'ครูผู้รับผิดชอบห้องเรียนคู่ขนานบุคคลออทิสติก<br>'
@@ -3920,7 +3933,7 @@ function buildReport(){
       for(var i=0; i<tchList.length; i+=cols){
         var cells = tchList.slice(i, i+cols).map(function(t){
           return '<td style="text-align:center;width:'+(100/cols)+'%;padding:0 12px">'
-            +'<div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">'
+            +'<div class="sig-line">'
             +'ลงชื่อ .....................................................<br>'
             +'( '+esc(t.name||'')+' )<br>'
             +'ครูผู้รับผิดชอบห้องเรียนคู่ขนานบุคคลออทิสติก<br>'
@@ -3971,14 +3984,14 @@ function buildReport(){
     <table class="sig-table" style="width:100%;margin-top:48px">
       <tr>
         <td style="width:50%;text-align:center;padding:0 12px">
-          <div style="border-top:1px solid #999;padding-top:8px">
+          <div class="sig-line">
             ลงชื่อ .....................................................<br>
             (........................................)<br>
             หัวหน้าฝ่ายบริหารวิชาการ<br>
             วันที่ ........../........../..........</div>
         </td>
         <td style="width:50%;text-align:center;padding:0 12px">
-          <div style="border-top:1px solid #999;padding-top:8px">
+          <div class="sig-line">
             ลงชื่อ .....................................................<br>
             (........................................)<br>
             รองผู้อำนวยการฝ่ายบริหารวิชาการ<br>
@@ -3990,7 +4003,7 @@ function buildReport(){
       <tr>
         <td style="width:25%"></td>
         <td style="width:50%;text-align:center;padding:0 12px">
-          <div style="border-top:1px solid #999;padding-top:8px">
+          <div class="sig-line">
             ลงชื่อ .....................................................<br>
             (........................................)<br>
             ผู้อำนวยการศูนย์การศึกษาพิเศษ<br>
@@ -4016,28 +4029,27 @@ function printReport(){
       body{font-family:'Sarabun',sans-serif;font-size:12px;color:#000;line-height:1.7;background:#fff}
       h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px}
       h2{font-size:12px;font-weight:600;text-align:center;color:#333;margin-bottom:3px}
-      h3{font-size:11px;font-weight:700;border-bottom:1.5px solid #bbb;padding-bottom:3px;margin:12px 0 6px;color:#1a5fa8}
-      table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px}
+      h3{font-size:11px;font-weight:700;border-bottom:1.5px solid #bbb;padding-bottom:3px;margin:12px 0 6px;color:#1a5fa8;page-break-after:avoid;break-after:avoid}
+      table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px;page-break-inside:auto}
+      thead{display:table-header-group}
       th,td{border:1px solid #bbb;padding:4px 6px}
       th{background:#f0f0f0;font-weight:700;text-align:center}
+      tr{page-break-inside:avoid;break-inside:avoid}
       img{max-width:100%;height:auto;border-radius:4px}
-      .rep-section{margin-bottom:10px}
-      /* ข้อ 11 + ลายเซ็น ติดกันเสมอ */
+      .rep-section{margin-bottom:10px;page-break-inside:auto}
       .rep-last-block{page-break-before:always;break-before:always;display:block}
       .photo-grid-print{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
       .photo-cell{text-align:center;break-inside:avoid}
       .photo-cell img{width:100%;max-height:120px;object-fit:cover;border:1px solid #ccc;border-radius:4px}
       .photo-cell div{font-size:10px;color:#555;margin-top:2px}
       p{font-size:10px;color:#777;margin:3px 0}
-      /* ลายเซ็น — ไม่แบ่งหน้า */
-      .sig-grid{display:grid;grid-template-columns:1fr 1fr;gap:2rem;margin-top:2rem;page-break-inside:avoid;break-inside:avoid}
-      .sig-box{text-align:center;font-size:11px}
-      .sig-box .sig-line{border-top:1px solid #999;padding-top:6px;margin-top:40px;line-height:1.8}
+      /* ลายเซ็น table */
+      .sig-table{width:100%;border-collapse:collapse;border:none}
+      .sig-table td{border:none;text-align:center;vertical-align:top;padding:0 12px}
+      .sig-line{border-top:1px solid #999;padding-top:6px;margin-top:40px;line-height:1.8;font-size:11px}
       @page{margin:10mm 8mm}
       @media print{
         body{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-        table{page-break-inside:auto}
-        tr{page-break-inside:auto}
       }
     </style>`;
 
