@@ -3846,7 +3846,7 @@ function buildReport(){
       var firstP=pics[0];
       var dateRange=firstP.date?toBEDate(firstP.date)+(firstP.dateEnd&&firstP.dateEnd!==firstP.date?' – '+toBEDate(firstP.dateEnd):''):'';
       // header แต่ละกิจกรรม (แถวแรกมี section title ด้วย)
-      h+='<tr><td colspan="3" style="padding:0">'
+      h+='<tr class="no-break" style="page-break-before:avoid"><td colspan="3" style="padding:0">'
         +(isFirst9?'<div style="background:#1a5fa8;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">9. ประมวลภาพกิจกรรมประจำเดือน</div>':'')
         +'<div style="background:#e8f0fe;padding:7px 10px;border-bottom:1px solid #c5d8f6'+(isFirst9?'':';border-top:1.5px solid #c5d8f6')+'">'        +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(cap)+'</div>'
         +(dateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>':'')
@@ -3879,7 +3879,7 @@ function buildReport(){
       var allPics=(t.photos&&t.photos.length)?t.photos:(t.imgUrl?[t.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
       var dateRange=toBEDate(t.date)+(t.dateEnd&&t.dateEnd!==t.date?' – '+toBEDate(t.dateEnd):'');
-      h+='<tr><td colspan="3" style="padding:0">'
+      h+='<tr class="no-break" style="page-break-before:avoid"><td colspan="3" style="padding:0">'
         +(isFirst10?'<div style="background:#1a5fa8;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">10. ภาพหลักฐานการสัมมนา/อบรม</div>':'')
         +'<div style="background:#e8f0fe;padding:7px 10px;border-bottom:1px solid #c5d8f6'+(isFirst10?'':';border-top:1.5px solid #c5d8f6')+'">'        +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>'
         +(t.org?'<div style="font-size:11px;color:#555;margin-top:2px">🏢 '+esc(t.org)+'</div>':'')
@@ -3915,7 +3915,7 @@ function buildReport(){
       var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
       var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' – '+toBEDate(c.dateEnd):'');
-      h+='<tr><td colspan="3" style="padding:0">'
+      h+='<tr class="no-break" style="page-break-before:avoid"><td colspan="3" style="padding:0">'
         +(isFirst11?'<div style="background:#2d7d3a;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</div>':'')
         +'<div style="background:#e8f4ed;padding:7px 10px;border-bottom:1px solid #a5d6b5'+(isFirst11?'':';border-top:1.5px solid #a5d6b5')+'">'        +'<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>'
         +(c.place?'<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>':'')
@@ -4059,9 +4059,14 @@ function printReport(){
       h3{font-size:11px;font-weight:700;border-bottom:1.5px solid #bbb;padding-bottom:3px;margin:12px 0 6px;color:#1a5fa8;page-break-after:avoid;break-after:avoid}
       table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px;page-break-inside:auto}
       thead{display:table-header-group}
-      th,td{border:1px solid #bbb;padding:4px 6px}
+      th,td{border:none;padding:4px 6px}
+      .rep-table th,.rep-table td{border:1px solid #bbb}
       th{background:#f0f0f0;font-weight:700;text-align:center}
       tr{page-break-inside:avoid;break-inside:avoid}
+      /* photo table ไม่มี border */
+      .rep-section table:not(.rep-table) td{border:none!important;padding:2px}
+      .rep-section table:not(.rep-table) th{border:none!important}
+      .no-break{page-break-before:avoid!important;break-before:avoid!important}
       img{max-width:100%;height:auto;border-radius:4px}
       .rep-section{margin-bottom:10px;page-break-inside:auto}
       .rep-last-block{page-break-before:always;break-before:always;display:block}
