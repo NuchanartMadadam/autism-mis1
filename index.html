@@ -3680,7 +3680,9 @@ function buildReport(){
   const logoHtml=settings.logoDataUrl
     ?('<div style="text-align:center;margin-bottom:12px"><img src="'+settings.logoDataUrl+'" style="height:72px;width:auto;object-fit:contain" alt="โลโก้"/></div>')
     :'<div style="text-align:center;font-size:40px;margin-bottom:8px">🏫</div>';
-  const tchSign=r.teachers.length?r.teachers[0].name:'................................................';
+  // ครูทุกคนในห้อง (active)
+  const tchList=(r.teachers||[]).filter(function(t){return t&&(!t.status||t.status==='กำลังปฏิบัติหน้าที่');});
+  const tchSign=tchList.length?tchList[0].name:'................................................';
 
   let h=`<div class="rep-preview" id="repContent">${logoHtml}
   <h1>รายงานสรุปผลการดำเนินงานประจำเดือน ${mn} ${yr}</h1>
@@ -3851,15 +3853,15 @@ function buildReport(){
 
   h+=`</div>
   <div style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px">
-    <div style="text-align:center">
-      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
-        ลงชื่อ .....................................................<br>
-        ( ${esc(tchSign)} )<br>
-        ครูผู้รับผิดชอบห้องเรียนคู่ขนานบุคคลออทิสติก<br>
-        ${esc(ROOMS[ri])}<br>
-        วันที่ ........../........../..........
-      </div>
-    </div>
+    ${(function(){
+      // สร้างช่องลายเซ็นครูทุกคนในห้อง
+      if(!tchList.length){
+        return '<div style="text-align:center"><div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">'          +'ลงชื่อ .....................................................<br>'          +'( .................................................. )<br>'          +'ครูผู้รับผิดชอบห้องเรียนคู่ขนานบุคคลออทิสติก<br>'          +esc(ROOMS[ri])+'<br>'          +'วันที่ ........../........../..........</div></div>';
+      }
+      return '<div style="display:grid;grid-template-columns:repeat('+Math.min(tchList.length,2)+',1fr);gap:20px;margin-top:12px">'        +tchList.map(function(t){
+          return '<div style="text-align:center">'            +'<div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">'            +'ลงชื่อ .....................................................<br>'            +'( '+esc(t.name||'')+'  )<br>'            +esc(t.position||'ครูผู้รับผิดชอบห้องเรียนคู่ขนานบุคคลออทิสติก')+'<br>'            +esc(ROOMS[ri])+'<br>'            +'วันที่ ........../........../..........</div></div>';
+        }).join('')        +'</div>';
+    }())}
     ${(function(){
       // นักเรียนที่สิ้นสุดการรับบริการในเดือนนี้
       var _repYrCE=yr-543;
@@ -3895,28 +3897,30 @@ function buildReport(){
         +'<th style="padding:6px 8px;border:1px solid #ddd">สถานที่ส่งต่อ/รายละเอียด</th>'
         +'</tr></thead><tbody>'+_rows+'</tbody></table></div>';
     }())}
-    <div style="text-align:center">
-      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
-        ลงชื่อ .....................................................<br>
-        (........................................)<br>
-        หัวหน้าฝ่ายบริหารวิชาการ<br>
-        วันที่ ........../........../..........
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:48px">
+      <div style="text-align:center">
+        <div style="border-top:1px solid #999;padding-top:8px">
+          ลงชื่อ .....................................................<br>
+          (........................................)<br>
+          หัวหน้าฝ่ายบริหารวิชาการ<br>
+          วันที่ ........../........../..........</div>
+      </div>
+      <div style="text-align:center">
+        <div style="border-top:1px solid #999;padding-top:8px">
+          ลงชื่อ .....................................................<br>
+          (........................................)<br>
+          รองผู้อำนวยการฝ่ายบริหารวิชาการ<br>
+          วันที่ ........../........../..........</div>
       </div>
     </div>
-    <div style="text-align:center">
-      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
-        ลงชื่อ .....................................................<br>
-        (........................................)<br>
-        รองผู้อำนวยการฝ่ายบริหารวิชาการ<br>
-        วันที่ ........../........../..........
-      </div>
-    </div>
-    <div style="text-align:center">
-      <div style="border-top:1px solid #999;padding-top:8px;margin-top:48px">
-        ลงชื่อ .....................................................<br>
-        (........................................)<br>
-        ผู้อำนวยการศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา<br>
-        วันที่ ........../........../..........
+    <div style="display:flex;justify-content:center;margin-top:48px">
+      <div style="text-align:center;min-width:300px">
+        <div style="border-top:1px solid #999;padding-top:8px">
+          ลงชื่อ .....................................................<br>
+          (........................................)<br>
+          ผู้อำนวยการศูนย์การศึกษาพิเศษ<br>
+          เขตการศึกษา 3 จังหวัดสงขลา<br>
+          วันที่ ........../........../..........</div>
       </div>
     </div>
   </div>
