@@ -3845,7 +3845,7 @@ function buildReport(){
       var pics=photoGroups[cap];
       var firstP=pics[0];
       var dateRange=firstP.date?toBEDate(firstP.date)+(firstP.dateEnd&&firstP.dateEnd!==firstP.date?' – '+toBEDate(firstP.dateEnd):''):'';
-      h+='<tr><td colspan="3" style="padding:0">'
+      h+='<tr class="photo-group-header"><td colspan="3" style="padding:0">'
         +'<div style="background:#e8f0fe;padding:7px 10px;'+(isFirst9?'':'border-top:1.5px solid #c5d8f6;')+'border-bottom:1px solid #c5d8f6">'
         +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(cap)+'</div>'
         +(dateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>':'')
@@ -3879,7 +3879,7 @@ function buildReport(){
       var allPics=(t.photos&&t.photos.length)?t.photos:(t.imgUrl?[t.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
       var dateRange=toBEDate(t.date)+(t.dateEnd&&t.dateEnd!==t.date?' – '+toBEDate(t.dateEnd):'');
-      h+='<tr><td colspan="3" style="padding:0">'
+      h+='<tr class="photo-group-header"><td colspan="3" style="padding:0">'
         +'<div style="background:#e8f0fe;padding:7px 10px;'+(isFirst10?'':'border-top:1.5px solid #c5d8f6;')+'border-bottom:1px solid #c5d8f6">'
         +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>'
         +(t.org?'<div style="font-size:11px;color:#555;margin-top:2px">🏢 '+esc(t.org)+'</div>':'')
@@ -3916,7 +3916,7 @@ function buildReport(){
       var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
       var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' – '+toBEDate(c.dateEnd):'');
-      h+='<tr><td colspan="3" style="padding:0">'
+      h+='<tr class="photo-group-header"><td colspan="3" style="padding:0">'
         +'<div style="background:#e8f4ed;padding:7px 10px;'+(isFirst11?'':'border-top:1.5px solid #a5d6b5;')+'border-bottom:1px solid #a5d6b5">'
         +'<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>'
         +(c.place?'<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>':'')
@@ -4072,6 +4072,9 @@ function printReport(){
       .rep-section table:not(.rep-table) td{border:none!important;padding:2px}
       .rep-section table:not(.rep-table) th{border:none!important}
       .no-break{page-break-before:avoid!important;break-before:avoid!important}
+      /* header กิจกรรม + รูปแถวแรกต้องอยู่หน้าเดียวกัน */
+      .photo-group-header{page-break-after:avoid!important;break-after:avoid!important}
+      .photo-group-header + tr{page-break-before:avoid!important;break-before:avoid!important}
       img{max-width:100%;height:auto;border-radius:4px}
       .rep-section{margin-bottom:10px;page-break-inside:auto}
       .rep-last-block{page-break-before:always;break-before:always;display:block}
