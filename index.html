@@ -1198,17 +1198,19 @@ window.bePartsToISO=bePartsToISO;
 
 // ──────────── STUDENT ACTIVE CHECKER ────────────
 // คืนค่า true ถ้านักเรียนยังรับบริการในเดือน/ปีที่ระบุ (year=ค.ศ.)
-function isStudentActiveIn(s, year, month){
+function isStudentActiveIn(s, year, month, day){
   if(!s) return false;
   var st = s.stuStatus||'กำลังรับบริการ';
   if(st==='กำลังรับบริการ') return true;
-  // มีสถานะอื่น — ตรวจวันสิ้นสุด
-  if(!s.stuEndDate) return false; // ไม่ระบุวัน = ถือว่าหยุดรับบริการแล้ว
-  // เปรียบเทียบเดือน/ปี ของ viewDate กับ stuEndDate
+  if(!s.stuEndDate) return false;
   var endParts = s.stuEndDate.split('-');
   if(endParts.length < 3) return false;
-  var endY = +endParts[0], endM = +endParts[1];
-  // ถ้าเดือนที่ดูอยู่ <= เดือนที่สิ้นสุด -> ยังรับบริการ (นับเดือนสิ้นสุดด้วย)
+  var endY=+endParts[0], endM=+endParts[1], endD=+endParts[2];
+  if(day){
+    // ตรวจระดับวัน — ใช้สำหรับ "วันนี้"
+    return new Date(year,month-1,day) <= new Date(endY,endM-1,endD);
+  }
+  // ตรวจระดับเดือน — ใช้สำหรับ viewMonth (ยังรับบริการถ้าเดือนนั้น <= เดือนสิ้นสุด)
   if(year < endY) return true;
   if(year === endY && month <= endM) return true;
   return false;
@@ -1968,7 +1970,7 @@ function pageDashboard(){
   getRooms().forEach(function(ri2){
     var _r=db.rooms[ri2]||mkRoom();
     var _nowD=new Date();
-    totS+=(_r.students||[]).filter(function(s){return isStudentActiveIn(s,_nowD.getFullYear(),_nowD.getMonth()+1);}).length;
+    totS+=(_r.students||[]).filter(function(s){return isStudentActiveIn(s,_nowD.getFullYear(),_nowD.getMonth()+1,_nowD.getDate());}).length;
     totT+=(_r.teachers||[]).length;
   });
 
@@ -2005,7 +2007,7 @@ function pageDashboard(){
       h+='</tbody></table></div>';
     }
     var _nd=new Date();
-    var _dStus=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_nd.getFullYear(),_nd.getMonth()+1);});
+    var _dStus=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_nd.getFullYear(),_nd.getMonth()+1,_nd.getDate());});
     if(_dStus.length){
       h+='<div style="margin:12px 0 8px"><b>นักเรียนที่กำลังรับบริการ ('+_dStus.length+' คน)</b></div>';
       h+='<div class="table-wrap"><table><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ที่อยู่</th><th>ประเภท</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>';
@@ -2159,8 +2161,8 @@ function pageStudents(ri){
   var h='<div class="page-header"><h2>🧒 ข้อมูลนักเรียน</h2></div>';
   h+=roomTabs(ri,'pageStudents');
   var _now=new Date();
-  var _activeStus=r.students.filter(function(s){return isStudentActiveIn(s,_now.getFullYear(),_now.getMonth()+1);});
-  var _inactiveStus=r.students.filter(function(s){return !isStudentActiveIn(s,_now.getFullYear(),_now.getMonth()+1);});
+  var _activeStus=r.students.filter(function(s){return isStudentActiveIn(s,_now.getFullYear(),_now.getMonth()+1,_now.getDate());});
+  var _inactiveStus=r.students.filter(function(s){return !isStudentActiveIn(s,_now.getFullYear(),_now.getMonth()+1,_now.getDate());});
 
   // ── ตาราง นักเรียนที่กำลังรับบริการ ──
   h+='<div class="card"><h3>รายชื่อนักเรียนที่กำลังรับบริการ — '+RS[ri]+' ('+_activeStus.length+' คน)</h3>'
@@ -3847,11 +3849,11 @@ function buildReport(){
       // ใช้ table เพื่อให้ thead (header) ซ้ำเมื่อข้ามหน้า
       h+='<table style="width:100%;border-collapse:collapse;margin-bottom:14px;border:1px solid #ddd;border-radius:6px">';
       h+='<thead><tr><th style="background:#e8f0fe;padding:8px 10px;border-bottom:2px solid #c5d8f6;text-align:left;font-weight:700">'+headerHtml+'</th></tr></thead>';
-      h+='<tbody><tr><td style="padding:8px 10px">';
-      h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
+      h+='<tbody><tr><td style="padding:6px">';
+      h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">';
       pics.forEach(function(p){
         var src=driveImgSrc(p.imgUrl||'');
-        if(src) h+='<img src="'+src+'" style="width:100%;height:250px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+        if(src) h+='<img src="'+src+'" style="width:100%;width:100%;height:220px;object-fit:cover;border-radius:5px;border:1px solid #ddd;display:block" onerror="this.hidden=true"/>';
       });
       h+='</div></td></tr></tbody></table>';
     });
@@ -3872,12 +3874,12 @@ function buildReport(){
         +(dateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>':'');
       h+='<table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #ddd">';
       h+='<thead><tr><th style="background:#e8f0fe;padding:8px 10px;border-bottom:2px solid #c5d8f6;text-align:left;font-weight:normal">'+trHeader+'</th></tr></thead>';
-      h+='<tbody><tr><td style="padding:8px 10px">';
+      h+='<tbody><tr><td style="padding:6px">';
       if(hasPics){
-        h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
+        h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">';
         allPics.forEach(function(pic){
           var src=driveImgSrc(pic||'');
-          if(src) h+='<img src="'+src+'" style="width:100%;height:250px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+          if(src) h+='<img src="'+src+'" style="width:100%;width:100%;height:220px;object-fit:cover;border-radius:5px;border:1px solid #ddd;display:block" onerror="this.hidden=true"/>';
         });
         h+='</div>';
       }
@@ -3901,12 +3903,12 @@ function buildReport(){
         +(cmDateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+cmDateRange+'</div>':'');
       h+='<table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #ddd">';
       h+='<thead><tr><th style="background:#e8f4ed;padding:8px 10px;border-bottom:2px solid #a5d6b5;text-align:left;font-weight:normal">'+cmHeader+'</th></tr></thead>';
-      h+='<tbody><tr><td style="padding:8px 10px">';
+      h+='<tbody><tr><td style="padding:6px">';
       if(hasPics){
-        h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">';
+        h+='<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:6px">';
         allPics.forEach(function(pic){
           var src=driveImgSrc(pic||'');
-          if(src) h+='<img src="'+src+'" style="width:100%;height:250px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
+          if(src) h+='<img src="'+src+'" style="width:100%;width:100%;height:220px;object-fit:cover;border-radius:5px;border:1px solid #ddd;display:block" onerror="this.hidden=true"/>';
         });
         h+='</div>';
       } else { h+='<span style="color:#aaa;font-size:11px">ไม่มีภาพ</span>'; }
