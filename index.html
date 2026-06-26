@@ -3754,13 +3754,13 @@ function buildReport(){
   <p style="text-align:center;font-size:12px;color:#444;font-weight:500">ฝ่ายบริหารวิชาการ ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา</p>
 
   <div class="rep-section"><h3>1. ข้อมูลบุคลากรประจำห้องเรียน</h3>
-  <table class="rep-table"><thead><tr><th colspan="7" style="background:#e8f0fe;color:#1a5fa8;font-size:11px;text-align:left">1. ข้อมูลบุคลากรประจำห้องเรียน (ต่อ)</th></tr><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วุฒิการศึกษา</th><th>วิชาเอก</th><th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th></tr></thead><tbody>`;
+  <table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วุฒิการศึกษา</th><th>วิชาเอก</th><th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th></tr></thead><tbody>`;
   r.teachers.forEach((t,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(t.name)}</td><td>${esc(t.edu)}</td><td>${esc(t.major)}</td><td>${esc(t.position)}</td><td>${esc(t.org)}</td><td>${esc(t.phone)}</td></tr>`);
   if(!r.teachers.length)h+=`<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>`;
   h+=`</tbody></table></div>
 
   <div class="rep-section"><h3>2. ข้อมูลผู้เรียน</h3>
-  <table class="rep-table"><thead><tr><th colspan="7" style="background:#e8f0fe;color:#1a5fa8;font-size:11px;text-align:left">2. ข้อมูลผู้เรียน (ต่อ)</th></tr><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ประเภทความพิการ</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>`;
+  <table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ประเภทความพิการ</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>`;
   var _repStuList=r.students.filter(function(s){return isStudentActiveIn(s,_repYrCE,_repMnNum);});
   _repStuList.forEach((s,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(s.name)}</td><td>${toBEDate(s.dob)}</td><td>${calcAge(s.dob)}</td><td>${esc(s.type)}</td><td>${esc(s.guardian)}</td><td>${esc(s.gphone)}</td></tr>`);
   if(!_repStuList.length)h+=`<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>`;
@@ -3769,7 +3769,7 @@ function buildReport(){
   <div class="rep-section"><h3>3. สถิติการเข้าเรียน ${mn} ${yr}</h3>
 
   <p style="font-size:12px;font-weight:600;color:#1a5fa8;margin-bottom:6px">รายละเอียดการเข้าเรียนรายบุคคล</p>
-  <table class="rep-table"><thead><tr><th colspan="9" style="background:#e8f0fe;color:#1a5fa8;font-size:11px;text-align:left">3. สถิติการเข้าเรียนรายบุคคล (ต่อ)</th></tr><tr>
+  <table class="rep-table"><thead><tr>
     <th>ลำดับ</th><th>ชื่อ-สกุล</th><th>ประเภทความพิการ</th>
     <th style="color:#2d7d3a">มาเรียน</th><th style="color:#b71c1c">ขาดเรียน</th>
     <th style="color:#e65100">ลา</th><th style="color:#555">วันหยุด</th>
@@ -3811,11 +3811,11 @@ function buildReport(){
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>5. สรุปการปฏิบัติงานบุคลากร</h3>`;
-  if(hrs.length){h+=`<table class="rep-table"><thead><tr><th colspan="7" style="background:#e8f0fe;color:#1a5fa8;font-size:11px;text-align:left">5. สรุปการปฏิบัติงานบุคลากร (ต่อ)</th></tr><tr><th>ชื่อ-สกุล</th><th>ลากิจ</th><th>ลาป่วย</th><th>ลาพักผ่อน</th><th>ลาอื่นๆ</th><th>มาสาย</th><th>ออกนอกสถานที่</th></tr></thead><tbody>`;hrs.forEach(function(it){h+='<tr><td>'+esc(it.person)+'</td><td style="text-align:center">'+(it.leaveB||0)+' วัน</td><td style="text-align:center">'+(it.leaveSick||0)+' วัน</td><td style="text-align:center">'+(it.leaveRest||0)+' วัน</td><td style="text-align:center">'+(it.leaveOther||0)+' วัน'+(it.leaveOtherNote?' ('+esc(it.leaveOtherNote)+')':'')+'</td><td style="text-align:center">'+(it.late||0)+' ครั้ง</td><td style="text-align:center">'+(it.outSite||0)+' ครั้ง</td></tr>';});h+=`</tbody></table>`;}
+  if(hrs.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ลากิจ</th><th>ลาป่วย</th><th>ลาพักผ่อน</th><th>ลาอื่นๆ</th><th>มาสาย</th><th>ออกนอกสถานที่</th></tr></thead><tbody>`;hrs.forEach(function(it){h+='<tr><td>'+esc(it.person)+'</td><td style="text-align:center">'+(it.leaveB||0)+' วัน</td><td style="text-align:center">'+(it.leaveSick||0)+' วัน</td><td style="text-align:center">'+(it.leaveRest||0)+' วัน</td><td style="text-align:center">'+(it.leaveOther||0)+' วัน'+(it.leaveOtherNote?' ('+esc(it.leaveOtherNote)+')':'')+'</td><td style="text-align:center">'+(it.late||0)+' ครั้ง</td><td style="text-align:center">'+(it.outSite||0)+' ครั้ง</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>6. การสัมมนา/ฝึกอบรม/ศึกษาดูงาน (${trns.length} รายการ)</h3>`;
-  if(trns.length){h+=`<table class="rep-table"><thead><tr><th colspan="4" style="background:#e8f0fe;color:#1a5fa8;font-size:11px;text-align:left">6. การสัมมนา/ฝึกอบรม/ศึกษาดูงาน (ต่อ)</th></tr><tr><th>ชื่อ-สกุล</th><th>ชื่อหลักสูตร/อบรม</th><th>หน่วยงานที่จัด</th><th>วันที่</th></tr></thead><tbody>`;trns.forEach(function(t){h+='<tr><td>'+esc(t.person)+'</td><td>'+esc(t.course)+'</td><td>'+esc(t.org)+'</td><td>'+toBEDate(t.date)+'</td></tr>';});h+=`</tbody></table>`;}
+  if(trns.length){h+=`<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ชื่อหลักสูตร/อบรม</th><th>หน่วยงานที่จัด</th><th>วันที่</th></tr></thead><tbody>`;trns.forEach(function(t){h+='<tr><td>'+esc(t.person)+'</td><td>'+esc(t.course)+'</td><td>'+esc(t.org)+'</td><td>'+toBEDate(t.date)+'</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>7. งานสัมพันธ์ชุมชน/การเข้าร่วมกิจกรรมวันสำคัญ (${coms.length} กิจกรรม)</h3>`;
@@ -3823,7 +3823,7 @@ function buildReport(){
   else h+=`<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>`;
 
   h+=`</div><div class="rep-section"><h3>8. ภาคีเครือข่ายที่ทำงานร่วมกัน</h3>`;
-  if((r.network||[]).length){h+=`<table class="rep-table"><thead><tr><th colspan="4" style="background:#e8f0fe;color:#1a5fa8;font-size:11px;text-align:left">8. ภาคีเครือข่ายที่ทำงานร่วมกัน (ต่อ)</th></tr><tr><th>หน่วยงาน</th><th>ชื่อผู้ประสานงาน</th><th>ตำแหน่ง</th><th>เบอร์โทร</th></tr></thead><tbody>`;r.network.forEach(function(n){h+='<tr><td>'+esc(n.org)+'</td><td>'+esc(n.contact)+'</td><td>'+esc(n.position)+'</td><td>'+esc(n.phone)+'</td></tr>';});h+=`</tbody></table>`;}
+  if((r.network||[]).length){h+=`<table class="rep-table"><thead><tr><th>หน่วยงาน</th><th>ชื่อผู้ประสานงาน</th><th>ตำแหน่ง</th><th>เบอร์โทร</th></tr></thead><tbody>`;r.network.forEach(function(n){h+='<tr><td>'+esc(n.org)+'</td><td>'+esc(n.contact)+'</td><td>'+esc(n.position)+'</td><td>'+esc(n.phone)+'</td></tr>';});h+=`</tbody></table>`;}
   else h+=`<p style="font-size:12px;color:#999">ไม่มีข้อมูลภาคีเครือข่าย</p>`;
 
   h+=`</div>
@@ -4031,7 +4031,7 @@ function printReport(){
       h2{font-size:12px;font-weight:600;text-align:center;color:#333;margin-bottom:3px}
       h3{font-size:11px;font-weight:700;border-bottom:1.5px solid #bbb;padding-bottom:3px;margin:12px 0 6px;color:#1a5fa8;page-break-after:avoid;break-after:avoid}
       table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px;page-break-inside:auto}
-      thead{display:table-header-group}
+      thead{display:table-row-group}
       th,td{border:1px solid #bbb;padding:4px 6px}
       th{background:#f0f0f0;font-weight:700;text-align:center}
       tr{page-break-inside:avoid;break-inside:avoid}
