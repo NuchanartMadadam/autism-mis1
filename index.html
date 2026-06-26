@@ -3840,20 +3840,20 @@ function buildReport(){
     h+='<div style="margin-top:8px">';
     Object.keys(photoGroups).forEach(function(cap){
       var pics=photoGroups[cap];
-      h+='<div class="photo-block" style="margin-bottom:14px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border-left:3px solid #1a5fa8">';
-      // รายละเอียด
-      h+='<div style="font-size:12px;font-weight:700;color:#1a5fa8;margin-bottom:6px">'+esc(cap)+'</div>';
-      // วันที่ (ถ้ามี)
       var firstP=pics[0];
       var dateRange=firstP.date?toBEDate(firstP.date)+(firstP.dateEnd&&firstP.dateEnd!==firstP.date?' – '+toBEDate(firstP.dateEnd):''):'';
-      if(dateRange) h+='<div style="font-size:11px;color:#888;margin-bottom:6px">📅 '+dateRange+'</div>';
-      // รูปเรียงใต้
+      var headerHtml='<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(cap)+'</div>'
+        +(dateRange?'<div style="font-size:11px;color:#888;margin-top:3px">📅 '+dateRange+'</div>':'');
+      // ใช้ table เพื่อให้ thead (header) ซ้ำเมื่อข้ามหน้า
+      h+='<table style="width:100%;border-collapse:collapse;margin-bottom:14px;border:1px solid #ddd;border-radius:6px">';
+      h+='<thead><tr><th style="background:#e8f0fe;padding:8px 10px;border-bottom:2px solid #c5d8f6;text-align:left;font-weight:700">'+headerHtml+'</th></tr></thead>';
+      h+='<tbody><tr><td style="padding:8px 10px">';
       h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
       pics.forEach(function(p){
         var src=driveImgSrc(p.imgUrl||'');
         if(src) h+='<img src="'+src+'" style="width:100%;height:90px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
       });
-      h+='</div></div>';
+      h+='</div></td></tr></tbody></table>';
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน ${mn} (กรุณาเพิ่มภาพในหน้าประมวลภาพการสอน)</p>`;}
@@ -3865,23 +3865,23 @@ function buildReport(){
     repTrImg.forEach(function(t){
       var allPics=(t.photos&&t.photos.length)?t.photos:(t.imgUrl?[t.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
-      // บรรทัดรายละเอียด
-      h+='<div class="photo-block" style="margin-bottom:10px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border-left:3px solid #1a5fa8">';
-      h+='<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>';
-      if(t.org) h+='<div style="font-size:11px;color:#555;margin-top:2px">🏢 '+esc(t.org)+'</div>';
-      if(t.person) h+='<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(t.person)+'</div>';
       var dateRange=toBEDate(t.date)+(t.dateEnd&&t.dateEnd!==t.date?' – '+toBEDate(t.dateEnd):'');
-      if(dateRange) h+='<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>';
-      // เรียงรูปใต้รายละเอียด
+      var trHeader='<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>'
+        +(t.org?'<div style="font-size:11px;color:#555;margin-top:2px">🏢 '+esc(t.org)+'</div>':'')
+        +(t.person?'<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(t.person)+'</div>':'')
+        +(dateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>':'');
+      h+='<table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #ddd">';
+      h+='<thead><tr><th style="background:#e8f0fe;padding:8px 10px;border-bottom:2px solid #c5d8f6;text-align:left;font-weight:normal">'+trHeader+'</th></tr></thead>';
+      h+='<tbody><tr><td style="padding:8px 10px">';
       if(hasPics){
-        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
+        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
         allPics.forEach(function(pic){
           var src=driveImgSrc(pic||'');
           if(src) h+='<img src="'+src+'" style="width:100%;height:80px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
         });
         h+='</div>';
       }
-      h+='</div>';
+      h+='</td></tr></tbody></table>';
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานการอบรมในเดือนนี้</p>`;}
@@ -3893,23 +3893,24 @@ function buildReport(){
     repComImg.forEach(function(c){
       var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
-      // บรรทัดรายละเอียด
-      h+='<div class="photo-block" style="margin-bottom:10px;padding:8px 10px;background:#f8f9fa;border-radius:6px;border-left:3px solid #2d7d3a">';
-      h+='<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>';
-      if(c.place) h+='<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>';
-      if(c.participants) h+='<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(c.participants)+'</div>';
+      // บรรทัดรายละเอียด (ใช้ table เพื่อให้ header ซ้ำเมื่อข้ามหน้า)
       var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' – '+toBEDate(c.dateEnd):'');
-      if(cmDateRange) h+='<div style="font-size:11px;color:#888;margin-top:2px">📅 '+cmDateRange+'</div>';
-      // เรียงรูปใต้รายละเอียด
+      var cmHeader='<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>'
+        +(c.place?'<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>':'')
+        +(c.participants?'<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(c.participants)+'</div>':'')
+        +(cmDateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+cmDateRange+'</div>':'');
+      h+='<table style="width:100%;border-collapse:collapse;margin-bottom:10px;border:1px solid #ddd">';
+      h+='<thead><tr><th style="background:#e8f4ed;padding:8px 10px;border-bottom:2px solid #a5d6b5;text-align:left;font-weight:normal">'+cmHeader+'</th></tr></thead>';
+      h+='<tbody><tr><td style="padding:8px 10px">';
       if(hasPics){
-        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
+        h+='<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px">';
         allPics.forEach(function(pic){
           var src=driveImgSrc(pic||'');
           if(src) h+='<img src="'+src+'" style="width:100%;height:80px;object-fit:cover;border-radius:5px;border:1px solid #ddd" onerror="this.hidden=true"/>';
         });
         h+='</div>';
-      }
-      h+='</div>';
+      } else { h+='<span style="color:#aaa;font-size:11px">ไม่มีภาพ</span>'; }
+      h+='</td></tr></tbody></table>';
     });
     h+='</div>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
@@ -4071,12 +4072,7 @@ function printReport(){
   const fullHtml=`<!DOCTYPE html>
 <html lang="th">
 <head><meta charset="utf-8"/><title>รายงานประจำเดือน</title>${printStyle}</head>
-<body>${html}  <div style="text-align:center;padding:12px 0;font-size:12px;color:#999;border-top:1px solid #eee;margin-top:2rem;background:#fafafa">
-    พัฒนาโดย <strong style="color:var(--primary)">นางสาวนุชนารถ หมัดอะดั้ม</strong>
-    &nbsp;|&nbsp; ระบบสารสนเทศห้องเรียนคู่ขนานบุคคลออทิสติก
-    &nbsp;|&nbsp; ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา
-  </div>
-</body>
+<body>${html}</body>
 </html>`;
 
   const blob=new Blob([fullHtml],{type:'text/html;charset=utf-8'});
