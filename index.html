@@ -3829,8 +3829,7 @@ function buildReport(){
   else h+=`<p style="font-size:12px;color:#999">ไม่มีข้อมูลภาคีเครือข่าย</p>`;
 
 
-  h+=`</div>
-  <div class="rep-section">`;
+  h+=`</div><div class="rep-section">`;
   const repPhotos=(r.photos||[]).filter(function(p){return p.month&&p.month===mn;}).map(function(p){var _pu=p.imgUrl||p.dataUrl||'';return Object.assign({},p,{imgUrl:_pu==='(base64-stripped)'?'':_pu});});
   if(repPhotos.length){
     var photoGroups={};
@@ -3840,15 +3839,15 @@ function buildReport(){
       photoGroups[key].push(p);
     });
     h+='<table style="width:100%;border-collapse:collapse;margin-top:0">';
+    h+='<thead><tr><th colspan="3" style="background:#1a5fa8;padding:6px 10px;text-align:left;color:#fff;font-size:12px;font-weight:700">9. ประมวลภาพกิจกรรมประจำเดือน</th></tr></thead><tbody>';
     var isFirst9=true;
     Object.keys(photoGroups).forEach(function(cap){
       var pics=photoGroups[cap];
       var firstP=pics[0];
       var dateRange=firstP.date?toBEDate(firstP.date)+(firstP.dateEnd&&firstP.dateEnd!==firstP.date?' – '+toBEDate(firstP.dateEnd):''):'';
-      // header แต่ละกิจกรรม (แถวแรกมี section title ด้วย)
-      h+='<tr class="no-break" style="page-break-before:avoid"><td colspan="3" style="padding:0">'
-        +(isFirst9?'<div style="background:#1a5fa8;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">9. ประมวลภาพกิจกรรมประจำเดือน</div>':'')
-        +'<div style="background:#e8f0fe;padding:7px 10px;border-bottom:1px solid #c5d8f6'+(isFirst9?'':';border-top:1.5px solid #c5d8f6')+'">'        +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(cap)+'</div>'
+      h+='<tr><td colspan="3" style="padding:0">'
+        +'<div style="background:#e8f0fe;padding:7px 10px;'+(isFirst9?'':'border-top:1.5px solid #c5d8f6;')+'border-bottom:1px solid #c5d8f6">'
+        +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(cap)+'</div>'
         +(dateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>':'')
         +'</div></td></tr>';
       isFirst9=false;
@@ -3867,21 +3866,22 @@ function buildReport(){
         h+='</tr>';
       });
     });
-    h+='</table>';
+    h+='</tbody></table>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน ${mn}</p>`;}
 
   h+=`</div><div class="rep-section">`;
   const repTrImg=trns.filter(function(t){return (t.photos&&t.photos.length)||t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u});});
   if(repTrImg.length){
     h+='<table style="width:100%;border-collapse:collapse;margin-top:0">';
+    h+='<thead><tr><th colspan="3" style="background:#1a5fa8;padding:6px 10px;text-align:left;color:#fff;font-size:12px;font-weight:700">10. ภาพหลักฐานการสัมมนา/อบรม</th></tr></thead><tbody>';
     var isFirst10=true;
     repTrImg.forEach(function(t){
       var allPics=(t.photos&&t.photos.length)?t.photos:(t.imgUrl?[t.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
       var dateRange=toBEDate(t.date)+(t.dateEnd&&t.dateEnd!==t.date?' – '+toBEDate(t.dateEnd):'');
-      h+='<tr class="no-break" style="page-break-before:avoid"><td colspan="3" style="padding:0">'
-        +(isFirst10?'<div style="background:#1a5fa8;padding:6px 10px;font-size:12px;font-weight:700;color:#fff">10. ภาพหลักฐานการสัมมนา/อบรม</div>':'')
-        +'<div style="background:#e8f0fe;padding:7px 10px;border-bottom:1px solid #c5d8f6'+(isFirst10?'':';border-top:1.5px solid #c5d8f6')+'">'        +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>'
+      h+='<tr><td colspan="3" style="padding:0">'
+        +'<div style="background:#e8f0fe;padding:7px 10px;'+(isFirst10?'':'border-top:1.5px solid #c5d8f6;')+'border-bottom:1px solid #c5d8f6">'
+        +'<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>'
         +(t.org?'<div style="font-size:11px;color:#555;margin-top:2px">🏢 '+esc(t.org)+'</div>':'')
         +(t.person?'<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(t.person)+'</div>':'')
         +(dateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+dateRange+'</div>':'')
@@ -3910,22 +3910,23 @@ function buildReport(){
   const repComImg=coms.filter(function(c){return (c.photos&&c.photos.length)||c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2});});
   if(repComImg.length){
     h+='<table style="width:100%;border-collapse:collapse;margin-top:0">';
+    h+='<thead><tr><th colspan="3" style="background:#2d7d3a;padding:6px 10px;text-align:left;color:#fff;font-size:12px;font-weight:700">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</th></tr></thead><tbody>';
     var isFirst11=true;
     repComImg.forEach(function(c){
       var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
       var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' – '+toBEDate(c.dateEnd):'');
-      h+='<tr class="no-break" style="page-break-before:avoid"><td colspan="3" style="padding:0">'
-        +(isFirst11?'<div style="background:#2d7d3a;padding:5px 10px;font-size:12px;font-weight:700;color:#fff">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</div>':'')
-        +'<div style="background:#e8f4ed;padding:7px 10px;border-bottom:1px solid #a5d6b5'+(isFirst11?'':';border-top:1.5px solid #a5d6b5')+'">'        +'<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>'
+      h+='<tr><td colspan="3" style="padding:0">'
+        +'<div style="background:#e8f4ed;padding:7px 10px;'+(isFirst11?'':'border-top:1.5px solid #a5d6b5;')+'border-bottom:1px solid #a5d6b5">'
+        +'<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>'
         +(c.place?'<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>':'')
         +(c.participants?'<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(c.participants)+'</div>':'')
         +(cmDateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+cmDateRange+'</div>':'')
         +'</div></td></tr>';
       isFirst11=false;
       if(hasPics){
-        var triples=[];
         for(var pi=0;pi<allPics.length;pi+=3) triples.push(allPics.slice(pi,pi+3));
+        var triples=[];
         triples.forEach(function(trio){
           h+='<tr>';
           trio.forEach(function(pic){
