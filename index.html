@@ -3925,8 +3925,8 @@ function buildReport(){
         +'</div></td></tr>';
       isFirst11=false;
       if(hasPics){
-        for(var pi=0;pi<allPics.length;pi+=3) triples.push(allPics.slice(pi,pi+3));
         var triples=[];
+        for(var pi=0;pi<allPics.length;pi+=3) triples.push(allPics.slice(pi,pi+3));
         triples.forEach(function(trio){
           h+='<tr>';
           trio.forEach(function(pic){
@@ -3943,7 +3943,45 @@ function buildReport(){
     h+='</table>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
 
-  h+=`<div style="margin-top:3rem;font-size:12px">
+  ;
+  // นักเรียนที่สิ้นสุดการรับบริการในเดือนนี้
+  (function(){
+    var _repYrCE=yr-543;
+    var _repMn=repMonth;
+    var _endedStus=(r.students||[]).filter(function(s){
+      if(!s.stuStatus||s.stuStatus==='กำลังรับบริการ') return false;
+      if(!s.stuEndDate) return false;
+      var _ep=s.stuEndDate.split('-');
+      return +_ep[0]===_repYrCE && +_ep[1]===_repMn;
+    });
+    if(!_endedStus.length){ return; }
+      var _rows=_endedStus.map(function(s,i){
+        var _acY=getAcYearOf(s.stuEndDate);
+        return '<tr>'
+          +'<td style="text-align:center;padding:4px 8px">'+(i+1)+'</td>'
+          +'<td style="padding:4px 8px;font-weight:600">'+esc(s.name)+'</td>'
+          +'<td style="padding:4px 8px">'+esc(s.type)+'</td>'
+          +'<td style="padding:4px 8px"><span style="background:#e3f2fd;color:#1a5fa8;padding:2px 8px;border-radius:10px;font-size:11px">'+esc(s.stuStatus)+'</span></td>'
+          +'<td style="padding:4px 8px">'+toBEDate(s.stuEndDate)+'</td>'
+          +'<td style="padding:4px 8px;font-size:11px">'+(_acY?esc(_acY.name):'-')+'</td>'
+          +'<td style="padding:4px 8px;font-size:11px">'+esc(s.stuRemark||'-')+'</td>'
+          +'</tr>';
+      }).join('');
+      var _html='<div class="rep-section" style="margin-top:1.5rem">'
+        +'<div class="rep-section-title">📋 นักเรียนที่สิ้นสุดการรับบริการในเดือน '+mn+' '+yr+'</div>'
+        +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f0f4ff">'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ลำดับ</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ชื่อ-สกุล</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ประเภทความพิการ</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">สถานะ</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">วันที่สิ้นสุด</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">ปีการศึกษา</th>'
+        +'<th style="padding:6px 8px;border:1px solid #ddd">สถานที่ส่งต่อ/รายละเอียด</th>'
+        +'</tr></thead><tbody>'+_rows+'</tbody></table></div>';
+    h+=_html;
+  })();
+
+h+=`<div style="margin-top:3rem;font-size:12px">
     ${(function(){
       if(!tchList.length){
         return '<table class="sig-table" style="width:100%;margin-top:8px"><tr>'
@@ -3974,41 +4012,7 @@ function buildReport(){
       }
       return '<table class="sig-table" style="width:100%;margin-top:8px">'+rows.join('')+'</table>';
     }())}
-    ${(function(){
-      // นักเรียนที่สิ้นสุดการรับบริการในเดือนนี้
-      var _repYrCE=yr-543;
-      var _repMn=repMonth;
-      var _endedStus=(r.students||[]).filter(function(s){
-        if(!s.stuStatus||s.stuStatus==='กำลังรับบริการ') return false;
-        if(!s.stuEndDate) return false;
-        var _ep=s.stuEndDate.split('-');
-        return +_ep[0]===_repYrCE && +_ep[1]===_repMn;
-      });
-      if(!_endedStus.length) return '';
-      var _rows=_endedStus.map(function(s,i){
-        var _acY=getAcYearOf(s.stuEndDate);
-        return '<tr>'
-          +'<td style="text-align:center;padding:4px 8px">'+(i+1)+'</td>'
-          +'<td style="padding:4px 8px;font-weight:600">'+esc(s.name)+'</td>'
-          +'<td style="padding:4px 8px">'+esc(s.type)+'</td>'
-          +'<td style="padding:4px 8px"><span style="background:#e3f2fd;color:#1a5fa8;padding:2px 8px;border-radius:10px;font-size:11px">'+esc(s.stuStatus)+'</span></td>'
-          +'<td style="padding:4px 8px">'+toBEDate(s.stuEndDate)+'</td>'
-          +'<td style="padding:4px 8px;font-size:11px">'+(_acY?esc(_acY.name):'-')+'</td>'
-          +'<td style="padding:4px 8px;font-size:11px">'+esc(s.stuRemark||'-')+'</td>'
-          +'</tr>';
-      }).join('');
-      return '<div class="rep-section" style="margin-top:1.5rem">'
-        +'<div class="rep-section-title">📋 นักเรียนที่สิ้นสุดการรับบริการในเดือน '+mn+' '+yr+'</div>'
-        +'<table style="width:100%;border-collapse:collapse;font-size:12px"><thead><tr style="background:#f0f4ff">'
-        +'<th style="padding:6px 8px;border:1px solid #ddd">ลำดับ</th>'
-        +'<th style="padding:6px 8px;border:1px solid #ddd">ชื่อ-สกุล</th>'
-        +'<th style="padding:6px 8px;border:1px solid #ddd">ประเภทความพิการ</th>'
-        +'<th style="padding:6px 8px;border:1px solid #ddd">สถานะ</th>'
-        +'<th style="padding:6px 8px;border:1px solid #ddd">วันที่สิ้นสุด</th>'
-        +'<th style="padding:6px 8px;border:1px solid #ddd">ปีการศึกษา</th>'
-        +'<th style="padding:6px 8px;border:1px solid #ddd">สถานที่ส่งต่อ/รายละเอียด</th>'
-        +'</tr></thead><tbody>'+_rows+'</tbody></table></div>';
-    }())}
+
     <table class="sig-table" style="width:100%;margin-top:0">
       <tr>
         <td style="width:50%;text-align:center;padding:0 12px">
