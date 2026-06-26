@@ -3925,7 +3925,7 @@ function buildReport(){
   <div style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px">
     ${(function(){
       if(!tchList.length){
-        return '<table class="sig-table" style="width:100%;margin-top:12px"><tr>'
+        return '<table class="sig-table" style="width:100%;margin-top:8px"><tr>'
           +'<td style="text-align:center;width:50%;padding:0 12px">'
           +'<div class="sig-line">'
           +'ลงชื่อ .....................................................<br>'
@@ -3951,7 +3951,7 @@ function buildReport(){
         while(cells.length < cols) cells.push('<td style="width:'+(100/cols)+'%"></td>');
         rows.push('<tr>'+cells.join('')+'</tr>');
       }
-      return '<table class="sig-table" style="width:100%;margin-top:12px">'+rows.join('')+'</table>';
+      return '<table class="sig-table" style="width:100%;margin-top:8px">'+rows.join('')+'</table>';
     }())}
     ${(function(){
       // นักเรียนที่สิ้นสุดการรับบริการในเดือนนี้
@@ -3988,7 +3988,7 @@ function buildReport(){
         +'<th style="padding:6px 8px;border:1px solid #ddd">สถานที่ส่งต่อ/รายละเอียด</th>'
         +'</tr></thead><tbody>'+_rows+'</tbody></table></div>';
     }())}
-    <table class="sig-table" style="width:100%;margin-top:48px">
+    <table class="sig-table" style="width:100%;margin-top:0">
       <tr>
         <td style="width:50%;text-align:center;padding:0 12px">
           <div class="sig-line">
@@ -4006,7 +4006,7 @@ function buildReport(){
         </td>
       </tr>
     </table>
-    <table class="sig-table" style="width:100%;margin-top:48px">
+    <table class="sig-table" style="width:100%;margin-top:0">
       <tr>
         <td style="width:25%"></td>
         <td style="width:50%;text-align:center;padding:0 12px">
@@ -4053,7 +4053,7 @@ function printReport(){
       /* ลายเซ็น table */
       .sig-table{width:100%;border-collapse:collapse;border:none}
       .sig-table td{border:none;text-align:center;vertical-align:top;padding:0 12px}
-      .sig-line{padding-top:6px;margin-top:40px;line-height:1.8;font-size:11px}
+      .sig-line{padding-top:6px;margin-top:14px;line-height:1.6;font-size:11px}
       /* photo block ไม่แยกหน้า */
       .photo-block{page-break-inside:avoid;break-inside:avoid}
       @page{margin:10mm 8mm}
