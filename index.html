@@ -3943,9 +3943,9 @@ function buildReport(){
     h+='</table>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
 
-  <div style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px">
+  h+=`
+  <div style="margin-top:3rem;font-size:12px">
     ${(function(){
-      if(!tchList.length){
         return '<table class="sig-table" style="width:100%;margin-top:8px"><tr>'
           +'<td style="text-align:center;width:50%;padding:0 12px">'
           +'<div class="sig-line">'
