@@ -2974,83 +2974,136 @@ function pagePhotos(ri){
   var mn=MONTHS[viewMonth-1];
   var allPh=r.photos||[];
   var filtered=allPh.filter(function(p){return!p.month||p.month===mn;});
+
+  // จัดกลุ่มตาม caption
+  var groups={};
+  var groupOrder=[];
+  filtered.forEach(function(p){
+    var key=p.caption||'(ไม่ระบุ)';
+    if(!groups[key]){ groups[key]={caption:key,date:p.date,dateEnd:p.dateEnd,month:p.month,photos:[]}; groupOrder.push(key); }
+    groups[key].photos.push(p);
+    // ใช้วันที่แรกสุด
+    if(p.date && (!groups[key].date || p.date < groups[key].date)) groups[key].date=p.date;
+    if(p.dateEnd && (!groups[key].dateEnd || p.dateEnd > groups[key].dateEnd)) groups[key].dateEnd=p.dateEnd;
+  });
+
   var h='<div class="page-header"><h2>📸 ประมวลภาพการปฏิบัติงาน</h2></div>';
   h+=monthYearPickerHtml();
   h+=roomTabs(ri,'pagePhotos');
   h+='<div class="card"><h3>ภาพกิจกรรม '+mn+' '+(viewYear+543)+' — '+RS[ri]+'</h3>';
-  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:12px;margin-top:8px">';
-  filtered.forEach(function(p){
-    var realIdx=allPh.indexOf(p);
-    var imgUrl=p.imgUrl||'';
-    var imgSrc=imgUrl.startsWith('data:')?imgUrl:(imgUrl?driveImgSrc(imgUrl):'');
+  h+='<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:12px;margin-top:12px">';
+
+  groupOrder.forEach(function(key){
+    var g=groups[key];
+    var pics=g.photos;
+    var dateLabel=g.date?toBEDate(g.date)+(g.dateEnd&&g.dateEnd!==g.date?' ถึง '+toBEDate(g.dateEnd):''):'';
+    // แสดงรูปสูงสุด 4 รูปแรกใน grid
+    var previewPics=pics.slice(0,4);
+    var cols=previewPics.length>=2?2:1;
     h+='<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff">';
-    if(imgSrc){
-      h+='<img src="'+imgSrc+'" style="width:100%;height:140px;object-fit:cover;display:block" '
-        +'onerror="this.src=\'\';this.style.display=\'none\';" alt="ภาพกิจกรรม"/>';
-    } else {
-      h+='<div style="height:140px;display:flex;align-items:center;justify-content:center;background:#f0f4f8;color:#aaa;font-size:40px">📷</div>';
+    h+='<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:1px;background:#eee">';
+    previewPics.forEach(function(p){
+      var imgUrl=p.imgUrl||'';
+      var imgSrc=imgUrl.startsWith('data:')?imgUrl:(imgUrl?driveImgSrc(imgUrl):'');
+      if(imgSrc){
+        h+='<img src="'+imgSrc+'" style="width:100%;height:100px;object-fit:cover;display:block" onerror="this.style.display=chr(92)+chr(39)+chr(110)+chr(111)+chr(110)+chr(101)+chr(92)+chr(39)"/>';
+      } else {
+        h+='<div style="height:100px;background:#f0f4f8;display:flex;align-items:center;justify-content:center;font-size:24px">🖼️</div>';
+      }
+    });
+    if(pics.length>4){
+      h+='<div style="height:100px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600">+'+(pics.length-4)+'</div>';
     }
-    h+='<div style="padding:8px">'
-      +'<div style="font-size:12px;font-weight:600;color:#333;margin-bottom:2px">'+esc(p.caption||'(ไม่มีคำบรรยาย)')+'</div>'
-      +'<div style="font-size:11px;color:var(--muted)">'+esc(p.month)+' | '+toBEDate(p.date)+(p.dateEnd&&p.dateEnd!==p.date?' ถึง '+toBEDate(p.dateEnd):'')+'</div>'
-      +'</div>'
-      +'<div style="padding:0 8px 8px;display:flex;gap:4px">'
-      +'<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-idx="'+realIdx+'" onclick="editPhoto(+this.dataset.ri,+this.dataset.idx)">✏️</button>'
-      +'<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-idx="'+realIdx+'" onclick="delPhoto(+this.dataset.ri,+this.dataset.idx)">🗑️</button>'
-      +'</div></div>';
+    h+='</div>';
+    h+='<div style="padding:8px">';
+    h+='<div style="font-size:12px;font-weight:600;color:#333;margin-bottom:2px">'+esc(g.caption)+'</div>';
+    h+='<div style="font-size:11px;color:var(--muted)">'+esc(g.month)+(dateLabel?' | '+dateLabel:'')+'</div>';
+    h+='<div style="font-size:11px;color:var(--primary)">🖼 '+pics.length+' ภาพ</div>';
+    h+='</div>';
+    h+='<div style="padding:0 8px 8px;display:flex;gap:6px">';
+    h+='<button class="btn btn-outline btn-sm" onclick="editPhotoGroup('+ri+','+JSON.stringify(key)+')">✏️ แก้ไข</button>';
+    h+='<button class="btn btn-danger btn-sm" onclick="delPhotoGroup('+ri+','+JSON.stringify(key)+')">🗑️ ลบ</button>';
+    h+='</div>';
+    h+='</div>';
   });
+
   h+='</div>';
   if(!filtered.length){
-    h+='<p class="text-muted mt-1" style="text-align:center;padding:1rem">ไม่มีภาพในเดือน '+mn+' — กรุณาเลือกเดือนอื่น หรือกดเพิ่มภาพ</p>';
+    h+='<p class="text-muted mt-1" style="text-align:center;padding:1rem">ไม่มีภาพในเดือน '+mn+' — กดปุ่มด้านล่างเพื่อเพิ่ม</p>';
   }
-  h+='<div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addPhoto('+ri+')">➕ เพิ่มภาพ/กิจกรรม</button></div></div>';
+  h+='<div class="mt-1"><button class="btn btn-primary btn-sm" onclick="addPhoto('+ri+')">➕ เพิ่มภาพ/กิจกรรม</button></div>';
+  h+='</div>';
   render(h);
 }
 window.pagePhotos=pagePhotos;
-function photoForm(p){
-  var selMonth = p?p.month:MONTHS[viewMonth-1];
-  var mOpts = MONTHS.map(function(m){return '<option'+(m===selMonth?' selected':'')+'>'+m+'</option>';}).join('');
-  return '<div class="form-group"><label>รายละเอียดรูปภาพ/คำบรรยาย</label><input id="ph_cap" value="'+esc(p?p.caption:'')+'"/></div>'
-    +'<div class="form-row">'
-    +'<div class="form-group"><label>ประจำเดือน</label><select id="ph_m">'+mOpts+'</select></div>'
-    +beDatePickerHtml('ph_d',p?p.date:todayStr(),'วันที่เริ่ม')
-    +beDatePickerHtml('ph_d2',p?p.dateEnd||'':'','ถึงวันที่ (ถ้าข้ามวัน)',false,true)
-    +'</div>'
-    +imgZoneHtml('ph_url',p?p.imgUrl||'':'','แนบรูปภาพ (คลิกหรือลากไฟล์มาวาง)');
-}
 
-function savePhoto(ri,idx){
-  ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
-  var imgVal = document.getElementById('ph_url') ? document.getElementById('ph_url').value : '';
-  var imgName = 'photo_'+ri+'_'+Date.now()+'.jpg';
-  var subFolder = 'ภาพกิจกรรม_' + (RS[ri]||('ห้อง'+ri));
-  if(imgVal && imgVal.startsWith('data:') && settings.scriptUrl){
-    toast('กำลังอัปโหลดรูปไป Google Drive...');
-    syncImgToDrive(imgVal, imgName, subFolder, function(finalUrl){
-      _savePhotoData(ri, idx, finalUrl);
-    });
-  } else {
-    _savePhotoData(ri, idx, imgVal);
-  }
+function editPhotoGroup(ri,caption){
+  // โหลดรูปทั้งหมดของ group นี้เข้า _multiPhotoFiles
+  var r=db.rooms[ri];
+  var allPh=r.photos||[];
+  var groupPics=allPh.filter(function(p){return (p.caption||'(ไม่ระบุ)')===caption;});
+  if(!groupPics.length) return;
+  var first=groupPics[0];
+  window._multiPhotoFiles=groupPics.map(function(p){return {name:'existing',data:p.imgUrl||'',existing:true};});
+  window._editPhotoGroup={ri:ri,caption:caption};
+
+  var selMonth=first.month||MONTHS[viewMonth-1];
+  var mOpts=MONTHS.map(function(m){return '<option'+(m===selMonth?' selected':'')+'>'+m+'</option>';}).join('');
+  var html='<h3>✏️ แก้ไขกิจกรรม</h3>';
+  html+='<div class="form-row">';
+  html+='<div class="form-group" style="margin:0"><label>ประจำเดือน</label><select id="ph_m">'+mOpts+'</select></div>';
+  html+=beDatePickerHtml('ph_d',first.date||todayStr(),'วันที่เริ่ม');
+  html+=beDatePickerHtml('ph_d2',first.dateEnd||'','ถึงวันที่',false,true);
+  html+='</div>';
+  html+='<div class="form-group"><label>คำบรรยาย/ชื่อกิจกรรม</label>';
+  html+='<input id="ph_cap" value="'+esc(caption)+'"/></div>';
+  html+='<div class="form-group"><label>ภาพหลักฐาน <span style="color:var(--primary);font-weight:600">(เพิ่มได้หลายรูป)</span></label>';
+  html+='<div class="img-upload-zone" id="ph_dropzone" onclick="trigPhotoInput()" ondragover="event.preventDefault()" ondrop="handlePhotoFileDrop(event)">';
+  html+='<div style="font-size:28px">📷</div>';
+  html+='<div style="font-weight:600">คลิกหรือลากหลายรูปมาวาง</div>';
+  html+='<div style="font-size:11px;color:var(--muted)">JPG, PNG — แต่ละไฟล์ไม่เกิน 5MB</div>';
+  html+='</div>';
+  html+='<input type="file" id="ph_files_input" accept="image/*" multiple style="display:none" onchange="handlePhotoFileInput(event)"/>';
+  html+='</div>';
+  html+='<div id="ph_preview_grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">';
+  // แสดงรูปเดิม
+  groupPics.forEach(function(p,pi){
+    var imgSrc=p.imgUrl||'';
+    if(imgSrc.startsWith('data:')||imgSrc.startsWith('http')){
+      html+='<div id="ph_ex_'+pi+'" style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">';
+      html+='<img src="'+imgSrc+'" style="width:100%;height:80px;object-fit:cover;display:block" onerror="this.style.display=chr(92)+chr(39)+chr(110)+chr(111)+chr(110)+chr(101)+chr(92)+chr(39)"/>';
+      html+='<button onclick="_rmExPhotoPh('+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>';
+      html+='</div>';
+    }
+  });
+  html+='</div>';
+  html+='<div id="ph_count" style="font-size:12px;color:var(--primary);margin-top:4px"></div>';
+  html+='<div class="modal-footer">';
+  html+='<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>';
+  html+='<button class="btn btn-primary" data-ri="'+ri+'" onclick="saveMultiPhotosGroup(+this.dataset.ri)">💾 บันทึก</button>';
+  html+='</div>';
+  openModal(html);
 }
-window.savePhoto=savePhoto;
-function _savePhotoData(ri, idx, imgUrl){
-  var mn = document.getElementById('ph_m') ? document.getElementById('ph_m').value : MONTHS[viewMonth-1];
-  var p = {
-    caption: document.getElementById('ph_cap') ? document.getElementById('ph_cap').value : '',
-    month:   mn,
-    date:    document.getElementById('ph_d') ? document.getElementById('ph_d').value : todayStr(),
-    dateEnd: document.getElementById('ph_d2') ? document.getElementById('ph_d2').value : '',
-    imgUrl:  imgUrl
-  };
-  if(!db.rooms[ri].photos) db.rooms[ri].photos=[];
-  if(idx===-1) db.rooms[ri].photos.push(p); else db.rooms[ri].photos[idx]=p;
-  saveLocal(); syncSheet('savePhotos',ri,db.rooms[ri].photos);
-  closeModal(); toast('บันทึกภาพสำเร็จ ✓'); pagePhotos(ri);
+window.editPhotoGroup=editPhotoGroup;
+
+window._rmExPhotoPh=function(pi){
+  if(window._multiPhotoFiles) window._multiPhotoFiles[pi]=null;
+  var c=document.getElementById('ph_ex_'+pi);
+  if(c)c.remove();
+};
+
+function delPhotoGroup(ri,caption){
+  if(!confirm('ลบกิจกรรม "'+caption+'" และรูปทั้งหมด?')) return;
+  var r=db.rooms[ri];
+  r.photos=(r.photos||[]).filter(function(p){return (p.caption||'(ไม่ระบุ)')!==caption;});
+  saveLocal(); syncSheet('savePhotos',ri,r.photos);
+  toast('ลบแล้ว'); pagePhotos(ri);
 }
-window._savePhotoData=_savePhotoData;
+window.delPhotoGroup=delPhotoGroup;
+
 function addPhoto(ri){
   window._multiPhotoFiles=[];
+  window._editPhotoGroup=null;
   var selMonth=MONTHS[viewMonth-1];
   var mOpts=MONTHS.map(function(m){return '<option'+(m===selMonth?' selected':'')+'>'+m+'</option>';}).join('');
   var html='<h3>➕ เพิ่มภาพกิจกรรม</h3>';
@@ -3059,42 +3112,74 @@ function addPhoto(ri){
   html+=beDatePickerHtml('ph_d',todayStr(),'วันที่เริ่ม');
   html+=beDatePickerHtml('ph_d2','','ถึงวันที่',false,true);
   html+='</div>';
-  html+='<div class="form-group"><label>คำบรรยาย (ใช้กับทุกรูปที่เพิ่ม)</label>';
-  html+='<input id="ph_cap" placeholder="เช่น กิจกรรมการเรียนการสอน"/></div>';
-  html+='<div class="form-group">';
-  html+='<label>เลือกรูปภาพ <span style="color:var(--primary);font-weight:600">(เลือกได้หลายรูปพร้อมกัน)</span></label>';
-  html+='<div class="img-upload-zone" id="ph_dropzone" onclick="trigPhotoInput()" ondragover="event.preventDefault()" ondrop="phDrop(event)">';
+  html+='<div class="form-group"><label>คำบรรยาย/ชื่อกิจกรรม</label>';
+  html+='<input id="ph_cap" placeholder="เช่น ประมวลภาพการสอน วิชาภาษาไทย"/></div>';
+  html+='<div class="form-group"><label>รูปภาพ <span style="color:var(--primary);font-weight:600">(เพิ่มได้หลายรูป)</span></label>';
+  html+='<div class="img-upload-zone" id="ph_dropzone" onclick="trigPhotoInput()" ondragover="event.preventDefault()" ondrop="handlePhotoFileDrop(event)">';
   html+='<div style="font-size:28px">📷</div>';
-  html+='<div style="font-weight:600">คลิกหรือลากหลายรูปมาวางพร้อมกัน</div>';
+  html+='<div style="font-weight:600">คลิกหรือลากหลายรูปมาวาง</div>';
   html+='<div style="font-size:11px;color:var(--muted)">JPG, PNG — แต่ละไฟล์ไม่เกิน 5MB</div>';
   html+='</div>';
-  html+='<input type="file" id="ph_files_input" accept="image/*" multiple style="display:none" onchange="handleMultiPhotoSelect(event)"/>';
+  html+='<input type="file" id="ph_files_input" accept="image/*" multiple style="display:none" onchange="handlePhotoFileInput(event)"/>';
   html+='</div>';
   html+='<div id="ph_preview_grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px"></div>';
-  html+='<div id="ph_count" style="font-size:12px;color:var(--primary);margin-top:4px;font-weight:600"></div>';
+  html+='<div id="ph_count" style="font-size:12px;color:var(--primary);margin-top:4px;font-weight:600">0 รูป</div>';
   html+='<div class="modal-footer">';
   html+='<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>';
-  html+='<button class="btn btn-primary" data-ri="'+ri+'" onclick="saveMultiPhotos(+this.dataset.ri)">💾 บันทึกทั้งหมด</button>';
+  html+='<button class="btn btn-primary" data-ri="'+ri+'" onclick="saveMultiPhotosGroup(+this.dataset.ri)">💾 บันทึก</button>';
   html+='</div>';
   openModal(html);
 }
 window.addPhoto=addPhoto;
-function editPhoto(ri,idx){
-  openModal('<h3>✏️ แก้ไขภาพกิจกรรม</h3>'
-    +photoForm(db.rooms[ri].photos[idx])
-    +'<div class="modal-footer">'
-    +'<button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button>'
-    +'<button class="btn btn-primary" data-ri="'+ri+'" data-idx="'+idx+'" onclick="savePhoto(+this.dataset.ri,+this.dataset.idx)">💾 บันทึก</button>'
-    +'</div>');
+
+function saveMultiPhotosGroup(ri){
+  var cap=document.getElementById('ph_cap')?document.getElementById('ph_cap').value.trim():'';
+  var mn=document.getElementById('ph_m')?document.getElementById('ph_m').value:MONTHS[viewMonth-1];
+  var dateVal=document.getElementById('ph_d')?document.getElementById('ph_d').value:todayStr();
+  var dateEnd=document.getElementById('ph_d2')?document.getElementById('ph_d2').value:'';
+  if(!cap){toast('กรุณาใส่คำบรรยาย','err');return;}
+
+  var files=(window._multiPhotoFiles||[]).filter(function(x){return x;});
+  if(!files.length){toast('กรุณาเลือกรูปภาพอย่างน้อย 1 รูป','err');return;}
+
+  // ลบรูปเดิมของ group นี้ก่อน
+  var oldCap=window._editPhotoGroup?window._editPhotoGroup.caption:cap;
+  var r=db.rooms[ri];
+  r.photos=(r.photos||[]).filter(function(p){return (p.caption||'(ไม่ระบุ)')!==oldCap;});
+
+  var pending=files.length;
+  var subFolder='ภาพกิจกรรม_'+(RS[ri]||('ห้อง'+ri));
+
+  files.forEach(function(f){
+    if(f.existing && f.data){
+      // รูปเดิมที่ไม่ได้เปลี่ยน
+      r.photos.push({caption:cap,month:mn,date:dateVal,dateEnd:dateEnd,imgUrl:f.data});
+      pending--;
+      if(pending===0){ saveLocal(); syncSheet('savePhotos',ri,r.photos); closeModal(); toast('บันทึกสำเร็จ ✓'); pagePhotos(ri); window._editPhotoGroup=null; }
+    } else if(f.data && f.data.startsWith('data:') && settings.scriptUrl){
+      syncImgToDrive(f.data,'photo_'+ri+'_'+Date.now()+'.jpg',subFolder,function(url){
+        r.photos.push({caption:cap,month:mn,date:dateVal,dateEnd:dateEnd,imgUrl:url});
+        pending--;
+        if(pending===0){ saveLocal(); syncSheet('savePhotos',ri,r.photos); closeModal(); toast('บันทึกสำเร็จ ✓'); pagePhotos(ri); window._editPhotoGroup=null; }
+      });
+    } else {
+      r.photos.push({caption:cap,month:mn,date:dateVal,dateEnd:dateEnd,imgUrl:f.data||''});
+      pending--;
+      if(pending===0){ saveLocal(); syncSheet('savePhotos',ri,r.photos); closeModal(); toast('บันทึกสำเร็จ ✓'); pagePhotos(ri); window._editPhotoGroup=null; }
+    }
+  });
 }
-window.editPhoto=editPhoto;
-function savePh(ri,idx){
-  const p={caption:document.getElementById('ph_cap').value,month:document.getElementById('ph_m').value,date:document.getElementById('ph_d').value,imgUrl:document.getElementById('ph_url').value};
-  if(!db.rooms[ri].photos)db.rooms[ri].photos=[];
-  if(idx===-1)db.rooms[ri].photos.push(p);else db.rooms[ri].photos[idx]=p;
-  saveLocal();syncSheet('savePhotos',ri,db.rooms[ri].photos);closeModal();toast('บันทึกสำเร็จ ✓');pagePhotos(ri);}
-window.savePh=savePh;
-function delPhoto(ri,idx){if(confirm('ยืนยัน?')){db.rooms[ri].photos.splice(idx,1);saveLocal();syncSheet('savePhotos',ri,db.rooms[ri].photos);toast('ลบแล้ว');pagePhotos(ri);}}
+window.saveMultiPhotosGroup=saveMultiPhotosGroup;
+
+function delPhoto(ri,idx){
+  if(confirm('ยืนยันลบภาพนี้?')){
+    db.rooms[ri].photos.splice(idx,1);
+    saveLocal();
+    syncSheet('savePhotos',ri,db.rooms[ri].photos);
+    toast('ลบแล้ว');
+    pagePhotos(ri);
+  }
+}
 window.delPhoto=delPhoto;
 
 // ──────────── 10. IEP/IIP ────────────
