@@ -4623,32 +4623,54 @@ function pageSignedReport(){
   window._submitSignedReport=function(){
     var m=+document.getElementById('srMonth').value;
     var acY=+document.getElementById('srAcYear').value;
-    var y=m>=5?acY:acY+1; // พ.ค.-ธ.ค. = ปีเดียวกัน, ม.ค.-เม.ย. = ปีถัดไป
+    var y=m>=5?acY:acY+1;
     var fileInput=document.getElementById('srFile');
     var note=document.getElementById('srNote').value.trim();
 
     if(!fileInput.files.length){ toast('กรุณาเลือกไฟล์','err'); return; }
     var file=fileInput.files[0];
     if(file.size>15*1024*1024){ toast('ไฟล์ใหญ่เกิน 15MB','err'); return; }
+    if(!settings.scriptUrl){ toast('กรุณาตั้งค่า Script URL ก่อน','err'); return; }
+
+    toast('⏳ กำลังอัปโหลดไปยัง Google Drive...');
+    document.getElementById('srUploadBtn').disabled=true;
 
     var reader=new FileReader();
     reader.onload=function(e){
-      if(!r.signedReports) r.signedReports=[];
-      // ลบรายงานเดือนเดียวกันถ้ามีอยู่แล้ว
-      r.signedReports=r.signedReports.filter(function(rep){ return !(rep.acYear===acY&&rep.month===m); });
+      var base64=e.target.result;
       var today=new Date();
       var d=today.getDate()+' '+MONTHS_TH[today.getMonth()].substring(0,3)+'. '+(today.getFullYear()+543);
-      r.signedReports.push({
-        acYear:acY, month:m, year:y,
-        fileName:file.name,
-        fileUrl:e.target.result,
-        note:note,
-        uploadDate:d
+      var subFolder='MIS_รายงานเซ็น_'+ROOMS[ri];
+      var fileName='รายงาน_'+getMonthLabel(m,y)+'_'+ROOMS[ri].replace(/\./g,'')+(file.name.match(/\.[^.]+$/)||[''])[0];
+
+      fetch(settings.scriptUrl,{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({action:'uploadFile', fileData:base64, fileName:fileName, subFolder:subFolder})
+      })
+      .then(function(res){ return res.json(); })
+      .then(function(data){
+        document.getElementById('srUploadBtn').disabled=false;
+        if(data.status!=='ok'){ toast('อัปโหลดไม่สำเร็จ: '+(data.message||''),'err'); return; }
+        if(!r.signedReports) r.signedReports=[];
+        r.signedReports=r.signedReports.filter(function(rep){ return !(rep.acYear===acY&&rep.month===m); });
+        r.signedReports.push({
+          acYear:acY, month:m, year:y,
+          fileName:fileName,
+          fileUrl:data.url,
+          fileId:data.fileId,
+          note:note,
+          uploadDate:d
+        });
+        saveLocal();
+        document.getElementById('srUploadForm').style.display='none';
+        renderList();
+        toast('✅ อัปโหลดสำเร็จ — บันทึกลง Google Drive แล้ว');
+      })
+      .catch(function(err){
+        document.getElementById('srUploadBtn').disabled=false;
+        toast('เชื่อมต่อไม่ได้: '+err.message,'err');
       });
-      saveLocal();
-      document.getElementById('srUploadForm').style.display='none';
-      renderList();
-      toast('✅ อัปโหลดรายงานเรียบร้อย');
     };
     reader.readAsDataURL(file);
   };
@@ -4700,7 +4722,7 @@ function pageSignedReport(){
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
       <button onclick="document.getElementById('srUploadForm').style.display='none'" style="padding:6px 14px;border:1px solid var(--border);background:transparent;border-radius:6px;font-size:12px;cursor:pointer">ยกเลิก</button>
-      <button onclick="window._submitSignedReport()" style="padding:6px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">💾 บันทึก</button>
+      <button id="srUploadBtn" onclick="window._submitSignedReport()" style="padding:6px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">💾 บันทึก</button>
     </div>
   </div>`:''}
 
