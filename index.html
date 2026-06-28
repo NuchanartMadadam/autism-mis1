@@ -4540,14 +4540,7 @@ window.importJSON=importJSON;
 
 // ──────────── INIT ────────────
 loadLocal();
-</script>
-  <div style="text-align:center;padding:12px 0;font-size:12px;color:#999;border-top:1px solid #eee;margin-top:2rem;background:#fafafa">
-    พัฒนาโดย <strong style="color:var(--primary)">นางสาวนุชนารถ หมัดอะดั้ม</strong>
-    &nbsp;|&nbsp; ระบบสารสนเทศห้องเรียนคู่ขนานบุคคลออทิสติก
-    &nbsp;|&nbsp; ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา
-  </div>
-</body>
-</html>
+
 // ===== PAGE: รายงานฉบับเซ็น =====
 function pageSignedReport(){
   var ri=ar;
@@ -4598,7 +4591,7 @@ function pageSignedReport(){
             +'<div style="font-weight:600;font-size:13px">รายงานประจำเดือน '+getMonthLabel(rep.month,rep.year)+'</div>'
             +'<div style="font-size:11px;color:var(--text-muted)">'+ROOMS[ri]+' · ปีการศึกษา '+rep.acYear+' · อัปโหลดเมื่อ '+rep.uploadDate+'</div>'
           +'</div>'
-          +(rep.fileUrl?'<button onclick="window.open(''+rep.fileUrl+'','_blank')" style="padding:4px 10px;border:1px solid var(--primary);color:var(--primary);background:transparent;border-radius:5px;font-size:11px;cursor:pointer">👁 ดู</button>':'')
+          +(rep.fileUrl?'<a href="'+rep.fileUrl+'" target="_blank" style="padding:4px 10px;border:1px solid var(--primary);color:var(--primary);border-radius:5px;font-size:11px;text-decoration:none">👁 ดู</a>':'')
           +(cu.role!=='viewer'?'<button onclick="window._delSignedReport('+i+')" style="padding:4px 10px;border:1px solid #fca5a5;color:#ef4444;background:transparent;border-radius:5px;font-size:11px;cursor:pointer">🗑</button>':'')
         +'</div>';
       });
@@ -4695,7 +4688,7 @@ function pageSignedReport(){
     <select id="srFilterMonth" onchange="window._srFilterMonth(this.value)" style="padding:6px 10px;border:1px solid var(--border);border-radius:6px;background:var(--surface-1);font-size:12px;color:var(--text-primary)">
       ${filterMonthOpts}
     </select>
-    ${cu.role!=='viewer'?'<button onclick="document.getElementById('srUploadForm').style.display='block'" style="padding:6px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">+ อัปโหลดรายงาน</button>':''}
+    ${cu.role!=='viewer'?'<button onclick="window._showSRForm()" style="padding:6px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">+ อัปโหลดรายงาน</button>':''}
   </div>
 
   <!-- Upload Form -->
@@ -4721,7 +4714,7 @@ function pageSignedReport(){
       <input id="srFile" type="file" accept=".pdf,.jpg,.jpeg,.png" style="width:100%;padding:6px;border:1px solid var(--border);border-radius:6px;font-size:12px;background:var(--bg-primary)">
     </div>
     <div style="display:flex;gap:8px;justify-content:flex-end">
-      <button onclick="document.getElementById('srUploadForm').style.display='none'" style="padding:6px 14px;border:1px solid var(--border);background:transparent;border-radius:6px;font-size:12px;cursor:pointer">ยกเลิก</button>
+      <button onclick="window._hideSRForm()" style="padding:6px 14px;border:1px solid var(--border);background:transparent;border-radius:6px;font-size:12px;cursor:pointer">ยกเลิก</button>
       <button id="srUploadBtn" onclick="window._submitSignedReport()" style="padding:6px 14px;background:var(--primary);color:#fff;border:none;border-radius:6px;font-size:12px;cursor:pointer">💾 บันทึก</button>
     </div>
   </div>`:''}
@@ -4731,6 +4724,8 @@ function pageSignedReport(){
   document.getElementById('mainContent').innerHTML=html;
   setNav('signedReport');
 
+  window._showSRForm=function(){ document.getElementById('srUploadForm').style.display='block'; };
+  window._hideSRForm=function(){ document.getElementById('srUploadForm').style.display='none'; };
   window._srFilterYear=function(y){
     selYear=+y;
     // อัพเดต filter month options
@@ -4765,3 +4760,14 @@ function pageSignedReport(){
   renderList();
 }
 window.pageSignedReport=pageSignedReport;
+
+
+
+</script>
+  <div style="text-align:center;padding:12px 0;font-size:12px;color:#999;border-top:1px solid #eee;margin-top:2rem;background:#fafafa">
+    พัฒนาโดย <strong style="color:var(--primary)">นางสาวนุชนารถ หมัดอะดั้ม</strong>
+    &nbsp;|&nbsp; ระบบสารสนเทศห้องเรียนคู่ขนานบุคคลออทิสติก
+    &nbsp;|&nbsp; ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา
+  </div>
+</body>
+</html>
