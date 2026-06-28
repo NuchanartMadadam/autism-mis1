@@ -3011,28 +3011,28 @@ function pagePhotos(ri){
     var g=groups[key];
     var pics=g.photos;
     var dateLabel=g.date?toBEDate(g.date)+(g.dateEnd&&g.dateEnd!==g.date?' ถึง '+toBEDate(g.dateEnd):''):'';
-    // แสดงรูปสูงสุด 4 รูปแรกใน grid
-    var previewPics=pics.slice(0,4);
+    // กรองเฉพาะรูปที่มี imgUrl จริง
+    var validPics2=pics.filter(function(p){return p.imgUrl&&p.imgUrl.length>10;});
+    var previewPics=validPics2.slice(0,4);
     var cols=previewPics.length>=2?2:1;
     h+='<div style="border:1px solid var(--border);border-radius:8px;overflow:hidden;background:#fff">';
     h+='<div style="display:grid;grid-template-columns:repeat('+cols+',1fr);gap:1px;background:#eee">';
+    if(!previewPics.length){
+      h+='<div style="height:120px;background:#f0f4f8;display:flex;align-items:center;justify-content:center;font-size:28px">🖼️</div>';
+    }
     previewPics.forEach(function(p){
       var imgUrl=p.imgUrl||'';
       var imgSrc=imgUrl.startsWith('data:')?imgUrl:(imgUrl?driveImgSrc(imgUrl):'');
-      if(imgSrc){
-        h+='<img src="'+imgSrc+'" style="width:100%;height:100px;object-fit:cover;display:block" onerror="this.style.display=chr(92)+chr(39)+chr(110)+chr(111)+chr(110)+chr(101)+chr(92)+chr(39)"/>';
-      } else {
-        h+='<div style="height:100px;background:#f0f4f8;display:flex;align-items:center;justify-content:center;font-size:24px">🖼️</div>';
-      }
+      h+='<img src="'+imgSrc+'" style="width:100%;height:120px;object-fit:cover;display:block" onerror="this.hidden=true"/>';
     });
-    if(pics.length>4){
-      h+='<div style="height:100px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600">+'+(pics.length-4)+'</div>';
+    if(validPics2.length>4){
+      h+='<div style="height:120px;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;font-weight:600">+'+(validPics2.length-4)+'</div>';
     }
     h+='</div>';
     h+='<div style="padding:8px">';
     h+='<div style="font-size:12px;font-weight:600;color:#333;margin-bottom:2px">'+esc(g.caption)+'</div>';
     h+='<div style="font-size:11px;color:var(--muted)">'+esc(g.month)+(dateLabel?' | '+dateLabel:'')+'</div>';
-    h+='<div style="font-size:11px;color:var(--primary)">🖼 '+pics.length+' ภาพ</div>';
+    h+='<div style="font-size:11px;color:var(--primary)">🖼 '+validPics2.length+' ภาพ</div>';
     h+='</div>';
     h+='<div style="padding:0 8px 8px;display:flex;gap:6px">';
     h+='<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-key="'+encodeURIComponent(key)+'" onclick="editPhotoGroup(+this.dataset.ri,decodeURIComponent(this.dataset.key))">✏️ แก้ไข</button>';
@@ -3058,7 +3058,9 @@ function editPhotoGroup(ri,caption){
   var groupPics=allPh.filter(function(p){return (p.caption||'(ไม่ระบุ)')===caption;});
   if(!groupPics.length) return;
   var first=groupPics[0];
-  window._multiPhotoFiles=groupPics.map(function(p){return {name:'existing',data:p.imgUrl||'',existing:true};});
+  // กรองเฉพาะรูปที่มี imgUrl จริงๆ
+  var validPics=groupPics.filter(function(p){return p.imgUrl&&p.imgUrl.length>10;});
+  window._multiPhotoFiles=validPics.map(function(p){return {name:'existing',data:p.imgUrl,existing:true};});
   window._editPhotoGroup={ri:ri,caption:caption};
 
   var selMonth=first.month||MONTHS[viewMonth-1];
@@ -3081,7 +3083,7 @@ function editPhotoGroup(ri,caption){
   html+='</div>';
   html+='<div id="ph_preview_grid" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:8px">';
   // แสดงรูปเดิม
-  groupPics.forEach(function(p,pi){
+  validPics.forEach(function(p,pi){
     var imgSrc=p.imgUrl||'';
     if(imgSrc.startsWith('data:')||imgSrc.startsWith('http')){
       html+='<div id="ph_ex_'+pi+'" style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">';
