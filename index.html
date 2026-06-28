@@ -968,10 +968,11 @@ function _processPhotoFiles(files){
       compressImg(ev.target.result,800,0.65,function(compressed){
         var idx=window._multiPhotoFiles.length;
         window._multiPhotoFiles.push({name:f.name,data:compressed});
+        var cellId='ph_cell_'+idx+'_'+Date.now();
         if(grid){
           var cell=document.createElement('div');
           cell.style.cssText='position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)';
-          cell.id='ph_cell_'+idx;
+          cell.id=cellId;
           var img=document.createElement('img');
           img.src=compressed;
           img.style.cssText='width:100%;height:250px;object-fit:cover;display:block';
@@ -979,7 +980,15 @@ function _processPhotoFiles(files){
           btn.textContent='✕';
           btn.style.cssText='position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.6);color:#fff;border:none;border-radius:50%;width:20px;height:20px;cursor:pointer;font-size:12px;padding:0;line-height:1';
           btn.setAttribute('data-pidx',idx);
-          btn.onclick=function(){removePhotoPreview(+this.getAttribute('data-pidx'));};
+          btn.setAttribute('data-cellid',cellId);
+          btn.onclick=function(){
+            window._multiPhotoFiles[+this.getAttribute('data-pidx')]=null;
+            var c=document.getElementById(this.getAttribute('data-cellid'));
+            if(c)c.remove();
+            var remain=(window._multiPhotoFiles||[]).filter(function(x){return x;}).length;
+            var countEl=document.getElementById('ph_count');
+            if(countEl)countEl.textContent='เลือกแล้ว '+remain+' รูป';
+          };
           var label=document.createElement('div');
           label.style.cssText='font-size:9px;padding:2px 4px;background:#f5f5f5;color:#555;white-space:nowrap;overflow:hidden;text-overflow:ellipsis';
           label.textContent=f.name;
