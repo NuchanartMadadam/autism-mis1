@@ -3021,8 +3021,8 @@ function pagePhotos(ri){
     h+='<div style="font-size:11px;color:var(--primary)">🖼 '+pics.length+' ภาพ</div>';
     h+='</div>';
     h+='<div style="padding:0 8px 8px;display:flex;gap:6px">';
-    h+='<button class="btn btn-outline btn-sm" onclick="editPhotoGroup('+ri+','+JSON.stringify(key)+')">✏️ แก้ไข</button>';
-    h+='<button class="btn btn-danger btn-sm" onclick="delPhotoGroup('+ri+','+JSON.stringify(key)+')">🗑️ ลบ</button>';
+    h+='<button class="btn btn-outline btn-sm" data-ri="'+ri+'" data-key="'+encodeURIComponent(key)+'" onclick="editPhotoGroup(+this.dataset.ri,decodeURIComponent(this.dataset.key))">✏️ แก้ไข</button>';
+    h+='<button class="btn btn-danger btn-sm" data-ri="'+ri+'" data-key="'+encodeURIComponent(key)+'" onclick="delPhotoGroup(+this.dataset.ri,decodeURIComponent(this.dataset.key))">🗑️ ลบ</button>';
     h+='</div>';
     h+='</div>';
   });
