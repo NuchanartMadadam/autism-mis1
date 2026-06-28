@@ -1673,7 +1673,12 @@ function render(h){
     setTimeout(hideActionsIfViewer,50);
   }
 }
-function getRooms(){return cu.role==='admin'?[0,1,2]:[cu.roomId];}
+function getRooms(){
+  if(!cu) return [0];
+  if(cu.role==='admin'||cu.role==='viewer') return [0,1,2];
+  var rid = cu.roomId;
+  return (rid!==undefined && rid!==null) ? [+rid] : [0];
+}
 function setNav(p){document.querySelectorAll('.nav-item').forEach(el=>el.classList.remove('active'));const n=document.getElementById('nav-'+p);if(n)n.classList.add('active');}
 function roomTabs(ri,fn){
   return '<div class="room-tabs">'+getRooms().map(function(i){
@@ -1962,9 +1967,9 @@ function showPage(p){
 function pageDashboard(){
   var now=new Date();
   var dp=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0');
-  // guard rooms
+  // guard rooms — สร้างห้องว่างถ้ายังไม่มีข้อมูล
   while(db.rooms.length<3)db.rooms.push(mkRoom());
-  for(var _gi=0;_gi<3;_gi++){if(!db.rooms[_gi]||!db.rooms[_gi].students)db.rooms[_gi]=mkRoom();}
+  for(var _gi=0;_gi<3;_gi++){if(!db.rooms[_gi]||typeof db.rooms[_gi].students==='undefined')db.rooms[_gi]=Object.assign(mkRoom(),db.rooms[_gi]||{});}
 
   var totS=0,totT=0;
   getRooms().forEach(function(ri2){
@@ -3707,7 +3712,7 @@ window.selRepRoom=function(ri){
 };
 
 function buildReport(){
-  const ri=repRoom;const r=db.rooms[ri];const mn=MONTHS[repMonth-1];const yr=repYear;
+  const ri=repRoom;const r=db.rooms[ri]||mkRoom();const mn=MONTHS[repMonth-1];const yr=repYear;
   const key=String(yr-543)+'-'+repMonth;const att=r.attendance[key]||{};
   const _repYrCE=+String(yr-543);const _repMnNum=repMonth;
   const _repActiveStus=r.students.filter(function(s){return isStudentActiveIn(s,_repYrCE,_repMnNum);});
@@ -4143,7 +4148,7 @@ function pageStats(){
   h+='</tbody></table></div>';
   h+='<div class="card"><h3>สถิติการเข้าเรียน '+MONTHS[mn-1]+' '+(yr+543)+'</h3><table><thead><tr><th>ห้องเรียน</th><th>มา</th><th>ขาด</th><th>ลา</th><th>หยุด</th><th>อัตรา</th></tr></thead><tbody>';
   getRooms().forEach(function(i){
-    var r=(db.rooms||[])[i],att=r.attendance[key]||{},p=0,a=0,l=0,w=0;
+    var r=(db.rooms||[])[i]||mkRoom(),att=r.attendance[key]||{},p=0,a=0,l=0,w=0;
     r.students.forEach(function(s){Object.values(att[s.name]||{}).forEach(function(v){if(v==='P')p++;else if(v==='A')a++;else if(v==='L')l++;else if(v==='W')w++;});});
     var tot=p+a+l,pct=tot>0?Math.round(p/tot*100):0;
     h+='<tr><td>'+RS[i]+'</td><td style="text-align:center;color:var(--success);font-weight:700">'+p+'</td><td style="text-align:center;color:var(--danger);font-weight:700">'+a+'</td><td style="text-align:center;color:var(--warn);font-weight:700">'+l+'</td><td style="text-align:center;color:#555;font-weight:700">'+w+'</td><td style="text-align:center;font-weight:700">'+pct+'%</td></tr>';
