@@ -3911,42 +3911,49 @@ function buildReport(){
     h+='</table>';
   }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานการอบรมในเดือนนี้</p>`;}
 
-  h+=`</div><div class="rep-last-block"><div class="rep-section">`;
+  h+=`</div><div class="rep-section">`;
   const repComImg=coms.filter(function(c){return (c.photos&&c.photos.length)||c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2});});
-  if(repComImg.length){
-    h+='<table style="width:100%;border-collapse:collapse;margin-top:0">';
-    h+='<thead><tr><th colspan="3" style="background:#2d7d3a;padding:6px 10px;text-align:left;color:#fff;font-size:12px;font-weight:700">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</th></tr></thead><tbody>';
-    var isFirst11=true;
-    repComImg.forEach(function(c){
-      var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
-      var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
-      var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' – '+toBEDate(c.dateEnd):'');
-      h+='<tr class="photo-group-header"><td colspan="3" style="padding:0">'
-        +'<div style="background:#e8f4ed;padding:7px 10px;'+(isFirst11?'':'border-top:1.5px solid #a5d6b5;')+'border-bottom:1px solid #a5d6b5">'
-        +'<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>'
-        +(c.place?'<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>':'')
-        +(c.participants?'<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(c.participants)+'</div>':'')
-        +(cmDateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+cmDateRange+'</div>':'')
-        +'</div></td></tr>';
-      isFirst11=false;
-      if(hasPics){
-        var triples=[];
-        for(var pi=0;pi<allPics.length;pi+=3) triples.push(allPics.slice(pi,pi+3));
-        triples.forEach(function(trio){
-          h+='<tr>';
-          trio.forEach(function(pic){
-            var src=driveImgSrc(pic||'');
-            h+='<td style="width:33.33%;padding:3px">'
-              +(src?'<img src="'+src+'" style="width:100%;height:160px;object-fit:cover;border-radius:4px;display:block" onerror="this.hidden=true"/>':'')
-              +'</td>';
-          });
-          while(trio.length<3){ h+='<td style="width:33.33%"></td>'; trio.push(null); }
-          h+='</tr>';
+  function _renderComRow(c,isFirst){
+    var allPics=(c.photos&&c.photos.length)?c.photos:(c.imgUrl?[c.imgUrl]:[]);
+    var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
+    var cmDateRange=toBEDate(c.date)+(c.dateEnd&&c.dateEnd!==c.date?' - '+toBEDate(c.dateEnd):'');
+    var out='<tr class="photo-group-header"><td colspan="3" style="padding:0">'
+      +'<div style="background:#e8f4ed;padding:7px 10px;'+(isFirst?'':'border-top:1.5px solid #a5d6b5;')+'border-bottom:1px solid #a5d6b5">'
+      +'<div style="font-size:12px;font-weight:700;color:#2d7d3a">'+esc(c.activity||'(ไม่ระบุกิจกรรม)')+'</div>'
+      +(c.place?'<div style="font-size:11px;color:#555;margin-top:2px">📍 '+esc(c.place)+'</div>':'')
+      +(c.participants?'<div style="font-size:11px;color:#555;margin-top:2px">👤 '+esc(c.participants)+'</div>':'')
+      +(cmDateRange?'<div style="font-size:11px;color:#888;margin-top:2px">📅 '+cmDateRange+'</div>':'')
+      +'</div></td></tr>';
+    if(hasPics){
+      var triples=[];
+      for(var pi=0;pi<allPics.length;pi+=3) triples.push(allPics.slice(pi,pi+3));
+      triples.forEach(function(trio){
+        out+='<tr>';
+        trio.forEach(function(pic){
+          var src=driveImgSrc(pic||'');
+          out+='<td style="width:33.33%;padding:3px">'+(src?'<img src="'+src+'" style="width:100%;height:160px;object-fit:cover;border-radius:4px;display:block" onerror="this.hidden=true"/>':'')+'</td>';
         });
-      }
-    });
-    h+='</table>';
-  }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>`;}
+        while(trio.length<3){out+='<td style="width:33.33%"></td>';trio.push(null);}
+        out+='</tr>';
+      });
+    }
+    return out;
+  }
+  if(repComImg.length){
+    var comAllButLast=repComImg.slice(0,-1);
+    var comLast=repComImg[repComImg.length-1];
+    if(comAllButLast.length){
+      h+='<table style="width:100%;border-collapse:collapse;margin-top:0">';
+      h+='<thead><tr><th colspan="3" style="background:#2d7d3a;padding:6px 10px;text-align:left;color:#fff;font-size:12px;font-weight:700">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</th></tr></thead><tbody>';
+      comAllButLast.forEach(function(c,i){h+=_renderComRow(c,i===0);});
+      h+='</tbody></table>';
+    }
+    h+='<div class="rep-last-block"><table style="width:100%;border-collapse:collapse;margin-top:0">';
+    if(!comAllButLast.length){h+='<thead><tr><th colspan="3" style="background:#2d7d3a;padding:6px 10px;text-align:left;color:#fff;font-size:12px;font-weight:700">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</th></tr></thead>';}
+    h+='<tbody>'+_renderComRow(comLast,!comAllButLast.length)+'</tbody></table>';
+  }else{
+    h+='<div class="rep-last-block"><p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>';
+  }
 
   ;
   // นักเรียนที่สิ้นสุดการรับบริการในเดือนนี้
@@ -3986,7 +3993,7 @@ function buildReport(){
     h+=_html;
   })();
 
-h+=`<div style="margin-top:3rem;font-size:12px">
+h+=`<div class="sig-wrap" style="margin-top:3rem;font-size:12px">
     ${(function(){
       if(!tchList.length){
         return '<table class="sig-table" style="width:100%;margin-top:8px"><tr>'
@@ -4083,6 +4090,8 @@ function printReport(){
       img{max-width:100%;height:auto;border-radius:4px}
       .rep-section{margin-bottom:10px;page-break-inside:auto}
       .rep-last-block{page-break-before:always;break-before:always;display:block}
+      /* ลายเซ็นติดกับ content สุดท้ายเสมอ */
+      .sig-wrap{page-break-before:avoid!important;break-before:avoid!important}
       .photo-grid-print{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}
       .photo-cell{text-align:center;break-inside:avoid}
       .photo-cell img{width:100%;max-height:120px;object-fit:cover;border:1px solid #ccc;border-radius:4px}
