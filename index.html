@@ -1102,10 +1102,11 @@ function _processMultiPhoto2(files,prefix){
       compressImg(ev.target.result,800,0.7,function(compressed){
         var idx=window._multiPhoto2[prefix].length;
         window._multiPhoto2[prefix].push(compressed);
+        var cellId2=prefix+'_ph2_'+idx+'_'+Date.now();
         if(grid){
           var cell=document.createElement('div');
           cell.style.cssText='position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)';
-          cell.id=prefix+'_ph2_'+idx;
+          cell.id=cellId2;
           var img=document.createElement('img');
           img.src=compressed;
           img.style.cssText='width:100%;height:70px;object-fit:cover;display:block';
@@ -1114,7 +1115,20 @@ function _processMultiPhoto2(files,prefix){
           btn.style.cssText='position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer';
           btn.setAttribute('data-prefix',prefix);
           btn.setAttribute('data-idx',idx);
-          btn.onclick=function(){removeMultiPhoto2(this.getAttribute('data-prefix'),+this.getAttribute('data-idx'));};
+          btn.setAttribute('data-cellid2',cellId2);
+          btn.onclick=function(){
+            var pr=this.getAttribute('data-prefix');
+            var di=+this.getAttribute('data-idx');
+            var cid=this.getAttribute('data-cellid2');
+            if(window._multiPhoto2&&window._multiPhoto2[pr]) window._multiPhoto2[pr][di]=null;
+            var c=document.getElementById(cid);
+            if(c)c.remove();
+            var countEl=document.getElementById(pr+'_photo_count');
+            if(countEl){
+              var remain=(window._multiPhoto2[pr]||[]).filter(function(x){return x;}).length;
+              countEl.textContent='เลือกแล้ว '+remain+' รูป';
+            }
+          };
           cell.appendChild(img);cell.appendChild(btn);
           grid.appendChild(cell);
         }
@@ -1125,6 +1139,21 @@ function _processMultiPhoto2(files,prefix){
   });
 }
 window._processMultiPhoto2=_processMultiPhoto2;
+
+function _rmExPhoto(prefix,pi){
+  // ลบรูปเดิม (existing) ออกจาก _multiPhoto2
+  if(window._multiPhoto2&&window._multiPhoto2[prefix]){
+    window._multiPhoto2[prefix][pi]=null;
+  }
+  var cell=document.getElementById(prefix+'_ex_'+pi);
+  if(cell)cell.remove();
+  var countEl=document.getElementById(prefix+'_photo_count');
+  if(countEl){
+    var remain=(window._multiPhoto2[prefix]||[]).filter(function(x){return x;}).length;
+    countEl.textContent='เลือกแล้ว '+remain+' รูป';
+  }
+}
+window._rmExPhoto=_rmExPhoto;
 
 function removeMultiPhoto2(prefix,idx){
   if(window._multiPhoto2&&window._multiPhoto2[prefix])window._multiPhoto2[prefix][idx]=null;
@@ -2730,9 +2759,11 @@ function trainingForm(ri,t){
   h+='<input type="file" id="tr_photo_input" accept="image/*" multiple style="display:none" onchange="handleMultiPhotoInput2(event,\'tr\')"/>';
   h+='<div id="tr_photo_grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
   trPhotos.forEach(function(p,pi){
-    h+='<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'      +'<button onclick="removeMultiPhoto2(\'tr\','+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'      +'</div>';
+    h+='<div id="tr_ex_'+pi+'" style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'
+      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'
+      +'<button onclick="_rmExPhoto(&#39;tr&#39;,'+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'
+      +'</div>';
   });
-  h+='</div>';
   h+='<div id="tr_photo_count" style="font-size:11px;color:var(--primary);margin-top:4px">'+( trPhotos.length?trPhotos.length+' รูป':'')+'</div>';
   h+='</div>';
   return h;
@@ -2840,9 +2871,11 @@ function comForm(c,ri){
   h+='<input type="file" id="cm_photo_input" accept="image/*" multiple style="display:none" onchange="handleMultiPhotoInput2(event,\'cm\')"/>';
   h+='<div id="cm_photo_grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
   cmPhotos.forEach(function(p,pi){
-    h+='<div style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'      +'<button onclick="removeMultiPhoto2(\'cm\','+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'      +'</div>';
+    h+='<div id="cm_ex_'+pi+'" style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'
+      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'
+      +'<button onclick="_rmExPhoto(&#39;cm&#39;,'+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'
+      +'</div>';
   });
-  h+='</div>';
   h+='<div id="cm_photo_count" style="font-size:11px;color:var(--primary);margin-top:4px">'+( cmPhotos.length?cmPhotos.length+' รูป':'')+'</div>';
   h+='</div>';
   return h;
