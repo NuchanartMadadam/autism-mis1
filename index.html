@@ -2022,7 +2022,7 @@ function pageDashboard(){
     var r=db.rooms[ri2]||mkRoom();
     var svc=(r.services||[]).filter(function(s){return s&&s.date&&s.date.startsWith(dp);}).length;
     var _now2=new Date();
-    var _activeStu=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_now2.getFullYear(),_now2.getMonth()+1);}).length;
+    var _activeStu=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_now2.getFullYear(),_now2.getMonth()+1,_now2.getDate());}).length;
     h+='<tr><td>'+RS[ri2]+'</td><td style="text-align:center">'+(r.teachers||[]).length+' คน</td><td style="text-align:center">'+_activeStu+' คน</td><td style="text-align:center">'+svc+' ครั้ง</td></tr>';
   });
   h+='</tbody></table></div></div>';
@@ -3427,7 +3427,7 @@ function pageIEP(ri, acYear){
 
   // ปุ่มเพิ่มแผนสำหรับนักเรียนที่ยังไม่มี (dropdown เลือกชื่อ)
   var stuWithoutPlan=r.students.filter(function(s){
-    if(!isStudentActiveIn(s,new Date().getFullYear(),new Date().getMonth()+1)) return false;
+    if(!isStudentActiveIn(s,new Date().getFullYear(),new Date().getMonth()+1,new Date().getDate())) return false;
     var iepHas=(s.iep||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
     var iipHas=(s.iip||[]).some(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
     return !iepHas&&!iipHas;
