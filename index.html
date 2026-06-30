@@ -4069,25 +4069,35 @@ function printReport(){
     +'.sig-grid{margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px}';
   doc.head.appendChild(styleEl);
 
-  // ย้าย node เดิมไปยัง iframe โดยตรง (ไม่ clone เลย) เพื่อหลีกเลี่ยง bug ของ cloneNode
-  // ใน Chrome ที่ตัดทอนเอกสารขนาดใหญ่แบบเงียบๆ จากนั้นย้ายกลับที่เดิมหลังพิมพ์เสร็จ
+  console.log('[printReport] BEFORE move - c has sig-wrap:', c.innerHTML.includes('sig-wrap'), 'length:', c.innerHTML.length);
+
+  // ย้าย node เดิมไปยัง iframe โดยตรงด้วย adoptNode (ออกแบบมาสำหรับย้าย node ข้าม document)
+  // เพื่อหลีกเลี่ยง bug ของ cloneNode ใน Chrome ที่ตัดทอนเอกสารขนาดใหญ่แบบเงียบๆ
   var originalParent=c.parentNode;
   var originalNextSibling=c.nextSibling;
-  doc.body.appendChild(c);
+
+  var adopted=doc.adoptNode(c);
+  doc.body.appendChild(adopted);
+
+  console.log('[printReport] AFTER move - adopted has sig-wrap:', adopted.innerHTML.includes('sig-wrap'), 'length:', adopted.innerHTML.length);
+  console.log('[printReport] doc.body.innerHTML has sig-wrap:', doc.body.innerHTML.includes('sig-wrap'));
 
   function restoreAndCleanup(){
-    if(originalNextSibling){ originalParent.insertBefore(c, originalNextSibling); }
-    else{ originalParent.appendChild(c); }
+    var backNode=document.adoptNode(adopted);
+    if(originalNextSibling && originalNextSibling.parentNode===originalParent){ originalParent.insertBefore(backNode, originalNextSibling); }
+    else{ originalParent.appendChild(backNode); }
   }
 
   function doPrint(){
+    console.log('[printReport] doPrint called - iframe doc has sig-wrap:', iframe.contentDocument.body.innerHTML.includes('sig-wrap'));
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
-    setTimeout(restoreAndCleanup, 500);
+    setTimeout(restoreAndCleanup, 1000);
   }
   // รอ image โหลดก่อนสั่งพิมพ์
-  var imgs=c.querySelectorAll('img');
+  var imgs=adopted.querySelectorAll('img');
   var pending=imgs.length;
+  console.log('[printReport] waiting for', pending, 'images');
   if(pending===0){ setTimeout(doPrint, 300); }
   else{
     var done=0;
