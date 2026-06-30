@@ -1450,38 +1450,42 @@ function loadFromSheets(onDone){
     return;
   }
   showLoadingOverlay('กำลังโหลดข้อมูลจาก Google Sheets...');
-  fetch(settings.scriptUrl+'?action=loadAll')
-    .then(function(r){return r.json();})
-    .then(function(data){
-      if(data&&data.status==='ok'&&data.rooms){
-        // merge ข้อมูลจาก Sheets เข้า db
-        data.rooms.forEach(function(roomData,ri){
-          if(!roomData||!db.rooms[ri])return;
-          var r=db.rooms[ri];
-          // merge แต่ละ section
-          if(roomData.teachers&&roomData.teachers.length)r.teachers=roomData.teachers;
-          if(roomData.students&&roomData.students.length)r.students=roomData.students;
-          if(roomData.services&&roomData.services.length)r.services=roomData.services;
-          if(roomData.hrMonthly&&roomData.hrMonthly.length)r.hrMonthly=roomData.hrMonthly;
-          if(roomData.training&&roomData.training.length)r.training=roomData.training;
-          if(roomData.community&&roomData.community.length)r.community=roomData.community;
-          if(roomData.network&&roomData.network.length)r.network=roomData.network;
-        });
-        saveLocal();
-        hideLoadingOverlay();
-        toast('โหลดข้อมูลจาก Google Sheets สำเร็จ ✓');
-        if(onDone)onDone(true);
-      } else {
-        hideLoadingOverlay();
-        toast('ใช้ข้อมูลจาก cache (ไม่สามารถโหลดจาก Sheets ได้)','warn');
-        if(onDone)onDone(false);
-      }
+  var rooms=[0,1,2];
+  var done=0,anyOk=false;
+  rooms.forEach(function(ri){
+    fetch(settings.scriptUrl,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({action:'loadAll', roomIndex:ri})
     })
-    .catch(function(e){
-      hideLoadingOverlay();
-      toast('ใช้ข้อมูลจาก cache — '+e.message,'warn');
-      if(onDone)onDone(false);
-    });
+      .then(function(r){return r.json();})
+      .then(function(res){
+        if(res&&res.status==='ok'&&res.data){
+          anyOk=true;
+          var d=res.data,cur=db.rooms[ri]||mkRoom();
+          d.students=(d.students||[]).map(function(s){
+            var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
+            s.iep=old.iep||[]; s.iip=old.iip||[];
+            return s;
+          });
+          d.schedules=cur.schedules||[];
+          d.holidays=cur.holidays||{};
+          d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
+          db.rooms[ri]=Object.assign(cur,d);
+        }
+      })
+      .catch(function(e){console.warn('loadFromSheets room '+ri+' failed:',e);})
+      .finally(function(){
+        done++;
+        if(done>=rooms.length){
+          saveLocal();
+          hideLoadingOverlay();
+          if(anyOk) toast('โหลดข้อมูลจาก Google Sheets สำเร็จ ✓');
+          else toast('ใช้ข้อมูลจาก cache (ไม่สามารถโหลดจาก Sheets ได้)','warn');
+          if(onDone)onDone(anyOk);
+        }
+      });
+  });
 }
 window.loadFromSheets=loadFromSheets;
 
