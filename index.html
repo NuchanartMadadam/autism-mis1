@@ -3806,6 +3806,7 @@ function buildReport(){
   })();
   h+=_attRows;
   h+='</tbody></table>';
+  console.log('[CP-after-sec3]', h.length);
 
   h+='<div class="rep-section"><h3>4. บันทึกการให้บริการทางวิชาการ ('+svcs.length+' ครั้ง)</h3>';
   if(svcs.length){h+='<table class="rep-table"><thead><tr><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียดการให้บริการ</th><th>ผู้ให้บริการ</th></tr></thead><tbody>';svcs.forEach(function(sv){h+='<tr><td>'+esc(sv.student||'')+'</td><td>'+esc(sv.detail||'')+'</td><td>'+esc(sv.provider||'')+'</td></tr>';});h+='</tbody></table>';}
@@ -3870,6 +3871,7 @@ function buildReport(){
     });
     h+='</div>';
   }else{h+='<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน '+mn+'</p>';}
+  console.log('[CP-after-sec9]', h.length);
 
   h+='</div><div class="rep-section">';
   const repTrImg=trns.filter(function(t){return (t.photos&&t.photos.length)||t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u,photos:(t.photos||[]).filter(function(p){return p&&p.length>10;})});});
@@ -3909,6 +3911,7 @@ function buildReport(){
     });
     h+='</div>';
 
+  console.log('[CP-after-sec10]', h.length);
   h+='</div><div class="rep-section">';
   const repComImg=coms.filter(function(c){return (c.photos&&c.photos.length)||c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2,photos:(c.photos||[]).filter(function(p){return p&&p.length>10;})});});
   function _renderComRow(c){
@@ -3954,6 +3957,7 @@ function buildReport(){
     h+='<div class="rep-last-block"><p style="font-size:12px;color:#999">ไม่มีภาพหลักฐานกิจกรรมชุมชนในเดือนนี้</p>';
   }
 
+  console.log('[CP-after-sec11-and-comstuff]', h.length);
   ;
   // นักเรียนที่สิ้นสุดการรับบริการในเดือนนี้
   (function(){
@@ -4006,11 +4010,13 @@ function buildReport(){
       }
       return '<table class="sig-table" style="width:100%;margin-top:8px">'+rows.join('')+'</table>';
     }());
+  console.log('[CP-before-close-rep-last]', h.length);
   h+='</div>';  // ปิด rep-last-block
   h+='<div class="rep-last-block">';  // เปิด rep-last-block ใหม่สำหรับลายเซ็น
   h+='<div class="sig-wrap" style="margin-top:3rem;font-size:12px">'
     +_sigHtml
     +'<table class="sig-table" style="width:100%;margin-top:0"><tr>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'หัวหน้าฝ่ายบริหารวิชาการ<br>'    +'วันที่ ........../........../..........</div></td>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'รองผู้อำนวยการฝ่ายบริหารวิชาการ<br>'    +'วันที่ ........../........../..........</div></td>'    +'</tr></table>'    +'<table class="sig-table" style="width:100%;margin-top:0"><tr>'    +'<td style="width:25%"></td>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'ผู้อำนวยการศูนย์การศึกษาพิเศษ<br>'    +'เขตการศึกษา 3 จังหวัดสงขลา<br>'    +'วันที่ ........../........../..........</div></td>'    +'<td style="width:25%"></td>'    +'</tr></table>'    +'</div></div>';
+  console.log('[CP-FINAL-before-assign]', h.length, 'has sig-wrap:', h.includes('sig-wrap'));
   const el=document.getElementById('repPreview');if(el)el.innerHTML=h;
 }
 }
@@ -4073,16 +4079,32 @@ function printReport(){
   var clone=c.cloneNode(true);
   doc.body.appendChild(clone);
 
-  iframe.onload=function(){
-    try{iframe.contentWindow.focus();iframe.contentWindow.print();}
-    catch(e){
-      var w=window.open('','_blank');
-      w.document.write(doc.documentElement.outerHTML);
-      w.document.close();
-    }
-  };
-  // เนื่องจากเราเขียน DOM โดยตรงแล้ว (ไม่ใช่ src=blobUrl) ให้เรียก onload เองทันทีหลัง DOM พร้อม
-  setTimeout(function(){ iframe.onload(); }, 300);
+  // debug check
+  console.log('[printReport] clone has sig-wrap:', clone.innerHTML.includes('sig-wrap'));
+  console.log('[printReport] doc.body has sig-wrap:', doc.body.innerHTML.includes('sig-wrap'));
+
+  function doPrint(){
+    console.log('[printReport] iframe doc body length:', iframe.contentDocument.body.innerHTML.length);
+    console.log('[printReport] iframe doc has sig-wrap:', iframe.contentDocument.body.innerHTML.includes('sig-wrap'));
+    iframe.contentWindow.focus();
+    iframe.contentWindow.print();
+  }
+  // เนื่องจากเราเขียน DOM โดยตรงแล้ว (ไม่ใช่ src=blobUrl) ให้รอ image โหลดก่อนสั่งพิมพ์
+  var imgs=clone.querySelectorAll('img');
+  var pending=imgs.length;
+  if(pending===0){ setTimeout(doPrint, 300); }
+  else{
+    var done=0;
+    imgs.forEach(function(img){
+      if(img.complete){ done++; if(done===pending) setTimeout(doPrint,200); }
+      else{
+        img.addEventListener('load', function(){ done++; if(done===pending) setTimeout(doPrint,200); });
+        img.addEventListener('error', function(){ done++; if(done===pending) setTimeout(doPrint,200); });
+      }
+    });
+    // safety timeout เผื่อรูปโหลดไม่จบ
+    setTimeout(doPrint, 5000);
+  }
 }
 window.printReport=printReport;
 
