@@ -3837,14 +3837,16 @@ function buildReport(){
       if(!photoGroups[key])photoGroups[key]=[];
       photoGroups[key].push(p);
     });
-    h+='<div style="background:#1a5fa8;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;border-radius:4px;margin-bottom:8px" class="sec9-head">9. ประมวลภาพกิจกรรมประจำเดือน</div>';
     var isFirst9=true;
     Object.keys(photoGroups).forEach(function(cap){
       var pics=photoGroups[cap].filter(function(p){return p.imgUrl&&p.imgUrl.length>10;});
       if(!pics.length) return;
       var firstP=pics[0];
       var dateRange=firstP.date?toBEDate(firstP.date)+(firstP.dateEnd&&firstP.dateEnd!==firstP.date?' – '+toBEDate(firstP.dateEnd):''):'';
-      if(isFirst9) h+='<div style="page-break-inside:avoid;break-inside:avoid">';
+      if(isFirst9){
+        h+='<div style="page-break-inside:avoid;break-inside:avoid">';
+        h+='<div style="background:#1a5fa8;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;border-radius:4px;margin-bottom:8px" class="sec9-head">9. ประมวลภาพกิจกรรมประจำเดือน</div>';
+      }
       // แต่ละกิจกรรมอยู่ใน div ที่มี page-break-inside:avoid
       h+='<div style="page-break-inside:avoid;break-inside:avoid;border:1px solid #e0e8f4;border-radius:6px;overflow:hidden;margin-bottom:8px">';
       h+='<div style="background:#e8f0fe;padding:7px 10px;border-bottom:1px solid #c5d8f6">';
@@ -3876,13 +3878,15 @@ function buildReport(){
   h+='</div><div class="rep-section">';
   const repTrImg=trns.filter(function(t){return (t.photos&&t.photos.length)||t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u,photos:(t.photos||[]).filter(function(p){return p&&p.length>10;})});});
   if(repTrImg.length){
-    h+='<div style="background:#1a5fa8;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;border-radius:4px;margin-bottom:8px">10. ภาพหลักฐานการสัมมนา/อบรม</div>';
     var isFirst10=true;
     repTrImg.forEach(function(t){
       var allPics=((t.photos&&t.photos.length)?t.photos:(t.imgUrl?[t.imgUrl]:[])).filter(function(p){return p&&p.length>10;});
       var hasPics=allPics.some(function(p){return driveImgSrc(p||'');});
       var dateRange=toBEDate(t.date)+(t.dateEnd&&t.dateEnd!==t.date?' – '+toBEDate(t.dateEnd):'');
-      if(isFirst10) h+='<div style="page-break-inside:avoid;break-inside:avoid">';
+      if(isFirst10){
+        h+='<div style="page-break-inside:avoid;break-inside:avoid">';
+        h+='<div style="background:#1a5fa8;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;border-radius:4px;margin-bottom:8px">10. ภาพหลักฐานการสัมมนา/อบรม</div>';
+      }
       h+='<div style="page-break-inside:avoid;break-inside:avoid;border:1px solid #e0e8f4;border-radius:6px;overflow:hidden;margin-bottom:8px">';
       h+='<div style="background:#e8f0fe;padding:7px 10px;border-bottom:1px solid #c5d8f6">';
       h+='<div style="font-size:12px;font-weight:700;color:#1a5fa8">'+esc(t.course||'(ไม่ระบุหลักสูตร)')+'</div>';
