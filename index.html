@@ -4006,6 +4006,8 @@ function buildReport(){
       }
       return '<table class="sig-table" style="width:100%;margin-top:8px">'+rows.join('')+'</table>';
     }());
+  h+='</div>';  // ปิด rep-last-block
+  h+='<div class="rep-last-block">';  // เปิด rep-last-block ใหม่สำหรับลายเซ็น
   h+='<div class="sig-wrap" style="margin-top:3rem;font-size:12px">'
     +_sigHtml
     +'<table class="sig-table" style="width:100%;margin-top:0"><tr>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'หัวหน้าฝ่ายบริหารวิชาการ<br>'    +'วันที่ ........../........../..........</div></td>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'รองผู้อำนวยการฝ่ายบริหารวิชาการ<br>'    +'วันที่ ........../........../..........</div></td>'    +'</tr></table>'    +'<table class="sig-table" style="width:100%;margin-top:0"><tr>'    +'<td style="width:25%"></td>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'ผู้อำนวยการศูนย์การศึกษาพิเศษ<br>'    +'เขตการศึกษา 3 จังหวัดสงขลา<br>'    +'วันที่ ........../........../..........</div></td>'    +'<td style="width:25%"></td>'    +'</tr></table>'    +'</div></div>';
