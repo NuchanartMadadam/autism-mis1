@@ -4053,7 +4053,7 @@ function printReport(){
     +'      /* ลายเซ็น table */\n'
     +'      .sig-table{width:100%;border-collapse:collapse;border:none}\n'
     +'      .sig-table td{border:none;text-align:center;vertical-align:top;padding:0 12px}\n'
-    +'      .sig-line{padding-top:6px;margin-top:14px;line-height:1.6;font-size:11px}\n'
+    +'      .sig-line{border-top:1px solid #333;padding-top:6px;margin-top:48px;line-height:1.6;font-size:11px}\n'
     +'      /* photo block ไม่แยกหน้า */\n'
     +'      .photo-block{page-break-inside:avoid;break-inside:avoid}\n'
     +'      @page{margin:10mm 8mm}\n'
@@ -4061,11 +4061,11 @@ function printReport(){
     +'        body{-webkit-print-color-adjust:exact;print-color-adjust:exact}\n'
     +'        .photo-block{page-break-inside:avoid;break-inside:avoid}\n'
     +'      }\n'
-    +'    </style>`;\n'
+    +'    </style>\n'
   ;
 
   // แปลง content — แทน sig grid ด้วย class ที่ถูกต้อง
-  let html = c.innerHTML;
+  let html = c.outerHTML;
   // แทน grid signature ให้ print ได้ดี
   html = html.replace(
     /style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px"/g,
