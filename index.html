@@ -4019,84 +4019,70 @@ window.buildReport=buildReport;
 function printReport(){
   const c=document.getElementById('repContent');
   if(!c){alert('กรุณารอโหลดรายงานก่อน');return;}
-  var printStyle=''
-    +'    <style>\n'
-    +'      @import url(\'https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap\');\n'
-    +'      *{box-sizing:border-box;margin:0;padding:0}\n'
-    +'      body{font-family:\'Sarabun\',sans-serif;font-size:12px;color:#000;line-height:1.7;background:#fff}\n'
-    +'      h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px}\n'
-    +'      h2{font-size:12px;font-weight:600;text-align:center;color:#333;margin-bottom:3px}\n'
-    +'      h3{font-size:11px;font-weight:700;border-bottom:1.5px solid #bbb;padding-bottom:3px;margin:12px 0 6px;color:#1a5fa8;page-break-after:avoid;break-after:avoid}\n'
-    +'      table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px;page-break-inside:auto}\n'
-    +'      thead{display:table-header-group}\n'
-    +'      th,td{border:none;padding:4px 6px}\n'
-    +'      .rep-table th,.rep-table td{border:1px solid #bbb}\n'
-    +'      th{background:#f0f0f0;font-weight:700;text-align:center}\n'
-    +'      tr{page-break-inside:avoid;break-inside:avoid}\n'
-    +'      /* photo table ไม่มี border */\n'
-    +'      .rep-section table:not(.rep-table) td{border:none!important;padding:2px}\n'
-    +'      .rep-section table:not(.rep-table) th{border:none!important}\n'
-    +'      .no-break{page-break-before:avoid!important;break-before:avoid!important}\n'
-    +'      /* header กิจกรรม + รูปแถวแรกต้องอยู่หน้าเดียวกัน */\n'
-    +'      .photo-group-header{page-break-after:avoid!important;break-after:avoid!important}\n'
-    +'      .photo-group-header + tr{page-break-before:avoid!important;break-before:avoid!important}\n'
-    +'      img{max-width:100%;height:auto;border-radius:4px}\n'
-    +'      .rep-section{margin-bottom:10px;page-break-inside:auto}\n'
-    +'      .rep-last-block{page-break-inside:avoid;break-inside:avoid;display:block}\n'
-    +'      /* ลายเซ็นติดกับ content สุดท้ายเสมอ */\n'
-    +'      .sig-wrap{page-break-before:avoid!important;break-before:avoid!important}\n'
-    +'      .photo-grid-print{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}\n'
-    +'      .photo-cell{text-align:center;break-inside:avoid}\n'
-    +'      .photo-cell img{width:100%;max-height:120px;object-fit:cover;border:1px solid #ccc;border-radius:4px}\n'
-    +'      .photo-cell div{font-size:10px;color:#555;margin-top:2px}\n'
-    +'      p{font-size:10px;color:#777;margin:3px 0}\n'
-    +'      /* ลายเซ็น table */\n'
-    +'      .sig-table{width:100%;border-collapse:collapse;border:none}\n'
-    +'      .sig-table td{border:none;text-align:center;vertical-align:top;padding:0 12px}\n'
-    +'      .sig-line{border-top:1px solid #333;padding-top:6px;margin-top:48px;line-height:1.6;font-size:11px}\n'
-    +'      /* photo block ไม่แยกหน้า */\n'
-    +'      .photo-block{page-break-inside:avoid;break-inside:avoid}\n'
-    +'      @page{margin:10mm 8mm}\n'
-    +'      @media print{\n'
-    +'        body{-webkit-print-color-adjust:exact;print-color-adjust:exact}\n'
-    +'        .photo-block{page-break-inside:avoid;break-inside:avoid}\n'
-    +'      }\n'
-    +'    </style>\n'
-  ;
 
-  // แปลง content — แทน sig grid ด้วย class ที่ถูกต้อง
-  let html = c.outerHTML;
-  // แทน grid signature ให้ print ได้ดี
-  html = html.replace(
-    /style="margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px"/g,
-    'class="sig-grid"'
-  );
-  html = html.replace(
-    /style="border-top:1px solid #999;padding-top:8px;margin-top:48px"/g,
-    'class="sig-line"'
-  );
-
-  var fullHtml='<!DOCTYPE html>'
-    +'<html lang="th">'
-    +'<head><meta charset="utf-8"/><title>รายงานประจำเดือน</title>'+printStyle+'</head>'
-    +'<body>'+html+'</body>'
-    +'</html>';
-
-  const blob=new Blob([fullHtml],{type:'text/html;charset=utf-8'});
-  const blobUrl=URL.createObjectURL(blob);
   let iframe=document.getElementById('printFrame');
-  if(!iframe){
-    iframe=document.createElement('iframe');
-    iframe.id='printFrame';
-    iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;opacity:0';
-    document.body.appendChild(iframe);
-  }
-  iframe.src=blobUrl;
+  if(iframe) iframe.remove();
+  iframe=document.createElement('iframe');
+  iframe.id='printFrame';
+  iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;opacity:0';
+  document.body.appendChild(iframe);
+
+  const doc=iframe.contentDocument || iframe.contentWindow.document;
+  doc.open();
+  doc.write('<!DOCTYPE html><html lang="th"><head><meta charset="utf-8"/><title>รายงานประจำเดือน</title></head><body></body></html>');
+  doc.close();
+
+  var styleEl=doc.createElement('style');
+  styleEl.textContent=''
+    +'@import url(\'https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;700&display=swap\');'
+    +'*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:\'Sarabun\',sans-serif;font-size:12px;color:#000;line-height:1.7;background:#fff}'
+    +'h1{font-size:15px;font-weight:700;text-align:center;margin-bottom:4px}'
+    +'h2{font-size:12px;font-weight:600;text-align:center;color:#333;margin-bottom:3px}'
+    +'h3{font-size:11px;font-weight:700;border-bottom:1.5px solid #bbb;padding-bottom:3px;margin:12px 0 6px;color:#1a5fa8;page-break-after:avoid;break-after:avoid}'
+    +'table{width:100%;border-collapse:collapse;font-size:10px;margin-bottom:8px;page-break-inside:auto}'
+    +'thead{display:table-header-group}'
+    +'th,td{border:none;padding:4px 6px}'
+    +'.rep-table th,.rep-table td{border:1px solid #bbb}'
+    +'th{background:#f0f0f0;font-weight:700;text-align:center}'
+    +'tr{page-break-inside:avoid;break-inside:avoid}'
+    +'.rep-section table:not(.rep-table) td{border:none!important;padding:2px}'
+    +'.rep-section table:not(.rep-table) th{border:none!important}'
+    +'.no-break{page-break-before:avoid!important;break-before:avoid!important}'
+    +'.photo-group-header{page-break-after:avoid!important;break-after:avoid!important}'
+    +'.photo-group-header + tr{page-break-before:avoid!important;break-before:avoid!important}'
+    +'img{max-width:100%;height:auto;border-radius:4px}'
+    +'.rep-section{margin-bottom:10px;page-break-inside:auto}'
+    +'.rep-last-block{page-break-inside:avoid;break-inside:avoid;display:block}'
+    +'.sig-wrap{page-break-before:avoid!important;break-before:avoid!important}'
+    +'.photo-grid-print{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}'
+    +'.photo-cell{text-align:center;break-inside:avoid}'
+    +'.photo-cell img{width:100%;max-height:120px;object-fit:cover;border:1px solid #ccc;border-radius:4px}'
+    +'.photo-cell div{font-size:10px;color:#555;margin-top:2px}'
+    +'p{font-size:10px;color:#777;margin:3px 0}'
+    +'.sig-table{width:100%;border-collapse:collapse;border:none}'
+    +'.sig-table td{border:none;text-align:center;vertical-align:top;padding:0 12px}'
+    +'.sig-line{border-top:1px solid #333;padding-top:6px;margin-top:48px;line-height:1.6;font-size:11px}'
+    +'.photo-block{page-break-inside:avoid;break-inside:avoid}'
+    +'@page{margin:10mm 8mm}'
+    +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.photo-block{page-break-inside:avoid;break-inside:avoid}}'
+    +'.sig-grid{margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px}';
+  doc.head.appendChild(styleEl);
+
+  // clone DOM node ตรงๆ แทนการแปลงเป็น string เพื่อหลีกเลี่ยงปัญหา outerHTML/innerHTML truncate กับเอกสารขนาดใหญ่
+  var clone=c.cloneNode(true);
+  doc.body.appendChild(clone);
+
   iframe.onload=function(){
     try{iframe.contentWindow.focus();iframe.contentWindow.print();}
-    catch(e){window.open(blobUrl,'_blank');}
-    setTimeout(()=>URL.revokeObjectURL(blobUrl),10000);
+    catch(e){
+      var w=window.open('','_blank');
+      w.document.write(doc.documentElement.outerHTML);
+      w.document.close();
+    }
   };
+  // เนื่องจากเราเขียน DOM โดยตรงแล้ว (ไม่ใช่ src=blobUrl) ให้เรียก onload เองทันทีหลัง DOM พร้อม
+  setTimeout(function(){ iframe.onload(); }, 300);
 }
 window.printReport=printReport;
 
