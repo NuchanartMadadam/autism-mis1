@@ -3949,8 +3949,11 @@ function buildReport(){
     var comAllButLast=repComImg.slice(0,-1);
     var comLast=repComImg[repComImg.length-1];
     if(comAllButLast.length){
+      h+='<div style="page-break-inside:avoid;break-inside:avoid">';
       h+='<div style="background:#2d7d3a;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;border-radius:4px;margin-bottom:8px">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</div>';
-      comAllButLast.forEach(function(c){h+=_renderComRow(c);});
+      h+=_renderComRow(comAllButLast[0]);
+      h+='</div>';
+      comAllButLast.slice(1).forEach(function(c){h+=_renderComRow(c);});
     }
     h+='<div class="rep-last-block">';
     if(!comAllButLast.length) h+='<div style="background:#2d7d3a;padding:6px 10px;color:#fff;font-size:12px;font-weight:700;border-radius:4px;margin-bottom:8px">11. ภาพหลักฐานกิจกรรมสัมพันธ์ชุมชน</div>';
@@ -4020,13 +4023,16 @@ function buildReport(){
 }
 window.buildReport=buildReport;
 
+let _printInProgress=false;
 function printReport(){
+  if(_printInProgress){toast('กำลังเตรียมพิมพ์อยู่ กรุณารอสักครู่','warn');return;}
   const c=document.getElementById('repPreview');
   if(!c || !c.children.length){alert('กรุณารอโหลดรายงานก่อน');return;}
+  _printInProgress=true;
 
-  let iframe=document.getElementById('printFrame');
-  if(iframe) iframe.remove();
-  iframe=document.createElement('iframe');
+  let oldIframe=document.getElementById('printFrame');
+  if(oldIframe) oldIframe.remove();
+  const iframe=document.createElement('iframe');
   iframe.id='printFrame';
   iframe.style.cssText='position:fixed;top:-9999px;left:-9999px;width:210mm;height:297mm;border:none;opacity:0';
   document.body.appendChild(iframe);
@@ -4075,9 +4081,6 @@ function printReport(){
 
   // ย้าย repPreview ทั้งก้อน (รวมทุก child node) ไปยัง iframe โดยตรงด้วย adoptNode
   // เพื่อหลีกเลี่ยง bug ของ cloneNode ใน Chrome ที่ตัดทอนเอกสารขนาดใหญ่แบบเงียบๆ
-  var originalParent=c.parentNode;
-  var originalNextSibling=c.nextSibling;
-
   var wrapper=doc.createElement('div');
   wrapper.id='repContent';
   wrapper.className='rep-preview';
@@ -4089,15 +4092,24 @@ function printReport(){
     wrapper.appendChild(adopted);
   });
 
+  var cleanedUp=false;
   function restoreAndCleanup(){
+    if(cleanedUp)return;
+    cleanedUp=true;
     var nodesToRestore=Array.prototype.slice.call(wrapper.childNodes);
     nodesToRestore.forEach(function(node){
       var backNode=document.adoptNode(node);
       c.appendChild(backNode);
     });
+    _printInProgress=false;
   }
 
   function doPrint(){
+    // ถ้า iframe ถูกลบไปแล้ว (เช่นมีการพิมพ์ครั้งใหม่แทรกเข้ามา) ให้ยกเลิกและคืนเนื้อหากลับ
+    if(!iframe.isConnected || !iframe.contentWindow){
+      restoreAndCleanup();
+      return;
+    }
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
     setTimeout(restoreAndCleanup, 1000);
