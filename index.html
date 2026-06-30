@@ -3755,14 +3755,14 @@ function buildReport(){
     +'<p style="text-align:center;font-size:12px;color:#444;font-weight:500">ฝ่ายบริหารวิชาการ ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา</p>';
   h+='<div class="rep-section"><h3>1. ข้อมูลบุคลากรประจำห้องเรียน</h3>'
     +'<table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วุฒิการศึกษา</th><th>วิชาเอก</th><th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th></tr></thead><tbody>';
-  r.teachers.forEach((t,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(t.name)}</td><td>${esc(t.edu)}</td><td>${esc(t.major)}</td><td>${esc(t.position)}</td><td>${esc(t.org)}</td><td>${esc(t.phone)}</td></tr>`);
+  r.teachers.forEach(function(t,i){h+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(t.name)+'</td><td>'+esc(t.edu)+'</td><td>'+esc(t.major)+'</td><td>'+esc(t.position)+'</td><td>'+esc(t.org)+'</td><td>'+esc(t.phone)+'</td></tr>';});
   if(!r.teachers.length)h+='<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>';
   h+='</tbody></table></div>';
 
   h+='<div class="rep-section"><h3>2. ข้อมูลผู้เรียน</h3>'
     +'<table class="rep-table"><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ประเภทความพิการ</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>';
   var _repStuList=r.students.filter(function(s){return isStudentActiveIn(s,_repYrCE,_repMnNum);});
-  _repStuList.forEach((s,i)=>h+=`<tr><td style="text-align:center">${i+1}</td><td>${esc(s.name)}</td><td>${toBEDate(s.dob)}</td><td>${calcAge(s.dob)}</td><td>${esc(s.type)}</td><td>${esc(s.guardian)}</td><td>${esc(s.gphone)}</td></tr>`);
+  _repStuList.forEach(function(s,i){h+='<tr><td style="text-align:center">'+(i+1)+'</td><td>'+esc(s.name)+'</td><td>'+toBEDate(s.dob)+'</td><td>'+calcAge(s.dob)+'</td><td>'+esc(s.type)+'</td><td>'+esc(s.guardian)+'</td><td>'+esc(s.gphone)+'</td></tr>';});
   if(!_repStuList.length)h+='<tr><td colspan="7" style="text-align:center;color:#999">ไม่มีข้อมูล</td></tr>';
   h+='</tbody></table></div>';
 
@@ -3807,7 +3807,7 @@ function buildReport(){
   h+=_attRows;
   h+='</tbody></table>';
 
-  h+='<div class="rep-section"><h3>4. บันทึกการให้บริการทางวิชาการ ('+svcs.length+' ครั้ง)</h3>`;';
+  h+='<div class="rep-section"><h3>4. บันทึกการให้บริการทางวิชาการ ('+svcs.length+' ครั้ง)</h3>';
   if(svcs.length){h+='<table class="rep-table"><thead><tr><th>ชื่อ-สกุลนักเรียน</th><th>รายละเอียดการให้บริการ</th><th>ผู้ให้บริการ</th></tr></thead><tbody>';svcs.forEach(function(sv){h+='<tr><td>'+esc(sv.student||'')+'</td><td>'+esc(sv.detail||'')+'</td><td>'+esc(sv.provider||'')+'</td></tr>';});h+='</tbody></table>';}
   else h+='<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>';
 
@@ -3815,11 +3815,11 @@ function buildReport(){
   if(hrs.length){h+='<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ลากิจ</th><th>ลาป่วย</th><th>ลาพักผ่อน</th><th>ลาอื่นๆ</th><th>มาสาย</th><th>ออกนอกสถานที่</th></tr></thead><tbody>';hrs.forEach(function(it){h+='<tr><td>'+esc(it.person)+'</td><td style="text-align:center">'+(it.leaveB||0)+' วัน</td><td style="text-align:center">'+(it.leaveSick||0)+' วัน</td><td style="text-align:center">'+(it.leaveRest||0)+' วัน</td><td style="text-align:center">'+(it.leaveOther||0)+' วัน'+(it.leaveOtherNote?' ('+esc(it.leaveOtherNote)+')':'')+'</td><td style="text-align:center">'+(it.late||0)+' ครั้ง</td><td style="text-align:center">'+(it.outSite||0)+' ครั้ง</td></tr>';});h+='</tbody></table>';}
   else h+='<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>';
 
-  h+=`</div><div class="rep-section"><h3>6. การสัมมนา/ฝึกอบรม/ศึกษาดูงาน (${trns.length} รายการ)</h3>`;
+  h+='</div><div class="rep-section"><h3>6. การสัมมนา/ฝึกอบรม/ศึกษาดูงาน ('+trns.length+' รายการ)</h3>';
   if(trns.length){h+='<table class="rep-table"><thead><tr><th>ชื่อ-สกุล</th><th>ชื่อหลักสูตร/อบรม</th><th>หน่วยงานที่จัด</th><th>วันที่</th></tr></thead><tbody>';trns.forEach(function(t){h+='<tr><td>'+esc(t.person)+'</td><td>'+esc(t.course)+'</td><td>'+esc(t.org)+'</td><td>'+toBEDate(t.date)+'</td></tr>';});h+='</tbody></table>';}
   else h+='<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>';
 
-  h+=`</div><div class="rep-section"><h3>7. งานสัมพันธ์ชุมชน/การเข้าร่วมกิจกรรมวันสำคัญ (${coms.length} กิจกรรม)</h3>`;
+  h+='</div><div class="rep-section"><h3>7. งานสัมพันธ์ชุมชน/การเข้าร่วมกิจกรรมวันสำคัญ ('+coms.length+' กิจกรรม)</h3>';
   if(coms.length){h+='<table class="rep-table"><thead><tr><th>วันที่</th><th>รายการ/กิจกรรม</th><th>หน่วยงาน/สถานที่</th></tr></thead><tbody>';coms.forEach(function(c){h+='<tr><td>'+toBEDate(c.date)+'</td><td>'+esc(c.activity)+'</td><td>'+esc(c.place)+'</td></tr>';});h+='</tbody></table>';}
   else h+='<p style="font-size:12px;color:#999">ไม่มีรายการในเดือนนี้</p>';
 
@@ -3869,7 +3869,7 @@ function buildReport(){
       isFirst9=false;
     });
     h+='</div>';
-  }else{h+=`<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน ${mn}</p>`;}
+  }else{h+='<p style="font-size:12px;color:#999">ไม่มีภาพกิจกรรมที่บันทึกในเดือน '+mn+'</p>';}
 
   h+='</div><div class="rep-section">';
   const repTrImg=trns.filter(function(t){return (t.photos&&t.photos.length)||t.imgUrl||t.dataUrl;}).map(function(t){var _u=t.imgUrl||t.dataUrl||'';return Object.assign({},t,{imgUrl:_u==='(base64-stripped)'?'':_u,photos:(t.photos||[]).filter(function(p){return p&&p.length>10;})});});
