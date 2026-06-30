@@ -190,8 +190,8 @@ hr.dashed{border:none;border-top:1px dashed var(--border);margin:1rem 0}
   .rep-preview h3{page-break-after:avoid!important;break-after:avoid!important}
   .rep-preview .rep-section{page-break-inside:auto!important}
   /* signature table ทำงานตอนพิมพ์ */
-  .rep-preview .sig-table{width:100%;border-collapse:collapse;display:table!important}
-  .rep-preview .sig-table td{display:table-cell!important}
+  .rep-preview .sig-table{width:100%;border-collapse:collapse;border:none!important;display:table!important}
+  .rep-preview .sig-table td{display:table-cell!important;border:none!important}
   h1,h2,h3,p,table,tr,td,th{page-break-inside:auto!important;break-inside:auto!important}
   .rep-section{page-break-inside:auto!important;break-inside:auto!important;margin-bottom:8px!important}
   /* ข้อ 11 + ลายเซ็น อยู่ด้วยกันเสมอ */
@@ -3743,8 +3743,8 @@ function buildReport(){
     +'.rep-preview h3{page-break-after:avoid}'
     +'.rep-preview .rep-section{page-break-inside:auto}'
     +'.rep-preview .rep-last-block{page-break-inside:avoid;break-inside:avoid}'
-    +'.rep-preview .sig-table{width:100%;border-collapse:collapse}'
-    +'.rep-preview .sig-table td{display:table-cell}'
+    +'.rep-preview .sig-table{width:100%;border-collapse:collapse;border:none}'
+    +'.rep-preview .sig-table td{display:table-cell;border:none}'
     +'}</style>';
   let h='<div class="rep-preview" id="repContent">'
     +_repStyle
@@ -4062,7 +4062,7 @@ function printReport(){
     +'p{font-size:10px;color:#777;margin:3px 0}'
     +'.sig-table{width:100%;border-collapse:collapse;border:none}'
     +'.sig-table td{border:none;text-align:center;vertical-align:top;padding:0 12px}'
-    +'.sig-line{border-top:1px solid #333;padding-top:6px;margin-top:48px;line-height:1.6;font-size:11px}'
+    +'.sig-line{padding-top:6px;margin-top:48px;line-height:1.6;font-size:11px}'
     +'.photo-block{page-break-inside:avoid;break-inside:avoid}'
     +'@page{margin:10mm 8mm}'
     +'@media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}.photo-block{page-break-inside:avoid;break-inside:avoid}}'
