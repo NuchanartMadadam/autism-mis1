@@ -3666,7 +3666,7 @@ function pageReport(){
     +'<div class="flex" style="gap:12px;align-items:flex-end;flex-wrap:wrap">'
     +'<div class="form-group" style="margin:0">'
     +'<label>เลือกเดือน/ปี</label>'
-    +'<select id="rep_m" style="min-width:180px" onchange="_repSelChange(this.value)">'
+
     +'<option value="">-- เลือกเดือน --</option>'
     +'</select>'
     +'</div>'
@@ -3908,6 +3908,7 @@ function buildReport(){
       isFirst10=false;
     });
     h+='</div>';
+  }
 
   h+='</div><div class="rep-section">';
   const repComImg=coms.filter(function(c){return (c.photos&&c.photos.length)||c.imgUrl||c.dataUrl;}).map(function(c){var _u2=c.imgUrl||c.dataUrl||'';return Object.assign({},c,{imgUrl:_u2==='(base64-stripped)'?'':_u2,photos:(c.photos||[]).filter(function(p){return p&&p.length>10;})});});
@@ -4013,12 +4014,11 @@ function buildReport(){
     +'<table class="sig-table" style="width:100%;margin-top:0"><tr>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'หัวหน้าฝ่ายบริหารวิชาการ<br>'    +'วันที่ ........../........../..........</div></td>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'รองผู้อำนวยการฝ่ายบริหารวิชาการ<br>'    +'วันที่ ........../........../..........</div></td>'    +'</tr></table>'    +'<table class="sig-table" style="width:100%;margin-top:0"><tr>'    +'<td style="width:25%"></td>'    +'<td style="width:50%;text-align:center;padding:0 12px"><div class="sig-line">'    +'ลงชื่อ .....................................................<br>'    +'(........................................)<br>'    +'ผู้อำนวยการศูนย์การศึกษาพิเศษ<br>'    +'เขตการศึกษา 3 จังหวัดสงขลา<br>'    +'วันที่ ........../........../..........</div></td>'    +'<td style="width:25%"></td>'    +'</tr></table>'    +'</div></div>';
   const el=document.getElementById('repPreview');if(el)el.innerHTML=h;
 }
-}
 window.buildReport=buildReport;
 
 function printReport(){
-  const c=document.getElementById('repContent');
-  if(!c){alert('กรุณารอโหลดรายงานก่อน');return;}
+  const c=document.getElementById('repPreview');
+  if(!c || !c.children.length){alert('กรุณารอโหลดรายงานก่อน');return;}
 
   let iframe=document.getElementById('printFrame');
   if(iframe) iframe.remove();
@@ -4069,35 +4069,37 @@ function printReport(){
     +'.sig-grid{margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px}';
   doc.head.appendChild(styleEl);
 
-  console.log('[printReport] BEFORE move - c has sig-wrap:', c.innerHTML.includes('sig-wrap'), 'length:', c.innerHTML.length);
-
-  // ย้าย node เดิมไปยัง iframe โดยตรงด้วย adoptNode (ออกแบบมาสำหรับย้าย node ข้าม document)
+  // ย้าย repPreview ทั้งก้อน (รวมทุก child node) ไปยัง iframe โดยตรงด้วย adoptNode
   // เพื่อหลีกเลี่ยง bug ของ cloneNode ใน Chrome ที่ตัดทอนเอกสารขนาดใหญ่แบบเงียบๆ
   var originalParent=c.parentNode;
   var originalNextSibling=c.nextSibling;
 
-  var adopted=doc.adoptNode(c);
-  doc.body.appendChild(adopted);
+  var wrapper=doc.createElement('div');
+  wrapper.id='repContent';
+  wrapper.className='rep-preview';
+  doc.body.appendChild(wrapper);
 
-  console.log('[printReport] AFTER move - adopted has sig-wrap:', adopted.innerHTML.includes('sig-wrap'), 'length:', adopted.innerHTML.length);
-  console.log('[printReport] doc.body.innerHTML has sig-wrap:', doc.body.innerHTML.includes('sig-wrap'));
+  var childList=Array.prototype.slice.call(c.childNodes);
+  childList.forEach(function(node){
+    var adopted=doc.adoptNode(node);
+    wrapper.appendChild(adopted);
+  });
 
   function restoreAndCleanup(){
-    var backNode=document.adoptNode(adopted);
-    if(originalNextSibling && originalNextSibling.parentNode===originalParent){ originalParent.insertBefore(backNode, originalNextSibling); }
-    else{ originalParent.appendChild(backNode); }
+    var nodesToRestore=Array.prototype.slice.call(wrapper.childNodes);
+    nodesToRestore.forEach(function(node){
+      var backNode=document.adoptNode(node);
+      c.appendChild(backNode);
+    });
   }
 
   function doPrint(){
-    console.log('[printReport] doPrint called - iframe doc has sig-wrap:', iframe.contentDocument.body.innerHTML.includes('sig-wrap'));
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
     setTimeout(restoreAndCleanup, 1000);
   }
-  // รอ image โหลดก่อนสั่งพิมพ์
-  var imgs=adopted.querySelectorAll('img');
+  var imgs=wrapper.querySelectorAll('img');
   var pending=imgs.length;
-  console.log('[printReport] waiting for', pending, 'images');
   if(pending===0){ setTimeout(doPrint, 300); }
   else{
     var done=0;
