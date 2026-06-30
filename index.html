@@ -4069,25 +4069,24 @@ function printReport(){
     +'.sig-grid{margin-top:3rem;display:grid;grid-template-columns:1fr 1fr;gap:2rem;font-size:12px}';
   doc.head.appendChild(styleEl);
 
-  // สร้าง wrapper div ใน iframe เอง แล้ว clone ทีละ child node (ไม่ clone ทั้งก้อนเดียว)
-  // เพราะ c.cloneNode(true) กับเอกสารขนาดใหญ่มากๆ (รูปภาพ base64 จำนวนมาก) มี bug ใน Chrome
-  // ที่ทำให้ผลลัพธ์ถูกตัดทอนแบบเงียบๆ โดยไม่มี error ใดๆ
-  var wrapper=doc.createElement('div');
-  wrapper.id='repContent';
-  wrapper.className=c.className;
-  doc.body.appendChild(wrapper);
+  // ย้าย node เดิมไปยัง iframe โดยตรง (ไม่ clone เลย) เพื่อหลีกเลี่ยง bug ของ cloneNode
+  // ใน Chrome ที่ตัดทอนเอกสารขนาดใหญ่แบบเงียบๆ จากนั้นย้ายกลับที่เดิมหลังพิมพ์เสร็จ
+  var originalParent=c.parentNode;
+  var originalNextSibling=c.nextSibling;
+  doc.body.appendChild(c);
 
-  var childNodes=Array.prototype.slice.call(c.childNodes);
-  childNodes.forEach(function(node){
-    wrapper.appendChild(node.cloneNode(true));
-  });
+  function restoreAndCleanup(){
+    if(originalNextSibling){ originalParent.insertBefore(c, originalNextSibling); }
+    else{ originalParent.appendChild(c); }
+  }
 
   function doPrint(){
     iframe.contentWindow.focus();
     iframe.contentWindow.print();
+    setTimeout(restoreAndCleanup, 500);
   }
   // รอ image โหลดก่อนสั่งพิมพ์
-  var imgs=wrapper.querySelectorAll('img');
+  var imgs=c.querySelectorAll('img');
   var pending=imgs.length;
   if(pending===0){ setTimeout(doPrint, 300); }
   else{
@@ -4100,7 +4099,6 @@ function printReport(){
         img.addEventListener('error', checkDone);
       }
     });
-    // safety timeout เผื่อรูปโหลดไม่จบ
     setTimeout(doPrint, 6000);
   }
 }
