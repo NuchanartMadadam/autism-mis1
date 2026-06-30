@@ -3742,7 +3742,7 @@ function buildReport(){
     +'.rep-preview tr{page-break-inside:avoid}'
     +'.rep-preview h3{page-break-after:avoid}'
     +'.rep-preview .rep-section{page-break-inside:auto}'
-    +'.rep-preview .rep-last-block{page-break-before:always}'
+    +'.rep-preview .rep-last-block{page-break-inside:avoid;break-inside:avoid}'
     +'.rep-preview .sig-table{width:100%;border-collapse:collapse}'
     +'.rep-preview .sig-table td{display:table-cell}'
     +'}</style>';
@@ -4042,7 +4042,7 @@ function printReport(){
     +'      .photo-group-header + tr{page-break-before:avoid!important;break-before:avoid!important}\n'
     +'      img{max-width:100%;height:auto;border-radius:4px}\n'
     +'      .rep-section{margin-bottom:10px;page-break-inside:auto}\n'
-    +'      .rep-last-block{page-break-before:always;break-before:always;display:block}\n'
+    +'      .rep-last-block{page-break-inside:avoid;break-inside:avoid;display:block}\n'
     +'      /* ลายเซ็นติดกับ content สุดท้ายเสมอ */\n'
     +'      .sig-wrap{page-break-before:avoid!important;break-before:avoid!important}\n'
     +'      .photo-grid-print{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:6px}\n'
