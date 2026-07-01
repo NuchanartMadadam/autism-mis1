@@ -2287,7 +2287,8 @@ function pageTeachers(ri){
     +'<th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th><th>วันที่เริ่มปฏิบัติงาน</th><th>จัดการ</th>'
     +'</tr></thead><tbody>';
   r.teachers.forEach(function(t,idx){
-    var ph=t.photoUrl?'<img src="'+t.photoUrl+'" class="teacher-avatar" onerror="this.hidden=true" alt="รูปครู"/>'
+    var _tPhotoSrc=t.photoUrl?(t.photoUrl.startsWith('data:')?t.photoUrl:driveImgSrc(t.photoUrl)):'';
+    var ph=_tPhotoSrc?'<img src="'+_tPhotoSrc+'" class="teacher-avatar" onerror="this.hidden=true" alt="รูปครู"/>'
       :'<div class="teacher-avatar-placeholder">👩‍🏫</div>';
     h+='<tr>'
       +'<td style="text-align:center">'+ph+'</td>'
