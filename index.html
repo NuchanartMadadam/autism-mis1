@@ -1451,41 +1451,60 @@ function loadFromSheets(onDone){
   }
   showLoadingOverlay('กำลังโหลดข้อมูลจาก Google Sheets...');
   var rooms=[0,1,2];
-  var done=0,anyOk=false;
-  rooms.forEach(function(ri){
-    fetch(settings.scriptUrl,{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({action:'loadAll', roomIndex:ri})
-    })
-      .then(function(r){return r.json();})
-      .then(function(res){
-        if(res&&res.status==='ok'&&res.data){
-          anyOk=true;
-          var d=res.data,cur=db.rooms[ri]||mkRoom();
-          d.students=(d.students||[]).map(function(s){
-            var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
-            s.iep=old.iep||[]; s.iip=old.iip||[];
-            return s;
-          });
-          d.schedules=cur.schedules||[];
-          d.holidays=cur.holidays||{};
-          d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
-          db.rooms[ri]=Object.assign(cur,d);
-        }
-      })
-      .catch(function(e){console.warn('loadFromSheets room '+ri+' failed:',e);})
-      .finally(function(){
-        done++;
-        if(done>=rooms.length){
-          saveLocal();
-          hideLoadingOverlay();
-          if(anyOk) toast('โหลดข้อมูลจาก Google Sheets สำเร็จ ✓');
-          else toast('ใช้ข้อมูลจาก cache (ไม่สามารถโหลดจาก Sheets ได้)','warn');
-          if(onDone)onDone(anyOk);
-        }
-      });
-  });
+  var done=0, anyOk=false;
+
+  function loadRoom(ri){
+    var cbName='_gsCallback_'+ri+'_'+Date.now();
+    var script=document.createElement('script');
+    var timer=setTimeout(function(){
+      // timeout 10s
+      delete window[cbName];
+      if(script.parentNode)script.parentNode.removeChild(script);
+      done++;
+      checkDone();
+    },10000);
+
+    window[cbName]=function(res){
+      clearTimeout(timer);
+      delete window[cbName];
+      if(script.parentNode)script.parentNode.removeChild(script);
+      if(res&&res.status==='ok'&&res.data){
+        anyOk=true;
+        var d=res.data, cur=db.rooms[ri]||mkRoom();
+        d.students=(d.students||[]).map(function(s){
+          var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
+          s.iep=old.iep||[]; s.iip=old.iip||[];
+          return s;
+        });
+        d.schedules=cur.schedules||[];
+        d.holidays=cur.holidays||{};
+        d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
+        db.rooms[ri]=Object.assign(cur,d);
+      }
+      done++;
+      checkDone();
+    };
+
+    script.src=settings.scriptUrl+'?action=loadAll&roomIndex='+ri+'&callback='+cbName+'&t='+Date.now();
+    script.onerror=function(){
+      clearTimeout(timer);
+      delete window[cbName];
+      done++;
+      checkDone();
+    };
+    document.head.appendChild(script);
+  }
+
+  function checkDone(){
+    if(done>=rooms.length){
+      saveLocal();
+      hideLoadingOverlay();
+      if(anyOk) toast('โหลดข้อมูลจาก Google Sheets สำเร็จ ✓');
+      if(onDone)onDone(anyOk);
+    }
+  }
+
+  rooms.forEach(function(ri){ loadRoom(ri); });
 }
 window.loadFromSheets=loadFromSheets;
 
@@ -1994,59 +2013,125 @@ function showPage(p){
 }
 
 // ------------ DASHBOARD ------------
+var _dashMonth=0, _dashYear=0, _dashAY=''; // 0 = ปัจจุบัน
 function pageDashboard(){
   var now=new Date();
-  var dp=String(now.getFullYear())+'-'+String(now.getMonth()+1).padStart(2,'0');
-  // guard rooms — สร้างห้องว่างถ้ายังไม่มีข้อมูล
+  var viewM=_dashMonth||now.getMonth()+1;
+  var viewY=_dashYear||now.getFullYear();
+  var isToday=(!_dashMonth&&!_dashYear);
+  var dp=String(viewY)+'-'+String(viewM).padStart(2,'0');
+
   while(db.rooms.length<3)db.rooms.push(mkRoom());
   for(var _gi=0;_gi<3;_gi++){if(!db.rooms[_gi]||typeof db.rooms[_gi].students==='undefined')db.rooms[_gi]=Object.assign(mkRoom(),db.rooms[_gi]||{});}
 
+  // ─── ตัวกรองเดือน/ปี ───
+  var monthOpts='';
+  MONTHS.forEach(function(mn,mi){monthOpts+='<option value="'+(mi+1)+'"'+(viewM===mi+1?' selected':'')+'>'+mn+'</option>';});
+  var yearOpts='';
+  for(var y=now.getFullYear()-2;y<=now.getFullYear()+1;y++){
+    yearOpts+='<option value="'+y+'"'+(viewY===y?' selected':'')+'>พ.ศ. '+(y+543)+'</option>';
+  }
+
+  var h='<div class="page-header"><h2>📊 ภาพรวมระบบ</h2></div>';
+
+  // filter bar
+  h+='<div class="card" style="margin-bottom:1rem;padding:12px 16px">';
+  h+='<div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">';
+  h+='<span style="font-size:13px;font-weight:600">📅 ดูข้อมูลประจำ</span>';
+  h+='<select id="dash_m" onchange="window._dashMonth=+this.value;window._dashYear=+document.getElementById(\'dash_y\').value;pageDashboard()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border)">'+monthOpts+'</select>';
+  h+='<select id="dash_y" onchange="window._dashYear=+this.value;window._dashMonth=+document.getElementById(\'dash_m\').value;pageDashboard()" style="padding:4px 8px;border-radius:6px;border:1px solid var(--border)">'+yearOpts+'</select>';
+  h+='<button onclick="window._dashMonth=0;window._dashYear=0;pageDashboard()" style="padding:4px 12px;border-radius:6px;border:1px solid var(--border);background:var(--surface-2);cursor:pointer;font-size:12px">ปัจจุบัน</button>';
+  if(!isToday) h+='<span style="font-size:12px;color:var(--primary);font-weight:600">กำลังดู: '+MONTHS[viewM-1]+' พ.ศ. '+(viewY+543)+'</span>';
+  h+='</div></div>';
+
+  // ─── cards สรุป ───
   var totS=0,totT=0;
   getRooms().forEach(function(ri2){
     var _r=db.rooms[ri2]||mkRoom();
-    var _nowD=new Date();
-    totS+=(_r.students||[]).filter(function(s){return isStudentActiveIn(s,_nowD.getFullYear(),_nowD.getMonth()+1,_nowD.getDate());}).length;
-    totT+=(_r.teachers||[]).length;
+    if(isToday){
+      totS+=(_r.students||[]).filter(function(s){return isStudentActiveIn(s,now.getFullYear(),now.getMonth()+1,now.getDate());}).length;
+      totT+=(_r.teachers||[]).filter(function(t){return t&&(t.status||'กำลังปฏิบัติหน้าที่')==='กำลังปฏิบัติหน้าที่';}).length;
+    } else {
+      totS+=(_r.students||[]).filter(function(s){return isStudentActiveIn(s,viewY,viewM);}).length;
+      totT+=(_r.teachers||[]).filter(function(t){
+        if(!t)return false;
+        if((t.status||'กำลังปฏิบัติหน้าที่')==='กำลังปฏิบัติหน้าที่') return true;
+        if(!t.endDate) return false;
+        var ep=t.endDate.split('-');
+        if(ep.length<3) return false;
+        var ey=+ep[0],em=+ep[1];
+        return viewY<ey||(viewY===ey&&viewM<=em);
+      }).length;
+    }
   });
 
-  var h='<div class="page-header"><h2>📊 ภาพรวมระบบ</h2></div>';
   h+='<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:1.5rem">';
-  h+='<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px">👨‍🏫</div><div style="font-size:28px;font-weight:700;color:var(--primary)">'+totT+'</div><div style="font-size:12px;color:var(--muted)">ครูทั้งหมด</div></div>';
-  h+='<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px">🧒</div><div style="font-size:28px;font-weight:700;color:#2d7d3a">'+totS+'</div><div style="font-size:12px;color:var(--muted)">นักเรียนทั้งหมด</div></div>';
+  h+='<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px">👨‍🏫</div><div style="font-size:28px;font-weight:700;color:var(--primary)">'+totT+'</div><div style="font-size:12px;color:var(--muted)">ครู'+(isToday?'ปัจจุบัน':'เดือนนี้')+'</div></div>';
+  h+='<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px">🧒</div><div style="font-size:28px;font-weight:700;color:#2d7d3a">'+totS+'</div><div style="font-size:12px;color:var(--muted)">นักเรียน'+(isToday?'ปัจจุบัน':'เดือนนี้')+'</div></div>';
   h+='<div class="card" style="text-align:center;padding:16px"><div style="font-size:28px">🏫</div><div style="font-size:28px;font-weight:700;color:#e65100">'+getRooms().length+'</div><div style="font-size:12px;color:var(--muted)">ห้องเรียน</div></div>';
   h+='</div>';
 
+  // ─── ตารางสรุปแต่ละห้อง ───
   h+='<div class="card"><h3>สรุปแต่ละห้องเรียน</h3>';
-  h+='<div class="table-wrap"><table><thead><tr><th>ห้องเรียน</th><th>ครู</th><th>นักเรียน</th><th>บริการเดือนนี้</th></tr></thead><tbody>';
+  h+='<div class="table-wrap"><table><thead><tr><th>ห้องเรียน</th><th>ครู</th><th>นักเรียน</th><th>บริการ'+(isToday?'เดือนนี้':'เดือนที่เลือก')+'</th></tr></thead><tbody>';
   getRooms().forEach(function(ri2){
     var r=db.rooms[ri2]||mkRoom();
-    var svc=(r.services||[]).filter(function(s){return s&&s.date&&s.date.startsWith(dp);}).length;
-    var _now2=new Date();
-    var _activeStu=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_now2.getFullYear(),_now2.getMonth()+1,_now2.getDate());}).length;
-    h+='<tr><td>'+RS[ri2]+'</td><td style="text-align:center">'+(r.teachers||[]).length+' คน</td><td style="text-align:center">'+_activeStu+' คน</td><td style="text-align:center">'+svc+' ครั้ง</td></tr>';
+    var svc=(r.services||[]).filter(function(s){return s&&s.period&&s.period.startsWith(dp)||s&&s.date&&s.date.startsWith(dp);}).length;
+    var activeT,activeStu;
+    if(isToday){
+      activeT=(r.teachers||[]).filter(function(t){return t&&(t.status||'กำลังปฏิบัติหน้าที่')==='กำลังปฏิบัติหน้าที่';}).length;
+      activeStu=(r.students||[]).filter(function(s){return isStudentActiveIn(s,now.getFullYear(),now.getMonth()+1,now.getDate());}).length;
+    } else {
+      activeT=(r.teachers||[]).filter(function(t){
+        if(!t)return false;
+        if((t.status||'กำลังปฏิบัติหน้าที่')==='กำลังปฏิบัติหน้าที่') return true;
+        if(!t.endDate) return false;
+        var ep=t.endDate.split('-');
+        if(ep.length<3) return false;
+        var ey=+ep[0],em=+ep[1];
+        return viewY<ey||(viewY===ey&&viewM<=em);
+      }).length;
+      activeStu=(r.students||[]).filter(function(s){return isStudentActiveIn(s,viewY,viewM);}).length;
+    }
+    h+='<tr><td>'+RS[ri2]+'</td><td style="text-align:center">'+activeT+' คน</td><td style="text-align:center">'+activeStu+' คน</td><td style="text-align:center">'+svc+' ครั้ง</td></tr>';
   });
   h+='</tbody></table></div></div>';
 
+  // ─── รายละเอียดแต่ละห้อง ───
   getRooms().forEach(function(ri2){
     var r=db.rooms[ri2]||mkRoom();
-    if(!(r.teachers||[]).length&&!(r.students||[]).length)return;
+    var activeTeachers,activeStu2;
+    if(isToday){
+      activeTeachers=(r.teachers||[]).filter(function(t){return t&&(t.status||'กำลังปฏิบัติหน้าที่')==='กำลังปฏิบัติหน้าที่';});
+      activeStu2=(r.students||[]).filter(function(s){return isStudentActiveIn(s,now.getFullYear(),now.getMonth()+1,now.getDate());});
+    } else {
+      activeTeachers=(r.teachers||[]).filter(function(t){
+        if(!t)return false;
+        if((t.status||'กำลังปฏิบัติหน้าที่')==='กำลังปฏิบัติหน้าที่') return true;
+        if(!t.endDate) return false;
+        var ep=t.endDate.split('-');
+        if(ep.length<3) return false;
+        var ey=+ep[0],em=+ep[1];
+        return viewY<ey||(viewY===ey&&viewM<=em);
+      });
+      activeStu2=(r.students||[]).filter(function(s){return isStudentActiveIn(s,viewY,viewM);});
+    }
+    if(!activeTeachers.length&&!activeStu2.length)return;
     h+='<div class="card"><h3>ข้อมูล '+RS[ri2]+'</h3>';
-    if((r.teachers||[]).length){
-      h+='<div style="margin-bottom:8px"><b>ครูผู้สอน ('+r.teachers.length+' คน)</b></div>';
+    if(activeTeachers.length){
+      h+='<div style="margin-bottom:8px"><b>ครูผู้สอน ('+activeTeachers.length+' คน)</b></div>';
       h+='<div class="table-wrap"><table><thead><tr><th>รูป</th><th>ชื่อ-สกุล</th><th>วุฒิ</th><th>ตำแหน่ง</th><th>สังกัด</th><th>เบอร์โทร</th><th>วันเริ่มงาน</th></tr></thead><tbody>';
-      r.teachers.forEach(function(t){
+      activeTeachers.forEach(function(t){
         if(!t)return;
         var photo=t.photoUrl?'<img src="'+(t.photoUrl.startsWith('data:')?t.photoUrl:driveImgSrc(t.photoUrl))+'" style="width:40px;height:40px;border-radius:50%;object-fit:cover" onerror="this.hidden=true"/>':'<div style="width:40px;height:40px;border-radius:50%;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:18px">👤</div>';
         h+='<tr><td>'+photo+'</td><td><b>'+esc(t.name||'')+'</b></td><td>'+esc(t.edu||'')+'</td><td>'+esc(t.position||'')+'</td><td>'+esc(t.org||'')+'</td><td>'+esc(t.phone||'')+'</td><td>'+toBEDate(t.startDate||'')+'</td></tr>';
       });
       h+='</tbody></table></div>';
     }
-    var _nd=new Date();
-    var _dStus=(r.students||[]).filter(function(s){return isStudentActiveIn(s,_nd.getFullYear(),_nd.getMonth()+1,_nd.getDate());});
-    if(_dStus.length){
-      h+='<div style="margin:12px 0 8px"><b>นักเรียนที่กำลังรับบริการ ('+_dStus.length+' คน)</b></div>';
+    if(activeStu2.length){
+      h+='<div style="margin:12px 0 8px"><b>นักเรียนที่กำลังรับบริการ ('+activeStu2.length+' คน)</b></div>';
       h+='<div class="table-wrap"><table><thead><tr><th>ลำดับ</th><th>ชื่อ-สกุล</th><th>วันเกิด</th><th>อายุ</th><th>ที่อยู่</th><th>ประเภท</th><th>ผู้ปกครอง</th><th>เบอร์โทร</th></tr></thead><tbody>';
-      _dStus.forEach(function(s,si){
+      activeStu2.forEach(function(s,si){
         if(!s)return;
         h+='<tr><td style="text-align:center">'+(si+1)+'</td><td><b>'+esc(s.name||'')+'</b></td><td>'+toBEDate(s.dob||'')+'</td><td>'+calcAge(s.dob||'')+'</td><td>'+esc(s.address||'')+'</td><td><span style="background:var(--primary-light);color:var(--primary);padding:2px 8px;border-radius:12px;font-size:11px">'+esc(s.type||'')+'</span></td><td>'+esc(s.guardian||'')+'</td><td>'+esc(s.gphone||'')+'</td></tr>';
       });
