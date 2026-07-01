@@ -886,16 +886,29 @@ function normalizePeriod(period){
   if(!period) return '';
   // ถ้าเป็นภาษาไทยอยู่แล้ว (มีตัวอักษรไทย) ไม่ต้องแปลง
   if(/[\u0E00-\u0E7F]/.test(period)) return period;
-  // ตัด T ออกก่อน เหลือแค่ "2569-04-30" หรือ "2026-04-30"
-  var dateOnly=period.split('T')[0];
-  var parts=dateOnly.split('-');
+  // ตัด T ออกก่อน
+  var str=String(period);
+  var parts=str.split('T')[0].split('-');
   if(parts.length>=2){
-    var y=+parts[0], m=+parts[1];
+    var y=+parts[0], m=+parts[1], d=parts[2]?+parts[2]:1;
     if(!isNaN(y)&&!isNaN(m)&&m>=1&&m<=12){
-      // ถ้าเป็น พ.ศ. (>2400) ใช้ตรงๆ
-      if(y>2400) return MONTHS[m-1]+' '+y;
-      // ถ้าเป็น ค.ศ. (1900-2100) บวก 543
-      if(y>=1900&&y<=2100) return MONTHS[m-1]+' '+(y+543);
+      // ถ้า period มี timezone offset (T17:00:00.000Z = UTC+7)
+      // วันที่ที่ได้อาจเป็นวันสุดท้ายของเดือนก่อน เช่น 30 เม.ย. แทน 1 พ.ค.
+      // แก้โดยบวก 1 วันก่อนแปลงเดือน
+      if(str.indexOf('T')>=0){
+        var dt=new Date(y>2400?y-543:y, m-1, d);
+        dt.setDate(dt.getDate()+1); // compensate timezone
+        m=dt.getMonth()+1;
+        y=dt.getFullYear()+(y>2400?543:0);
+        if(y<2500) y+=543; // แปลงเป็น พ.ศ. ถ้ายังเป็น ค.ศ.
+      } else {
+        if(y>2400){
+          // พ.ศ. อยู่แล้ว
+        } else {
+          y+=543;
+        }
+      }
+      return MONTHS[m-1]+' '+y;
     }
   }
   return period;
