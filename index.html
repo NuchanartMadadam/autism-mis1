@@ -2857,16 +2857,17 @@ function trainingForm(ri,t){
     +beDatePickerHtml('tr_d',t?t.date||'':todayStr(),'วันที่เริ่ม')
     +beDatePickerHtml('tr_d2',t?t.dateEnd||'':'','ถึงวันที่',false,true);
   h+='</div>';
-  // multi-photo for training
-  var trPhotos=t&&t.photos?t.photos:[];
+  // multi-photo for training — ใช้ _multiPhoto2.tr เป็น source of truth
+  var trPhotos=(window._multiPhoto2&&window._multiPhoto2.tr)?window._multiPhoto2.tr.filter(function(p){return p&&p.length>5;}):(t&&t.photos?t.photos:[]);
   h+='<div class="form-group"><label>แนบภาพหลักฐาน <span style="color:var(--primary);font-weight:600">(เพิ่มได้หลายรูป)</span></label>';
   h+='<div class="img-upload-zone" id="tr_photo_drop" onclick="trigMultiPhotoInput(\'tr\')" ondragover="event.preventDefault()" ondrop="handleMultiPhotoDrop2(event,\'tr\')">'    +'<div style="font-size:24px">📷</div>'    +'<div style="font-weight:600">คลิกหรือลากหลายรูปมาวาง</div>'    +'<div style="font-size:11px;color:var(--muted)">JPG, PNG — แต่ละไฟล์ไม่เกิน 5MB</div></div>';
   h+='<input type="file" id="tr_photo_input" accept="image/*" multiple style="display:none" onchange="handleMultiPhotoInput2(event,\'tr\')"/>';
   h+='<div id="tr_photo_grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
   trPhotos.forEach(function(p,pi){
+    var src=p.startsWith('http')?driveImgSrc(p):p;
     h+='<div id="tr_ex_'+pi+'" style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'
-      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'
-      +'<button onclick="_rmExPhoto(&#39;tr&#39;,'+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'
+      +'<img src="'+src+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.style.display=\'none\'"/>'
+      +'<button onclick="_rmExPhoto(\'tr\','+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'
       +'</div>';
   });
   h+='<div id="tr_photo_count" style="font-size:11px;color:var(--primary);margin-top:4px">'+( trPhotos.length?trPhotos.length+' รูป':'')+'</div>';
@@ -2887,8 +2888,11 @@ function addTraining(ri){
 window.addTraining=addTraining;
 function editTraining(ri,idx){
   if(!window._multiPhoto2)window._multiPhoto2={tr:[],cm:[]};
-  window._multiPhoto2.tr=(db.rooms[ri].training[idx]&&db.rooms[ri].training[idx].photos)?db.rooms[ri].training[idx].photos.slice():[];
-  openModal('<h3>✏️ แก้ไขรายการ</h3>'+trainingForm(ri,db.rooms[ri].training[idx])+'<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr('+ri+','+idx+')">💾 บันทึก</button></div>');}
+  var t=db.rooms[ri].training[idx];
+  // โหลดรูปเดิมทั้งหมดเข้า _multiPhoto2.tr
+  window._multiPhoto2.tr=(t&&t.photos&&t.photos.length)?t.photos.slice():(t&&t.imgUrl&&t.imgUrl.startsWith('http')?[t.imgUrl]:[]);
+  openModal('<h3>✏️ แก้ไขรายการ</h3>'+trainingForm(ri,t)+'<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveTr('+ri+','+idx+')">💾 บันทึก</button></div>');
+}
 window.editTraining=editTraining;
 function saveTr(ri,idx){
   ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
@@ -2918,20 +2922,21 @@ function saveTr(ri,idx){
 }
 window.saveTr=saveTr;
 function _saveTrData(ri, idx, imgUrl){
-  var newPhotos=(window._multiPhoto2&&window._multiPhoto2.tr)?window._multiPhoto2.tr.filter(function(x){return x;}):[];
-  var existPhotos=(idx>=0&&db.rooms[ri].training[idx]&&db.rooms[ri].training[idx].photos)?db.rooms[ri].training[idx].photos:[];
-  // ถ้า imgUrl เป็น Drive URL จริง ให้เพิ่มเข้า newPhotos ด้วย
-  if(imgUrl&&imgUrl.startsWith('http')&&newPhotos.indexOf(imgUrl)<0){
-    newPhotos.push(imgUrl);
+  // ใช้เฉพาะรูปที่เหลืออยู่ใน _multiPhoto2.tr (หลังจากผู้ใช้ลบออกบางรูปแล้ว)
+  var allPhotos=(window._multiPhoto2&&window._multiPhoto2.tr)
+    ?window._multiPhoto2.tr.filter(function(p){return p&&p.length>5;})
+    :[];
+  // ถ้ามี imgUrl ใหม่จาก Drive ให้เพิ่มด้วย
+  if(imgUrl&&imgUrl.startsWith('http')&&allPhotos.indexOf(imgUrl)<0){
+    allPhotos.push(imgUrl);
   }
-  var allPhotos=existPhotos.concat(newPhotos.filter(function(p){return existPhotos.indexOf(p)<0;}));
   var t = {
     person: (getCheckedTeachers('tr_p_list')||'(ไม่ระบุ)'),
     course: document.getElementById('tr_c').value,
     org:    document.getElementById('tr_o').value,
     date:   document.getElementById('tr_d').value,
     dateEnd:document.getElementById('tr_d2')?document.getElementById('tr_d2').value:'',
-    imgUrl: allPhotos.length?allPhotos[0]:(imgUrl&&imgUrl.startsWith('http')?imgUrl:''),
+    imgUrl: allPhotos.length?allPhotos[0]:'',
     photos: allPhotos
   };
   if(!db.rooms[ri].training) db.rooms[ri].training=[];
@@ -2985,16 +2990,17 @@ function comForm(c,ri){
     +buildChips(getPrevValues(ri,'community','place'),'cm_p')+'</div>';
   h+='<div class="form-group"><label>ครูผู้สอนที่เข้าร่วม (เลือกได้หลายคน)</label>'
     +teacherCheckboxHtml(ri,'cm_t_list',selNames)+'</div>';
-  // multi-photo for community
-  var cmPhotos=c&&c.photos?c.photos:[];
+  // multi-photo for community — ใช้ _multiPhoto2.cm เป็น source of truth
+  var cmPhotos=(window._multiPhoto2&&window._multiPhoto2.cm)?window._multiPhoto2.cm.filter(function(p){return p&&p.length>5;}):(c&&c.photos?c.photos:[]);
   h+='<div class="form-group"><label>แนบภาพหลักฐาน <span style="color:var(--primary);font-weight:600">(เพิ่มได้หลายรูป)</span></label>';
   h+='<div class="img-upload-zone" id="cm_photo_drop" onclick="trigMultiPhotoInput(\'cm\')" ondragover="event.preventDefault()" ondrop="handleMultiPhotoDrop2(event,\'cm\')">'    +'<div style="font-size:24px">📷</div>'    +'<div style="font-weight:600">คลิกหรือลากหลายรูปมาวาง</div>'    +'<div style="font-size:11px;color:var(--muted)">JPG, PNG — แต่ละไฟล์ไม่เกิน 5MB</div></div>';
   h+='<input type="file" id="cm_photo_input" accept="image/*" multiple style="display:none" onchange="handleMultiPhotoInput2(event,\'cm\')"/>';
   h+='<div id="cm_photo_grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px">';
   cmPhotos.forEach(function(p,pi){
+    var src=p.startsWith('http')?driveImgSrc(p):p;
     h+='<div id="cm_ex_'+pi+'" style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">'
-      +'<img src="'+p+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.hidden=true"/>'
-      +'<button onclick="_rmExPhoto(&#39;cm&#39;,'+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'
+      +'<img src="'+src+'" style="width:100%;height:70px;object-fit:cover;display:block" onerror="this.style.display=\'none\'"/>'
+      +'<button onclick="_rmExPhoto(\'cm\','+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>'
       +'</div>';
   });
   h+='<div id="cm_photo_count" style="font-size:11px;color:var(--primary);margin-top:4px">'+( cmPhotos.length?cmPhotos.length+' รูป':'')+'</div>';
@@ -3015,8 +3021,10 @@ function addCom(ri){
 window.addCom=addCom;
 function editCom(ri,idx){
   if(!window._multiPhoto2)window._multiPhoto2={tr:[],cm:[]};
-  window._multiPhoto2.cm=(db.rooms[ri].community[idx]&&db.rooms[ri].community[idx].photos)?db.rooms[ri].community[idx].photos.slice():[];
-  openModal('<h3>✏️ แก้ไขกิจกรรม</h3>'+comForm(db.rooms[ri].community[idx],ri)+'<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom('+ri+','+idx+')">💾 บันทึก</button></div>');}
+  var c=db.rooms[ri].community[idx];
+  window._multiPhoto2.cm=(c&&c.photos&&c.photos.length)?c.photos.slice():(c&&c.imgUrl&&c.imgUrl.startsWith('http')?[c.imgUrl]:[]);
+  openModal('<h3>✏️ แก้ไขกิจกรรม</h3>'+comForm(c,ri)+'<div class="modal-footer"><button class="btn btn-outline" onclick="closeModal()">ยกเลิก</button><button class="btn btn-primary" onclick="saveCom('+ri+','+idx+')">💾 บันทึก</button></div>');
+}
 window.editCom=editCom;
 function saveCom(ri,idx){
   ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
@@ -3046,19 +3054,19 @@ function saveCom(ri,idx){
 }
 window.saveCom=saveCom;
 function _saveComData(ri, idx, imgUrl){
-  var newPhotos=(window._multiPhoto2&&window._multiPhoto2.cm)?window._multiPhoto2.cm.filter(function(x){return x;}):[];
-  var existPhotos=(idx>=0&&db.rooms[ri].community[idx]&&db.rooms[ri].community[idx].photos)?db.rooms[ri].community[idx].photos:[];
-  if(imgUrl&&imgUrl.startsWith('http')&&newPhotos.indexOf(imgUrl)<0){
-    newPhotos.push(imgUrl);
+  var allPhotos=(window._multiPhoto2&&window._multiPhoto2.cm)
+    ?window._multiPhoto2.cm.filter(function(p){return p&&p.length>5;})
+    :[];
+  if(imgUrl&&imgUrl.startsWith('http')&&allPhotos.indexOf(imgUrl)<0){
+    allPhotos.push(imgUrl);
   }
-  var allPhotos=existPhotos.concat(newPhotos.filter(function(p){return existPhotos.indexOf(p)<0;}));
   var c = {
     date:         document.getElementById('cm_d').value,
     dateEnd:      document.getElementById('cm_d2')?document.getElementById('cm_d2').value:'',
     activity:     document.getElementById('cm_a').value,
     place:        document.getElementById('cm_p').value,
     participants: getCheckedTeachers('cm_t_list'),
-    imgUrl:       allPhotos.length?allPhotos[0]:(imgUrl&&imgUrl.startsWith('http')?imgUrl:''),
+    imgUrl:       allPhotos.length?allPhotos[0]:'',
     photos:       allPhotos
   };
   if(!db.rooms[ri].community) db.rooms[ri].community=[];
