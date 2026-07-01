@@ -3336,9 +3336,11 @@ function editPhotoGroup(ri,caption){
   // แสดงรูปเดิม
   validPics.forEach(function(p,pi){
     var imgSrc=p.imgUrl||'';
+    // แปลง Drive URL เป็น thumbnail URL
+    if(imgSrc.startsWith('http')) imgSrc=driveImgSrc(imgSrc);
     if(imgSrc.startsWith('data:')||imgSrc.startsWith('http')){
       html+='<div id="ph_ex_'+pi+'" style="position:relative;border-radius:6px;overflow:hidden;border:1px solid var(--border)">';
-      html+='<img src="'+imgSrc+'" style="width:100%;height:80px;object-fit:cover;display:block" onerror="this.style.display=chr(92)+chr(39)+chr(110)+chr(111)+chr(110)+chr(101)+chr(92)+chr(39)"/>';
+      html+='<img src="'+imgSrc+'" style="width:100%;height:80px;object-fit:cover;display:block" onerror="this.style.display=\'none\'"/>';
       html+='<button onclick="_rmExPhotoPh('+pi+')" style="position:absolute;top:2px;right:2px;background:rgba(0,0,0,.6);color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:10px;cursor:pointer">✕</button>';
       html+='</div>';
     }
