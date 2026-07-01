@@ -1560,6 +1560,29 @@ function loadFromSheets(onDone){
         if(t.startDate) t.startDate=t.startDate.split('T')[0];
         if(t.endDate) t.endDate=t.endDate.split('T')[0];
       });
+      // normalize attendance keys จาก Sheets ที่อาจเป็น Date string
+      // เช่น "Fri May 01 2026 00:00:00 GMT+0700" → "2026-5"
+      if(d.attendance){
+        var normalAtt={};
+        Object.keys(d.attendance).forEach(function(k){
+          var normalKey=k;
+          if(/^(Mon|Tue|Wed|Thu|Fri|Sat|Sun)/.test(k)){
+            var dt=new Date(k);
+            if(!isNaN(dt.getTime())){
+              normalKey=dt.getFullYear()+'-'+(dt.getMonth()+1);
+            }
+          }
+          if(!normalAtt[normalKey]) normalAtt[normalKey]={};
+          var stuData=d.attendance[k]||{};
+          Object.keys(stuData).forEach(function(stuName){
+            if(!normalAtt[normalKey][stuName]) normalAtt[normalKey][stuName]={};
+            Object.assign(normalAtt[normalKey][stuName], stuData[stuName]||{});
+          });
+        });
+        d.attendance=normalAtt;
+      }
+      // เก็บ attendance เดิมถ้า Sheets ไม่มีข้อมูล
+      if(!d.attendance||!Object.keys(d.attendance).length) d.attendance=cur.attendance||{};
       d.schedules=cur.schedules||[];
       d.holidays=cur.holidays||{};
       d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
