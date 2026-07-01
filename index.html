@@ -1549,6 +1549,12 @@ function loadFromSheets(onDone){
       d.students=(d.students||[]).map(function(s){
         var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
         s.iep=old.iep||[]; s.iip=old.iip||[];
+        // เพิ่ม acYear ให้แผนเดิมที่ยังไม่มี โดยใช้ปีการศึกษาปัจจุบัน
+        var curAyStr=String(settings.activeYearId?
+          ((settings.academicYears||[]).find(function(y){return y.id===settings.activeYearId;})||{}).name||String(new Date().getFullYear()+543)
+          :String(new Date().getFullYear()+543));
+        (s.iep||[]).forEach(function(f){if(!f.acYear)f.acYear=curAyStr;});
+        (s.iip||[]).forEach(function(f){if(!f.acYear)f.acYear=curAyStr;});
         return s;
       });
       // normalize period fields ที่อาจเป็น ISO date จาก Sheets
@@ -1813,6 +1819,18 @@ function loadLocal(){
             });
           });
           if(_fixed>0)localStorage.setItem('autismMIS_v4',JSON.stringify(db));
+        }catch(e){}
+        // auto-fix IEP/IIP ที่ไม่มี acYear
+        try{
+          var _iepFixed=0;
+          var _curAyStr=String(new Date().getFullYear()+543);
+          db.rooms.forEach(function(r){
+            (r.students||[]).forEach(function(s){
+              (s.iep||[]).forEach(function(f){if(!f.acYear){f.acYear=_curAyStr;_iepFixed++;}});
+              (s.iip||[]).forEach(function(f){if(!f.acYear){f.acYear=_curAyStr;_iepFixed++;}});
+            });
+          });
+          if(_iepFixed>0)localStorage.setItem('autismMIS_v4',JSON.stringify(db));
         }catch(e){}
       }
     }
@@ -3695,8 +3713,8 @@ function pageIEP(ri, acYear){
     var si=r.students.indexOf(s);
     var iepAll=s.iep||[];
     var iipAll=s.iip||[];
-    var iepFl=iepAll.filter(function(f){return f.acYear&&f.acYear.indexOf(ayStr)>=0;});
-    var iipFl=iipAll.filter(function(f){return f.acYear&&f.acYear.indexOf(ayStr)>=0;});
+    var iepFl=iepAll.filter(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
+    var iipFl=iipAll.filter(function(f){return !f.acYear||f.acYear.indexOf(ayStr)>=0;});
 
     h+='<div class="card">'
       +'<h3>🧒 '+esc(s.name)
