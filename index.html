@@ -884,18 +884,17 @@ function toBEDateFull(isoStr){
 // แปลง period ที่อาจเป็น ISO string จาก Sheets → "เดือน พ.ศ." เช่น "พฤษภาคม 2569"
 function normalizePeriod(period){
   if(!period) return '';
+  // ถ้าเป็นภาษาไทยอยู่แล้ว (มีตัวอักษรไทย) ไม่ต้องแปลง
+  if(/[\u0E00-\u0E7F]/.test(period)) return period;
   // ถ้าเป็น ISO date เช่น "2026-05-01T17:00:00.000Z" หรือ "2026-05-01"
   var isoMatch=period.match(/^(\d{4})-(\d{2})/);
   if(isoMatch){
     var y=+isoMatch[1], m=+isoMatch[2];
+    // ป้องกัน พ.ศ. ถูกแปลงอีกรอบ
+    if(y>2500) return period; // น่าจะเป็น พ.ศ. อยู่แล้ว
     return MONTHS[m-1]+' '+(y+543);
   }
-  // ถ้าเป็น "2569-05" หรือ "2569-5" (พ.ศ.-เดือน)
-  var beMatch=period.match(/^(25\d{2})-(\d{1,2})/);
-  if(beMatch){
-    return MONTHS[+beMatch[2]-1]+' '+beMatch[1];
-  }
-  return period; // ถ้าเป็น "พฤษภาคม 2569" อยู่แล้ว
+  return period;
 }
 function todayBE(){
   var now=new Date();
