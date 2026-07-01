@@ -881,6 +881,22 @@ function toBEDateFull(isoStr){
   if(isNaN(y)||isNaN(m)||isNaN(d))return isoStr;
   return d+' '+MONTHS[m-1]+' '+(y+543);
 }
+// แปลง period ที่อาจเป็น ISO string จาก Sheets → "เดือน พ.ศ." เช่น "พฤษภาคม 2569"
+function normalizePeriod(period){
+  if(!period) return '';
+  // ถ้าเป็น ISO date เช่น "2026-05-01T17:00:00.000Z" หรือ "2026-05-01"
+  var isoMatch=period.match(/^(\d{4})-(\d{2})/);
+  if(isoMatch){
+    var y=+isoMatch[1], m=+isoMatch[2];
+    return MONTHS[m-1]+' '+(y+543);
+  }
+  // ถ้าเป็น "2569-05" หรือ "2569-5" (พ.ศ.-เดือน)
+  var beMatch=period.match(/^(25\d{2})-(\d{1,2})/);
+  if(beMatch){
+    return MONTHS[+beMatch[2]-1]+' '+beMatch[1];
+  }
+  return period; // ถ้าเป็น "พฤษภาคม 2569" อยู่แล้ว
+}
 function todayBE(){
   var now=new Date();
   var d=now.getDate(),m=now.getMonth(),y=now.getFullYear();
@@ -1515,6 +1531,34 @@ function loadFromSheets(onDone){
         var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
         s.iep=old.iep||[]; s.iip=old.iip||[];
         return s;
+      });
+      // normalize period fields ที่อาจเป็น ISO date จาก Sheets
+      (d.services||[]).forEach(function(sv){
+        if(sv.period) sv.period=normalizePeriod(sv.period);
+      });
+      (d.hrMonthly||[]).forEach(function(hr){
+        if(hr.period) hr.period=normalizePeriod(hr.period);
+      });
+      // normalize date fields ใน training/community ที่อาจมี timezone offset
+      (d.training||[]).forEach(function(t){
+        if(t.date) t.date=t.date.split('T')[0];
+        if(t.dateEnd) t.dateEnd=t.dateEnd.split('T')[0];
+      });
+      (d.community||[]).forEach(function(c){
+        if(c.date) c.date=c.date.split('T')[0];
+        if(c.dateEnd) c.dateEnd=c.dateEnd.split('T')[0];
+      });
+      (d.photos||[]).forEach(function(p){
+        if(p.date) p.date=p.date.split('T')[0];
+        if(p.dateEnd) p.dateEnd=p.dateEnd.split('T')[0];
+      });
+      (d.students||[]).forEach(function(s){
+        if(s.dob) s.dob=s.dob.split('T')[0];
+        if(s.stuEndDate) s.stuEndDate=s.stuEndDate.split('T')[0];
+      });
+      (d.teachers||[]).forEach(function(t){
+        if(t.startDate) t.startDate=t.startDate.split('T')[0];
+        if(t.endDate) t.endDate=t.endDate.split('T')[0];
       });
       d.schedules=cur.schedules||[];
       d.holidays=cur.holidays||{};
