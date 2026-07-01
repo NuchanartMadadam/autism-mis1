@@ -886,13 +886,17 @@ function normalizePeriod(period){
   if(!period) return '';
   // ถ้าเป็นภาษาไทยอยู่แล้ว (มีตัวอักษรไทย) ไม่ต้องแปลง
   if(/[\u0E00-\u0E7F]/.test(period)) return period;
-  // ถ้าเป็น ISO date เช่น "2026-05-01T17:00:00.000Z" หรือ "2026-05-01"
-  var isoMatch=period.match(/^(\d{4})-(\d{2})/);
-  if(isoMatch){
-    var y=+isoMatch[1], m=+isoMatch[2];
-    // ป้องกัน พ.ศ. ถูกแปลงอีกรอบ
-    if(y>2500) return period; // น่าจะเป็น พ.ศ. อยู่แล้ว
-    return MONTHS[m-1]+' '+(y+543);
+  // ตัด T ออกก่อน เหลือแค่ "2569-04-30" หรือ "2026-04-30"
+  var dateOnly=period.split('T')[0];
+  var parts=dateOnly.split('-');
+  if(parts.length>=2){
+    var y=+parts[0], m=+parts[1];
+    if(!isNaN(y)&&!isNaN(m)&&m>=1&&m<=12){
+      // ถ้าเป็น พ.ศ. (>2400) ใช้ตรงๆ
+      if(y>2400) return MONTHS[m-1]+' '+y;
+      // ถ้าเป็น ค.ศ. (1900-2100) บวก 543
+      if(y>=1900&&y<=2100) return MONTHS[m-1]+' '+(y+543);
+    }
   }
   return period;
 }
