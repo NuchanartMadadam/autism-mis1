@@ -2395,13 +2395,29 @@ function saveTeacher(ri,idx){
     photoUrl: _g('t_photo')
   };
   if(!t.name){alert('กรุณากรอกชื่อ-สกุล');return;}
-  if(idx===-1)db.rooms[ri].teachers.push(t);
-  else db.rooms[ri].teachers[idx]=t;
-  saveLocal();
-  syncSheet('saveTeachers',ri,db.rooms[ri].teachers);
-  closeModal();
-  toast('บันทึกสำเร็จ ✓');
-  pageTeachers(ri);
+
+  function _doSave(photoUrl){
+    t.photoUrl=photoUrl;
+    if(idx===-1)db.rooms[ri].teachers.push(t);
+    else db.rooms[ri].teachers[idx]=t;
+    saveLocal();
+    syncSheet('saveTeachers',ri,db.rooms[ri].teachers);
+    closeModal();
+    toast('บันทึกสำเร็จ ✓');
+    pageTeachers(ri);
+  }
+
+  // อัปโหลดรูปขึ้น Drive ก่อน ถ้าเป็น base64
+  if(t.photoUrl&&t.photoUrl.startsWith('data:')&&settings.scriptUrl){
+    toast('กำลังอัปโหลดรูปครูไป Google Drive...');
+    var subFolder='ครู_'+(RS[ri]||('ห้อง'+ri));
+    var fname='teacher_'+ri+'_'+Date.now()+'.jpg';
+    syncImgToDrive(t.photoUrl,fname,subFolder,function(url){
+      _doSave(url||t.photoUrl);
+    });
+  } else {
+    _doSave(t.photoUrl);
+  }
 }
 window.saveTeacher=saveTeacher;
 function delTeacher(ri,idx){if(confirm('ยืนยันการลบ?')){db.rooms[ri].teachers.splice(idx,1);saveLocal();syncSheet('saveTeachers',ri,db.rooms[ri].teachers);toast('ลบแล้ว');pageTeachers(ri);}}
