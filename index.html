@@ -852,20 +852,23 @@ window.fixHRPeriods=fixHRPeriods;
 
 // -- แปลงวันที่เป็น พ.ศ. ------------------------------
 function toBEDate(isoStr){
-  // รับ "2026-05-06" หรือ "2026-06-10" → "6 พ.ค. 2569"
   if(!isoStr)return '-';
-  var parts=isoStr.split('-');
+  // รองรับทั้ง "2026-05-06" และ "2026-05-07T17:00:00.000Z" (จาก Google Sheets)
+  var s=isoStr.split('T')[0];
+  var parts=s.split('-');
   if(parts.length<3)return isoStr;
   var y=+parts[0],m=+parts[1],d=+parts[2];
+  if(isNaN(y)||isNaN(m)||isNaN(d))return isoStr;
   var mNames=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
   return d+' '+mNames[m-1]+' '+(y+543);
 }
 function toBEDateFull(isoStr){
-  // รับ "2026-05-06" → "6 พฤษภาคม 2569"
   if(!isoStr)return '-';
-  var parts=isoStr.split('-');
+  var s=isoStr.split('T')[0];
+  var parts=s.split('-');
   if(parts.length<3)return isoStr;
   var y=+parts[0],m=+parts[1],d=+parts[2];
+  if(isNaN(y)||isNaN(m)||isNaN(d))return isoStr;
   return d+' '+MONTHS[m-1]+' '+(y+543);
 }
 function todayBE(){
@@ -1457,18 +1460,21 @@ function loadFromSheets(onDone){
   function loadRoom(ri){
     var cbName='_gsCallback_'+ri+'_'+Date.now();
     var script=document.createElement('script');
-    var timer=setTimeout(function(){
-      // timeout 10s
+    var settled=false;
+
+    function finish(){
+      if(settled)return;
+      settled=true;
       delete window[cbName];
       if(script.parentNode)script.parentNode.removeChild(script);
       done++;
       checkDone();
-    },10000);
+    }
+
+    var timer=setTimeout(finish, 15000);
 
     window[cbName]=function(res){
       clearTimeout(timer);
-      delete window[cbName];
-      if(script.parentNode)script.parentNode.removeChild(script);
       if(res&&res.status==='ok'&&res.data){
         anyOk=true;
         var d=res.data, cur=db.rooms[ri]||mkRoom();
@@ -1482,17 +1488,11 @@ function loadFromSheets(onDone){
         d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
         db.rooms[ri]=Object.assign(cur,d);
       }
-      done++;
-      checkDone();
+      finish();
     };
 
+    script.onerror=function(){ clearTimeout(timer); finish(); };
     script.src=settings.scriptUrl+'?action=loadAll&roomIndex='+ri+'&callback='+cbName+'&t='+Date.now();
-    script.onerror=function(){
-      clearTimeout(timer);
-      delete window[cbName];
-      done++;
-      checkDone();
-    };
     document.head.appendChild(script);
   }
 
