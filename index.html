@@ -622,9 +622,10 @@ function uploadToDrive(base64Data, fileName, mimeType, subFolder, callback){
   }
   fetch(scriptUrl,{
     method:'POST',
+    headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
       action:'uploadFile',
-      data:base64Data,
+      fileData:base64Data,
       fileName:fileName||'file',
       mimeType:mimeType||'image/jpeg',
       subFolder:subFolder||'ไฟล์แนบ'
@@ -2880,6 +2881,10 @@ window.saveTr=saveTr;
 function _saveTrData(ri, idx, imgUrl){
   var newPhotos=(window._multiPhoto2&&window._multiPhoto2.tr)?window._multiPhoto2.tr.filter(function(x){return x;}):[];
   var existPhotos=(idx>=0&&db.rooms[ri].training[idx]&&db.rooms[ri].training[idx].photos)?db.rooms[ri].training[idx].photos:[];
+  // ถ้า imgUrl เป็น Drive URL จริง ให้เพิ่มเข้า newPhotos ด้วย
+  if(imgUrl&&imgUrl.startsWith('http')&&newPhotos.indexOf(imgUrl)<0){
+    newPhotos.push(imgUrl);
+  }
   var allPhotos=existPhotos.concat(newPhotos.filter(function(p){return existPhotos.indexOf(p)<0;}));
   var t = {
     person: (getCheckedTeachers('tr_p_list')||'(ไม่ระบุ)'),
@@ -2887,7 +2892,7 @@ function _saveTrData(ri, idx, imgUrl){
     org:    document.getElementById('tr_o').value,
     date:   document.getElementById('tr_d').value,
     dateEnd:document.getElementById('tr_d2')?document.getElementById('tr_d2').value:'',
-    imgUrl: allPhotos.length?allPhotos[0]:imgUrl,
+    imgUrl: allPhotos.length?allPhotos[0]:(imgUrl&&imgUrl.startsWith('http')?imgUrl:''),
     photos: allPhotos
   };
   if(!db.rooms[ri].training) db.rooms[ri].training=[];
@@ -2992,6 +2997,9 @@ window.saveCom=saveCom;
 function _saveComData(ri, idx, imgUrl){
   var newPhotos=(window._multiPhoto2&&window._multiPhoto2.cm)?window._multiPhoto2.cm.filter(function(x){return x;}):[];
   var existPhotos=(idx>=0&&db.rooms[ri].community[idx]&&db.rooms[ri].community[idx].photos)?db.rooms[ri].community[idx].photos:[];
+  if(imgUrl&&imgUrl.startsWith('http')&&newPhotos.indexOf(imgUrl)<0){
+    newPhotos.push(imgUrl);
+  }
   var allPhotos=existPhotos.concat(newPhotos.filter(function(p){return existPhotos.indexOf(p)<0;}));
   var c = {
     date:         document.getElementById('cm_d').value,
@@ -2999,7 +3007,7 @@ function _saveComData(ri, idx, imgUrl){
     activity:     document.getElementById('cm_a').value,
     place:        document.getElementById('cm_p').value,
     participants: getCheckedTeachers('cm_t_list'),
-    imgUrl:       allPhotos.length?allPhotos[0]:imgUrl,
+    imgUrl:       allPhotos.length?allPhotos[0]:(imgUrl&&imgUrl.startsWith('http')?imgUrl:''),
     photos:       allPhotos
   };
   if(!db.rooms[ri].community) db.rooms[ri].community=[];
