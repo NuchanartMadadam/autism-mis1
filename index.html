@@ -752,30 +752,33 @@ window.academicYearPickerHtml=academicYearPickerHtml;
 function viewIEPFile(btn){
   var url=btn.dataset.url||'';
   var ri=+btn.dataset.ri,si=+btn.dataset.si,idx=+btn.dataset.idx;
+  var type=btn.dataset.type||'iep';
   var s=db.rooms[ri].students[si];
-  var f=(s.iep||[])[idx]||(s.iip||[])[idx];
+  var f=(type==='iep'?(s.iep||[]):(s.iip||[]))[idx];
   var title=f?esc(f.name):'ไฟล์แผนการสอน';
+  var src=f?(f.dataUrl||f.url||url):'';
 
-  // ถ้าเป็น dataUrl → แปลงเป็น blob URL แล้วเปิด popup
-  if(f&&f.dataUrl&&f.dataUrl.startsWith('data:')){
+  if(!src){toast('ไม่พบไฟล์','err');return;}
+
+  // ถ้าเป็น Drive URL → เปิด tab ใหม่โดยตรง (Drive บล็อก iframe)
+  if(src.startsWith('http')){
+    var previewUrl=src.replace('/view','/preview').replace('/edit','/preview');
+    window.open(previewUrl,'_blank');
+    return;
+  }
+
+  // ถ้าเป็น base64 → เปิดใน modal
+  if(src.startsWith('data:')){
     try{
-      var byteStr=atob(f.dataUrl.split(',')[1]);
+      var byteStr=atob(src.split(',')[1]);
       var ab=new ArrayBuffer(byteStr.length);
       var ia=new Uint8Array(ab);
       for(var i=0;i<byteStr.length;i++) ia[i]=byteStr.charCodeAt(i);
       var blob=new Blob([ab],{type:'application/pdf'});
       var blobUrl=URL.createObjectURL(blob);
-      _openPdfPopup(blobUrl, title);
+      window.open(blobUrl,'_blank');
       return;
-    }catch(e){ toast('เปิดไฟล์ไม่ได้: '+e.message,'err'); return; }
-  }
-
-  // ถ้ามี URL Drive → แปลงเป็น /preview แล้วเปิด popup
-  if(url&&url.startsWith('http')){
-    // Google Drive: /file/d/ID/view → /file/d/ID/preview
-    var previewUrl=url.replace('/view','/preview').replace('/edit','/preview');
-    _openPdfPopup(previewUrl, title);
-    return;
+    }catch(e){toast('เปิดไฟล์ไม่ได้: '+e.message,'err');return;}
   }
 
   toast('ไม่พบไฟล์','err');
@@ -3889,7 +3892,18 @@ function viewPDF(src,fname){
     +'</div>');
 }
 window.viewPDF=viewPDF;
-function delIEP(ri,si,type,fi){if(confirm('ยืนยัน?')){db.rooms[ri].students[si][type].splice(fi,1);saveLocal();syncSheet('saveIEP',ri,db.rooms[ri].students);toast('ลบแล้ว');pageIEP(ri);}}
+function delIEP(ri,si,type,fi){
+  if(!confirm('ยืนยัน?'))return;
+  var r=db.rooms[ri];
+  if(!r||!r.students[si])return;
+  var arr=r.students[si][type]||[];
+  arr.splice(fi,1);
+  r.students[si][type]=arr;
+  saveLocal();
+  syncSheet('saveStudents',ri,r.students);
+  toast('ลบแล้ว');
+  pageIEP(ri);
+}
 window.delIEP=delIEP;
 
 // ------------ 11. REPORT ------------
