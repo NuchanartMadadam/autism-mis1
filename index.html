@@ -2865,16 +2865,28 @@ function editTraining(ri,idx){
 window.editTraining=editTraining;
 function saveTr(ri,idx){
   ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
-  var imgVal = document.getElementById('tr_img') ? document.getElementById('tr_img').value : '';
-  var imgName = 'training_'+ri+'_'+Date.now()+'.jpg';
-  var subFolder = 'อบรม_' + (RS[ri]||('ห้อง'+ri));
-  if(imgVal && imgVal.startsWith('data:') && settings.scriptUrl){
-    toast('กำลังอัปโหลดรูปไป Google Drive...');
-    syncImgToDrive(imgVal, imgName, subFolder, function(finalUrl){
-      _saveTrData(ri, idx, finalUrl);
+  var subFolder='อบรม_'+(RS[ri]||('ห้อง'+ri));
+  var newPhotos=(window._multiPhoto2&&window._multiPhoto2.tr)?window._multiPhoto2.tr.filter(function(x){return x;}):[];
+  var base64Photos=newPhotos.filter(function(p){return p&&p.startsWith('data:');});
+  var drivePhotos=newPhotos.filter(function(p){return p&&p.startsWith('http');});
+
+  if(base64Photos.length&&settings.scriptUrl){
+    toast('กำลังอัปโหลด '+base64Photos.length+' รูปไป Google Drive...');
+    var uploaded=[];
+    var done=0;
+    base64Photos.forEach(function(b64,i){
+      var fname='training_'+ri+'_'+Date.now()+'_'+i+'.jpg';
+      syncImgToDrive(b64,fname,subFolder,function(url){
+        if(url&&url.startsWith('http')) uploaded.push(url);
+        done++;
+        if(done>=base64Photos.length){
+          window._multiPhoto2.tr=drivePhotos.concat(uploaded);
+          _saveTrData(ri,idx,'');
+        }
+      });
     });
   } else {
-    _saveTrData(ri, idx, imgVal);
+    _saveTrData(ri,idx,'');
   }
 }
 window.saveTr=saveTr;
@@ -2981,16 +2993,28 @@ function editCom(ri,idx){
 window.editCom=editCom;
 function saveCom(ri,idx){
   ri=+ri; idx=(idx!==undefined&&idx!==null)?+idx:-1;
-  var imgVal = document.getElementById('cm_img') ? document.getElementById('cm_img').value : '';
-  var imgName = 'community_'+ri+'_'+Date.now()+'.jpg';
-  var subFolder = 'ชุมชน_' + (RS[ri]||('ห้อง'+ri));
-  if(imgVal && imgVal.startsWith('data:') && settings.scriptUrl){
-    toast('กำลังอัปโหลดรูปไป Google Drive...');
-    syncImgToDrive(imgVal, imgName, subFolder, function(finalUrl){
-      _saveComData(ri, idx, finalUrl);
+  var subFolder='ชุมชน_'+(RS[ri]||('ห้อง'+ri));
+  var newPhotos=(window._multiPhoto2&&window._multiPhoto2.cm)?window._multiPhoto2.cm.filter(function(x){return x;}):[];
+  var base64Photos=newPhotos.filter(function(p){return p&&p.startsWith('data:');});
+  var drivePhotos=newPhotos.filter(function(p){return p&&p.startsWith('http');});
+
+  if(base64Photos.length&&settings.scriptUrl){
+    toast('กำลังอัปโหลด '+base64Photos.length+' รูปไป Google Drive...');
+    var uploaded=[];
+    var done=0;
+    base64Photos.forEach(function(b64,i){
+      var fname='community_'+ri+'_'+Date.now()+'_'+i+'.jpg';
+      syncImgToDrive(b64,fname,subFolder,function(url){
+        if(url&&url.startsWith('http')) uploaded.push(url);
+        done++;
+        if(done>=base64Photos.length){
+          window._multiPhoto2.cm=drivePhotos.concat(uploaded);
+          _saveComData(ri,idx,'');
+        }
+      });
     });
   } else {
-    _saveComData(ri, idx, imgVal);
+    _saveComData(ri,idx,'');
   }
 }
 window.saveCom=saveCom;
