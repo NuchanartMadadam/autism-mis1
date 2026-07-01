@@ -614,13 +614,23 @@ function viewPDF2(src,name){
 window.viewPDF2=viewPDF2;
 
 // -- DRIVE UPLOAD -------------------------------------
+// ─── Proxy helper — วิ่งผ่าน /api/proxy เพื่อหลีกเลี่ยง CORS ───
+function proxyUrl(scriptUrl){
+  if(!scriptUrl) return '';
+  // ถ้าเปิดจาก localhost หรือ file:// ให้เรียก Apps Script โดยตรง
+  var host=location.hostname;
+  if(host==='localhost'||host===''||host==='127.0.0.1') return scriptUrl;
+  // บน Vercel ให้วิ่งผ่าน proxy
+  return '/api/proxy?scriptUrl='+encodeURIComponent(scriptUrl);
+}
+
 function uploadToDrive(base64Data, fileName, mimeType, subFolder, callback){
   var scriptUrl = settings.scriptUrl;
   if(!scriptUrl||!base64Data||!base64Data.startsWith('data:')){
     if(callback)callback(null);
     return;
   }
-  fetch(scriptUrl,{
+  fetch(proxyUrl(scriptUrl),{
     method:'POST',
     headers:{'Content-Type':'application/json'},
     body:JSON.stringify({
@@ -1458,42 +1468,53 @@ function loadFromSheets(onDone){
   var done=0, anyOk=false;
 
   function loadRoom(ri){
-    var cbName='_gsCallback_'+ri+'_'+Date.now();
-    var script=document.createElement('script');
-    var settled=false;
+    var url=proxyUrl(settings.scriptUrl)+'&action=loadAll&roomIndex='+ri+'&t='+Date.now();
+    // ถ้าเป็น localhost ให้ใช้ JSONP แทน
+    var host=location.hostname;
+    var useJsonp=(host===''||host==='localhost'||host==='127.0.0.1');
 
-    function finish(){
-      if(settled)return;
-      settled=true;
-      delete window[cbName];
-      if(script.parentNode)script.parentNode.removeChild(script);
-      done++;
-      checkDone();
-    }
-
-    var timer=setTimeout(finish, 15000);
-
-    window[cbName]=function(res){
-      clearTimeout(timer);
-      if(res&&res.status==='ok'&&res.data){
-        anyOk=true;
-        var d=res.data, cur=db.rooms[ri]||mkRoom();
-        d.students=(d.students||[]).map(function(s){
-          var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
-          s.iep=old.iep||[]; s.iip=old.iip||[];
-          return s;
-        });
-        d.schedules=cur.schedules||[];
-        d.holidays=cur.holidays||{};
-        d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
-        db.rooms[ri]=Object.assign(cur,d);
+    if(useJsonp){
+      var cbName='_gsCallback_'+ri+'_'+Date.now();
+      var script=document.createElement('script');
+      var settled=false;
+      function finish(){
+        if(settled)return; settled=true;
+        delete window[cbName];
+        if(script.parentNode)script.parentNode.removeChild(script);
+        done++; checkDone();
       }
-      finish();
-    };
+      var timer=setTimeout(finish,15000);
+      window[cbName]=function(res){
+        clearTimeout(timer);
+        mergeRoom(ri,res);
+        finish();
+      };
+      script.onerror=function(){clearTimeout(timer);finish();};
+      script.src=settings.scriptUrl+'?action=loadAll&roomIndex='+ri+'&callback='+cbName+'&t='+Date.now();
+      document.head.appendChild(script);
+    } else {
+      fetch(url)
+        .then(function(r){return r.json();})
+        .then(function(res){ mergeRoom(ri,res); })
+        .catch(function(e){console.warn('loadRoom '+ri+' failed:',e);})
+        .finally(function(){ done++; checkDone(); });
+    }
+  }
 
-    script.onerror=function(){ clearTimeout(timer); finish(); };
-    script.src=settings.scriptUrl+'?action=loadAll&roomIndex='+ri+'&callback='+cbName+'&t='+Date.now();
-    document.head.appendChild(script);
+  function mergeRoom(ri,res){
+    if(res&&res.status==='ok'&&res.data){
+      anyOk=true;
+      var d=res.data, cur=db.rooms[ri]||mkRoom();
+      d.students=(d.students||[]).map(function(s){
+        var old=(cur.students||[]).find(function(x){return x.name===s.name;})||{};
+        s.iep=old.iep||[]; s.iip=old.iip||[];
+        return s;
+      });
+      d.schedules=cur.schedules||[];
+      d.holidays=cur.holidays||{};
+      d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
+      db.rooms[ri]=Object.assign(cur,d);
+    }
   }
 
   function checkDone(){
@@ -4565,14 +4586,11 @@ async function syncSheet(action, roomIndex, data){
     }));
   }catch(e){cleanData=data;}
   try{
-    fetch(settings.scriptUrl,{
+    fetch(proxyUrl(settings.scriptUrl),{
       method:'POST',
-      mode:'no-cors',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({action:action,roomIndex:roomIndex,data:cleanData})
-    }).then(function(){
-      // no-cors ไม่มี response body — ถือว่าสำเร็จ
-    }).catch(function(err){
+    }).then(function(){}).catch(function(err){
       console.warn('syncSheet failed:',err);
     });
   }catch(e){console.warn('syncSheet error:',e);}
