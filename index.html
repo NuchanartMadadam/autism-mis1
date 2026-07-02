@@ -2062,12 +2062,13 @@ function getActiveYearMonths(){
 
 function applyLogo(){
   const url=settings.logoDataUrl;
-  document.getElementById('loginLogoIcon').style.display=url?'none':'';
-  document.getElementById('loginLogoImg').src=url||'';
-  document.getElementById('loginLogoImg').style.display=url?'block':'none';
-  document.getElementById('topbarIcon').style.display=url?'none':'';
-  document.getElementById('topbarLogo').src=url||'';
-  document.getElementById('topbarLogo').style.display=url?'block':'none';
+  var src=url?(url.startsWith('http')?driveImgSrc(url):url):'';
+  document.getElementById('loginLogoIcon').style.display=src?'none':'';
+  document.getElementById('loginLogoImg').src=src||'';
+  document.getElementById('loginLogoImg').style.display=src?'block':'none';
+  document.getElementById('topbarIcon').style.display=src?'none':'';
+  document.getElementById('topbarLogo').src=src||'';
+  document.getElementById('topbarLogo').style.display=src?'block':'none';
 }
 
 // ------------ AUTH ------------
@@ -4582,7 +4583,37 @@ function pageSettings(){
     <button class="btn btn-outline" onclick="importJSON()">📥 นำเข้า JSON</button>
   </div></div>`;
   render(h);}
-function handleLogo(e){const f=e.target.files[0];if(!f)return;if(f.size>500000){toast('ไฟล์ใหญ่เกิน 500KB','err');return;}const r=new FileReader();r.onload=ev=>{settings.logoDataUrl=ev.target.result;saveSettings();applyLogo();toast('เปลี่ยนโลโก้สำเร็จ ✓');pageSettings();};r.readAsDataURL(f);}
+function handleLogo(e){
+  const f=e.target.files[0];
+  if(!f)return;
+  if(f.size>2*1024*1024){toast('ไฟล์ใหญ่เกิน 2MB','err');return;}
+  const r=new FileReader();
+  r.onload=function(ev){
+    var base64=ev.target.result;
+    if(settings.scriptUrl){
+      toast('กำลังอัปโหลดโลโก้ไป Google Drive...');
+      uploadToDrive(base64,'logo_'+Date.now()+'.png','image/png','ระบบ_โลโก้',function(url){
+        if(url&&url.startsWith('http')){
+          settings.logoDataUrl=url;
+        } else {
+          // fallback เก็บ base64 ถ้าอัปโหลดไม่ได้
+          settings.logoDataUrl=base64;
+        }
+        saveSettings();
+        applyLogo();
+        toast('เปลี่ยนโลโก้สำเร็จ ✓');
+        pageSettings();
+      });
+    } else {
+      settings.logoDataUrl=base64;
+      saveSettings();
+      applyLogo();
+      toast('เปลี่ยนโลโก้สำเร็จ ✓');
+      pageSettings();
+    }
+  };
+  r.readAsDataURL(f);
+}
 window.handleLogo=handleLogo;
 function removeLogo(){settings.logoDataUrl='';saveSettings();applyLogo();toast('ลบโลโก้แล้ว');pageSettings();}
 window.removeLogo=removeLogo;
