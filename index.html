@@ -1757,17 +1757,22 @@ window.updateStuStatusBox=updateStuStatusBox;
 
 function loadLocal(){
   // โหลด settings ก่อน
+  var _hardcodedScriptUrl='https://script.google.com/macros/s/AKfycbwMyyDXSJYFk5M2EM2Ui6sriIG2hXPeS34oFi2LhShV8z3yDhKH4Td9pPNvNvGLGAz9/exec';
   try{
     var s=localStorage.getItem('autismMIS_settings');
     if(s){
       var cfg=JSON.parse(s);
+      // โหลดทุกอย่างจาก localStorage ยกเว้น scriptUrl ที่ hardcode ไว้แล้ว
+      var savedUrl=cfg.scriptUrl;
       settings=Object.assign(settings,cfg);
+      // ใช้ hardcoded URL เสมอ (ไม่ให้ localStorage ทับ)
+      settings.scriptUrl=_hardcodedScriptUrl;
     }
   }catch(e){}
-  // restore scriptUrl จาก key แยก (กันหาย)
+  // ล้าง scriptUrl เก่าออกจาก localStorage ด้วย
   try{
-    var su=localStorage.getItem('autismMIS_scriptUrl');
-    if(su&&su.length>10) settings.scriptUrl=su;
+    localStorage.removeItem('autismMIS_scriptUrl');
+    settings.scriptUrl=_hardcodedScriptUrl;
   }catch(e){}
   // ensure settings integrity
   if(!settings.academicYears)settings.academicYears=[{id:1,name:'ปีการศึกษา 2567',startDate:'2024-05-16',endDate:'2025-03-31',active:true}];
