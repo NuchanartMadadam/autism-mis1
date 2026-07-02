@@ -1523,7 +1523,12 @@ function mergeRoom(ri,res){
     }
     if(!d.attendance||!Object.keys(d.attendance).length)d.attendance=cur.attendance||{};
     d.schedules=cur.schedules||[];
-    d.holidays=cur.holidays||{};
+    // merge holidays จาก Sheets กับของเดิม ไม่ทับทั้งหมด
+    if(d.holidays&&Object.keys(d.holidays).length){
+      d.holidays=Object.assign({},cur.holidays||{},d.holidays);
+    } else {
+      d.holidays=cur.holidays||{};
+    }
     d.signedReports=d.signedReports&&d.signedReports.length?d.signedReports:(cur.signedReports||[]);
     db.rooms[ri]=Object.assign(cur,d);
   }
@@ -2758,13 +2763,14 @@ function saveHolidays(ri,key){
   var r=db.rooms[ri];
   if(!r.holidays)r.holidays={};
   r.holidays[key]={};
-  // อ่านค่าจาก inputs
   document.querySelectorAll('[id^="hol_"]').forEach(function(inp){
     var d=+inp.id.replace('hol_','');
     var val=inp.value.trim();
     if(val)r.holidays[key][d]=val;
   });
   saveLocal();
+  // sync holidays ขึ้น Sheets
+  syncSheet('saveHolidays',ri,r.holidays);
   closeModal();
   toast('บันทึกวันหยุดสำเร็จ ✓');
   pageAttendance(ri);
@@ -2776,6 +2782,7 @@ function clearAllHolidays(ri,key){
   if(!confirm('ล้างวันหยุดทั้งหมดของเดือนนี้?'))return;
   if(db.rooms[ri].holidays)db.rooms[ri].holidays[key]={};
   saveLocal();
+  syncSheet('saveHolidays',ri,db.rooms[ri].holidays);
   closeModal();
   toast('ล้างวันหยุดแล้ว');
   pageAttendance(ri);
