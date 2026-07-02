@@ -251,17 +251,8 @@ const ACCOUNTS={
 };
 // โหลดรหัสผ่านที่ admin ตั้งค่าไว้
 function loadAccountPasswords(){
-  try{
-    var s=localStorage.getItem('autismMIS_settings');
-    if(s){
-      var cfg=JSON.parse(s);
-      if(cfg.userPasswords){
-        Object.keys(cfg.userPasswords).forEach(function(k){
-          if(ACCOUNTS[k]&&cfg.userPasswords[k])ACCOUNTS[k].pass=cfg.userPasswords[k];
-        });
-      }
-    }
-  }catch(e){}
+  // รหัสผ่าน hardcode ในไฟล์แล้ว ไม่ต้องโหลดจาก localStorage
+  // (เพื่อให้ทุก browser ใช้รหัสเดียวกัน)
 }
 loadAccountPasswords();
 const ROOMS=['โรงเรียนเทศบาล 2 (บ้านหาดใหญ่)','โรงเรียนวัดเจริญภูผา','โรงเรียนบ้านทำเนียบ'];
@@ -1455,12 +1446,13 @@ function saveUserPass(key){
   if(!pw1){setMsg('กรุณากรอกรหัสผ่านใหม่',false);return;}
   if(pw1.length<6){setMsg('รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร',false);return;}
   if(pw1!==pw2){setMsg('รหัสผ่านไม่ตรงกัน',false);return;}
+  // อัปเดต ACCOUNTS ทันที (ใช้ได้ใน session นี้)
+  if(ACCOUNTS[key])ACCOUNTS[key].pass=pw1;
+  // บันทึกลง settings ด้วย (แต่จะ reset เมื่อ deploy ใหม่)
   if(!settings.userPasswords)settings.userPasswords={};
   settings.userPasswords[key]=pw1;
-  // อัปเดต ACCOUNTS ทันที
-  if(ACCOUNTS[key])ACCOUNTS[key].pass=pw1;
   localStorage.setItem('autismMIS_settings',JSON.stringify(settings));
-  setMsg('✓ เปลี่ยนรหัสผ่านสำเร็จ',true);
+  setMsg('✓ เปลี่ยนรหัสผ่านสำเร็จ (มีผลจนกว่าจะ deploy ใหม่)',true);
   document.getElementById('pw_'+key).value='';
   document.getElementById('pw2_'+key).value='';
   toast('เปลี่ยนรหัสผ่าน '+key+' สำเร็จ ✓');
