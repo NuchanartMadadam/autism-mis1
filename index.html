@@ -4469,7 +4469,11 @@ function printReport(){
     _printInProgress=false;
   }
 
+  var printFired=false;
   function doPrint(){
+    // กันการสั่งพิมพ์ซ้ำ ถ้าเส้นทาง "รอรูปโหลดครบ" กับเส้นทาง "สำรอง 6 วิ" มาถึงพร้อมกัน
+    if(printFired)return;
+    printFired=true;
     // ถ้า iframe ถูกลบไปแล้ว (เช่นมีการพิมพ์ครั้งใหม่แทรกเข้ามา) ให้ยกเลิกและคืนเนื้อหากลับ
     if(!iframe.isConnected || !iframe.contentWindow){
       restoreAndCleanup();
