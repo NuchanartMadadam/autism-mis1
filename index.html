@@ -265,7 +265,7 @@ function mkRoom(){return{teachers:[],students:[],attendance:{},services:[],hrMon
 let db={rooms:[mkRoom(),mkRoom(),mkRoom()]};
 let settings={
   scriptUrl:'https://script.google.com/macros/s/AKfycbwMyyDXSJYFk5M2EM2Ui6sriIG2hXPeS34oFi2LhShV8z3yDhKH4Td9pPNvNvGLGAz9/exec',
-  logoDataUrl:'https://drive.google.com/thumbnail?id=1m2PBEHh44TBI92HEDDL8Ert1NojqsV0y&sz=w200',
+  logoDataUrl:'https://drive.google.com/thumbnail?id=1m2PBEHh44TBI92HEDDL8ErtlNojqsV0y&sz=w200',
   academicYears:[
     {id:1, name:'ปีการศึกษา 2567', startDate:'2024-05-16', endDate:'2025-03-31', active:true}
   ],
@@ -1758,7 +1758,7 @@ window.updateStuStatusBox=updateStuStatusBox;
 function loadLocal(){
   // โหลด settings ก่อน
   var _hardcodedScriptUrl='https://script.google.com/macros/s/AKfycbwMyyDXSJYFk5M2EM2Ui6sriIG2hXPeS34oFi2LhShV8z3yDhKH4Td9pPNvNvGLGAz9/exec';
-  var _hardcodedLogoUrl='https://drive.google.com/thumbnail?id=1m2PBEHh44TBI92HEDDL8Ert1NojqsV0y&sz=w200';
+  var _hardcodedLogoUrl='https://drive.google.com/thumbnail?id=1m2PBEHh44TBI92HEDDL8ErtlNojqsV0y&sz=w200';
   try{
     var s=localStorage.getItem('autismMIS_settings');
     if(s){
