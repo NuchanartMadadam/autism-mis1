@@ -212,8 +212,8 @@ hr.dashed{border:none;border-top:1px dashed var(--border);margin:1rem 0}
     <h1>ระบบสารสนเทศ<br>ห้องเรียนคู่ขนานบุคคลออทิสติก</h1>
     <p>ฝ่ายบริหารวิชาการ ศูนย์การศึกษาพิเศษ เขตการศึกษา 3 จังหวัดสงขลา</p>
   </div>
-  <div class="form-group"><label>ชื่อผู้ใช้</label><input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้"/></div>
-  <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" onkeydown="if(event.key==='Enter')doLogin()"/></div>
+  <div class="form-group"><label>ชื่อผู้ใช้</label><input type="text" id="loginUser" placeholder="กรอกชื่อผู้ใช้" autocomplete="off"/></div>
+  <div class="form-group"><label>รหัสผ่าน</label><input type="password" id="loginPass" placeholder="กรอกรหัสผ่าน" autocomplete="new-password" onkeydown="if(event.key==='Enter')doLogin()"/></div>
   <div id="loginError" class="error-msg" style="display:none">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง</div>
   <button class="btn btn-primary btn-full mt-2" onclick="doLogin()">🔐 เข้าสู่ระบบ</button>
 </div>
@@ -316,9 +316,10 @@ function fileToDataURL(file,maxMB){
 
 function imgZoneHtml(fid, val, label){
   var has=val&&(val.startsWith('data:')||val.startsWith('http'));
+  var imgSrc=has?(val.startsWith('http')?driveImgSrc(val):val):'';
   var inner=has
     ?['<div class="img-preview-wrap">',
-      '<img src="'+val+'" style="max-width:100%;max-height:150px;border-radius:8px;border:1px solid var(--border)" onerror="this.hidden=true" alt="ภาพ"/>',
+      '<img src="'+imgSrc+'" style="max-width:100%;max-height:150px;border-radius:8px;border:1px solid var(--border)" onerror="this.hidden=true" alt="ภาพ"/>',
       '<button class="remove-img" data-fid="'+fid+'" onclick="event.stopPropagation();clearImgZone(this.dataset.fid)">✕</button>',
       '</div>'].join('')
     :['<div style="font-size:24px;margin-bottom:4px">📷</div>',
