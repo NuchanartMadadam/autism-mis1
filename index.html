@@ -2158,19 +2158,26 @@ function showPage(p){
   if(ar===undefined||ar===null||ar<0||ar>2)ar=getRooms()[0]||0;
   const map={dashboard:pageDashboard,teachers:()=>pageTeachers(ar),students:()=>pageStudents(ar),referral:()=>pageReferral(ar),attendance:()=>pageAttendance(ar),services:()=>pageServices(ar),hrmonthly:()=>pageHRMonthly(ar),training:()=>pageTraining(ar),community:()=>pageCommunity(ar),network:()=>pageNetwork(ar),photos:()=>pagePhotos(ar),iep:()=>pageIEP(ar),schedule:()=>pageSchedule(ar),report:pageReport,stats:pageStats,signedReport:pageSignedReport,settings:pageSettings,admin:pageAdmin,gsSetup:showGsSetup,academicYear:pageAcademicYear};
 
-  // โหลดข้อมูลใหม่จาก Sheets ถ้าเป็นหน้าที่ต้องการ (ทุก 60 วินาที)
+  // โหลดข้อมูลใหม่จาก Sheets ถ้าเป็นหน้าที่ต้องการ (ทุก 30 วินาที)
   var now=Date.now();
   var cacheKey=p+'_'+ar;
   if(_pagesNeedRefresh.indexOf(p)>=0 && settings.scriptUrl &&
-     (!_lastRefresh[cacheKey]||now-_lastRefresh[cacheKey]>60000)){
+     (!_lastRefresh[cacheKey]||now-_lastRefresh[cacheKey]>30000)){
     _lastRefresh[cacheKey]=now;
-    // โหลด background ไม่บล็อก UI
     var ri2=ar;
+    var pageFn=map[p]; // capture ก่อน
+    render('<div style="text-align:center;padding:3rem;color:var(--muted)">⏳ กำลังโหลดข้อมูลล่าสุด...</div>');
     fetch(proxyUrl(settings.scriptUrl)+'&action=loadAll&roomIndex='+ri2+'&t='+now)
       .then(function(r){return r.json();})
-      .then(function(res){mergeRoom(ri2,res);saveLocal();if(map[p])map[p]();})
-      .catch(function(){if(map[p])map[p]();});
-    render('<div style="text-align:center;padding:3rem;color:var(--muted)">⏳ กำลังโหลดข้อมูลล่าสุด...</div>');
+      .then(function(res){
+        mergeRoom(ri2,res);
+        saveLocal();
+        if(pageFn)pageFn();
+      })
+      .catch(function(e){
+        console.warn('auto-refresh failed:',e);
+        if(pageFn)pageFn();
+      });
     return;
   }
 
